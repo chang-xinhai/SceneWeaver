@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 from dataclasses import dataclass
 from typing import Union
@@ -92,6 +93,7 @@ def get_axis(state: state_def.State, obj: bpy.types.Object, tag=t.Subpart.Front)
     return front_plane_pt, front_plane_normal
 
 
+# 预处理碰撞查询的输入。它将输入标准化为集合或单个元素，并处理一些特定的逻辑以确保输入的有效性。
 def preprocess_collision_query_cases(a, b, a_tags, b_tags):
     if isinstance(a, list):
         a = set(a)
@@ -145,45 +147,63 @@ def any_touching(
     a_tags=None,
     b_tags=None,
     bvh_cache=None,
-):
+):  # MAKR
     """
     Computes one-to-one, many-to-one, one-to-many or many-to-many collisions
 
     In all cases, returns True if any one object from a and b touch
     """
+    # 预处理输入，确保 a、b 和标签的格式一致
     a, b, a_tags, b_tags = preprocess_collision_query_cases(a, b, a_tags, b_tags)
-
+    # 从场景中获取与 a 相关的碰撞检测对象
     col = iu.col_from_subset(scene, a, a_tags, bvh_cache)
+    # 检查不同的碰撞情况
 
     if b is None and len(a) == 1:
+        # 如果 b 为空且 a 只有一个元素，查询没有意义，返回 None
         # query makes no sense, asking for intra-set collision on one element
         hit, names, contacts = None, (a, b), []
     elif b is None:
+        # 如果 b 为空且 a 有多个元素，检查内部碰撞
         hit, names, contacts = col.in_collision_internal(
             return_data=True, return_names=True
         )
     elif isinstance(b, str):
-        T, g = scene.graph[b]
+        # 如果 b 是单个字符串，处理单个碰撞检测
+        T, g = scene.graph[b]  # 获取 b 的变换和几何信息
+
+        scaling_factor = 2.0
+        scale_matrix = np.eye(3) * scaling_factor
+
+        mesh_copy = copy.deepcopy(scene.geometry[g])
+        mesh_copy.vertices = mesh_copy.vertices @ scale_matrix
         hit, names, contacts = col.in_collision_single(
             scene.geometry[g], transform=T, return_data=True, return_names=True
         )
     elif isinstance(b, list):
+        import pdb
+
+        pdb.set_trace()
+        # 如果 b 是一个列表，处理多个物体之间的碰撞检测
         col2 = iu.col_from_subset(scene, b, b_tags, bvh_cache)
         hit, names, contacts = col.in_collision_other(
             col2, return_names=True, return_data=True
         )
     else:
+        # 如果 b 的类型未处理，抛出错误
         raise ValueError(f"Unhandled case {a=} {b=}")
 
-    names = list(names)
+    names = list(names)  # 将 names 转换为列表
     if len(names) == 1:
+        # 如果只有一个名称，且 b 是字符串，则将 b 添加到 names 中
         assert isinstance(b, str)
         names.append(b)
         logging.debug(f"added name {b} to make {names}")
 
     if len(names) == 0:
+        # 如果没有找到名称，则使用 a 和 b 作为名称
         names = [a, b]
-
+    # 返回碰撞结果，包括碰撞状态、涉及的物体名称和接触信息
     return ContactResult(hit=hit, names=names, contacts=contacts)
 
 
@@ -387,6 +407,7 @@ def has_line_of_sight(
 def freespace_2d(
     scene: trimesh.Scene, a: Union[str, list[str]], b: Union[str, list[str]]
 ) -> float:
+    # MARK
     if isinstance(a, str):
         a = [a]
     if isinstance(b, str):

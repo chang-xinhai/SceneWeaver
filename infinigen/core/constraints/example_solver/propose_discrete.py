@@ -123,7 +123,6 @@ def propose_addition_bound_gen(
         propose_relations.find_assignments(curr, search_rels)
     ):
         logger.debug("Found assignments %d %s %s", i, len(assignments), assignments)
-
         yield moves.Addition(
             names=[
                 f"{np.random.randint(1e6):04d}_{gen_class.__name__}"

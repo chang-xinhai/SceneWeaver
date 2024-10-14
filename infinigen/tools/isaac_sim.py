@@ -4,7 +4,11 @@
 # Authors: David Yan, Beining Han
 
 # Acknowledgement: This file draws inspiration from https://docs.omniverse.nvidia.com/isaacsim/latest/index.html
-
+import sys
+# sys.path.append("/home/yandan/.local/share/ov/pkg/isaac-sim-2023.1.1/exts/omni.isaac.core/")
+# sys.path.append("/home/yandan/.local/share/ov/pkg/isaac-sim-2023.1.1/kit/kernel/py/")
+# sys.path.append("/home/yandan/.local/share/ov/pkg/isaac-sim-2023.1.1/kit/exts/omni.usd")
+# import tongverse as tv
 import json
 
 import numpy as np
@@ -28,7 +32,6 @@ from omni.physx.scripts import utils
 CONFIG = {"renderer": "RayTracedLighting", "headless": False}
 simulation_app = SimulationApp(launch_config=CONFIG)
 
-
 class RobotController(BaseController):
     def __init__(self):
         super().__init__(name="robot_controller")
@@ -51,7 +54,7 @@ class InfinigenIsaacScene(object):
     def setup_scene(self):
         self._add_infinigen_scene()
         self._add_lighting()
-        self._add_robot()
+        # self._add_robot()
 
     def _add_infinigen_scene(self):
         create_prim(
@@ -64,6 +67,7 @@ class InfinigenIsaacScene(object):
         stage = omni.usd.get_context().get_stage()
 
         prims = [prim for prim in stage.Traverse() if prim.IsA(UsdGeom.Mesh)]
+        
         if self.cfg.json_path is None:
             for prim in prims:
                 utils.setStaticCollider(prim)
@@ -81,32 +85,32 @@ class InfinigenIsaacScene(object):
                     obj.replace("(", "_").replace(")", "_").replace(".", "_")
                 ] = key
 
-        for prim in prims:
-            prim_name = prim.GetName()
-            target = obj_to_target.get(prim_name)
+        # for prim in prims:
+        #     prim_name = prim.GetName()
+        #     target = obj_to_target.get(prim_name)
 
-            if "SPLIT" in prim_name:
-                do_not_cast_shadows = prim.CreateAttribute(
-                    "primvars:doNotCastShadows", Sdf.ValueTypeNames.Bool
-                )
-                do_not_cast_shadows.Set(True)
+        #     if "SPLIT" in prim_name:
+        #         do_not_cast_shadows = prim.CreateAttribute(
+        #             "primvars:doNotCastShadows", Sdf.ValueTypeNames.Bool
+        #         )
+        #         do_not_cast_shadows.Set(True)
 
-            if "terrain" in prim_name:
-                continue
+        #     if "terrain" in prim_name:
+        #         continue
 
-            if not target:
-                utils.setStaticCollider(prim)
-                continue
+        #     if not target:
+        #         utils.setStaticCollider(prim)
+        #         continue
 
-            if any(
-                x["relation"]["relation_type"] == "StableAgainst"
-                and "Subpart(wall)" in x["relation"].get("parent_tags")
-                or "Subpart(ceiling)" in x["relation"].get("parent_tags")
-                for x in relations[target]["relations"]
-            ):
-                utils.setStaticCollider(prim)
-            else:
-                utils.setRigidBody(prim, "convexDecomposition", False)
+        #     if any(
+        #         x["relation"]["relation_type"] == "StableAgainst"
+        #         and "Subpart(wall)" in x["relation"].get("parent_tags")
+        #         or "Subpart(ceiling)" in x["relation"].get("parent_tags")
+        #         for x in relations[target]["relations"]
+        #     ):
+        #         utils.setStaticCollider(prim)
+        #     else:
+        #         utils.setRigidBody(prim, "convexDecomposition", False)
 
         self.scene.add(self._support)
 

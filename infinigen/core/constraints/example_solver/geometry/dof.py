@@ -25,6 +25,9 @@ from infinigen.core.constraints.example_solver.room.constants import (
     WALL_THICKNESS,
 )
 
+from debug import invisible_others, visible_others
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -271,6 +274,7 @@ def apply_relations_surfacesample(
             f"Object {name} has more than 2 relations, not supported. {obj_state.relations=}"
         )
 
+
     for i, relation_state in enumerate(obj_state.relations):
         if isinstance(relation_state.relation, cl.AnyRelation):
             raise ValueError(
@@ -306,6 +310,7 @@ def apply_relations_surfacesample(
         logger.warning(f"Init was invalid for {name=} {rels=}")
         return None
 
+   
     if dof == 0:
         iu.translate(state.trimesh_scene, obj_name, T)
     elif dof == 1:
@@ -390,6 +395,7 @@ def apply_relations_surfacesample(
 
     elif dof == 2:
         assert len(parent_planes) == 1, (name, len(parent_planes))
+        
         for i, relation_state in enumerate(obj_state.relations):
             parent_obj = state.objs[relation_state.target_name].obj
             obj_plane, parent_plane = state.planes.get_rel_state_planes(
@@ -410,6 +416,7 @@ def apply_relations_surfacesample(
             stability.move_obj_random_pt(
                 state, obj_name, parent_obj.name, face_mask, parent_plane
             )
+           
             match relation_state.relation:
                 case cl.StableAgainst(_, parent_tags, margin):
                     stability.snap_against(
@@ -431,6 +438,7 @@ def apply_relations_surfacesample(
                     )
                 case _:
                     raise NotImplementedError
+  
     return parent_planes
 
 
@@ -461,6 +469,8 @@ def try_apply_relation_constraints(
     validate_relations_feasible(state, name)
 
     for retry in range(n_try_resolve):
+        
+        
         obj_state = state.objs[name]
         if (
             iu.blender_objs_from_names(obj_state.obj.name)[0].dimensions[2]
@@ -477,16 +487,24 @@ def try_apply_relation_constraints(
             if visualize:
                 vis = butil.copy(obj_state.obj)
                 vis.name = obj_state.obj.name[:30] + "_noneplanes_" + str(retry)
-            return False
+            return False 
 
         if validity.check_post_move_validity(state, name):
             obj_state.dof_matrix_translation = combined_stability_matrix(parent_planes)
             obj_state.dof_rotation_axis = combine_rotation_constraints(parent_planes)
+            # invisible_others()
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            # visible_others()
+            # import pdb
+            # pdb.set_trace()
             return True
+        
+       
 
         if visualize:
             vis = butil.copy(obj_state.obj)
             vis.name = obj_state.obj.name[:30] + "_failure_" + str(retry)
+
 
         # butil.save_blend("test.blend")
 

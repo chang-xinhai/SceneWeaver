@@ -16,36 +16,51 @@ from infinigen.core.util.random import log_uniform
 
 
 def shader_plaster(nw: NodeWrangler, plaster_colored, **kwargs):
+    # 随机生成色相和亮度值
     hue = uniform(0, 1)
     front_value = log_uniform(0.5, 1.0)
     back_value = front_value * uniform(0.6, 1)
+
+    # 根据 plaster_colored 的值生成前景和背景颜色
     if plaster_colored:
         front_color = hsv2rgba(hue, uniform(0.3, 0.5), front_value)
         back_color = hsv2rgba(hue + uniform(-0.1, 0.1), uniform(0.3, 0.5), back_value)
     else:
         front_color = hsv2rgba(hue, 0, front_value)
         back_color = hsv2rgba(hue + uniform(-0.1, 0.1), 0, back_value)
+
+    # 创建 UV 映射节点
     uv_map = nw.new_node(Nodes.UVMap)
+
+    # 创建穆斯格雷夫纹理节点
     musgrave = nw.new_node(
         Nodes.MusgraveTexture,
         [uv_map],
         input_kwargs={"Detail": log_uniform(15, 30), "Dimension": 0},
     )
+
+    # 创建噪声纹理节点
     noise = nw.new_node(
         Nodes.NoiseTexture,
         [uv_map],
         input_kwargs={"Detail": log_uniform(15, 30), "Distortion": log_uniform(4, 8)},
     )
+    # 构建颜色渐变
     noise = build_color_ramp(
         nw, noise, [0, uniform(0.3, 0.5)], [(0, 0, 0, 1), (1, 1, 1, 1)]
     )
+
+    # 将穆斯格雷夫纹理和噪声结合为差异效果
     difference = nw.new_node(
         Nodes.MixRGB, [musgrave, noise], attrs={"blend_type": "DIFFERENCE"}
     )
+
+    # 创建基础颜色
     base_color = build_color_ramp(
         nw, difference, [uniform(0.2, 0.3), 1], [back_color, front_color]
     )
 
+    # 创建位移节点
     displacement = nw.new_node(
         Nodes.Displacement,
         input_kwargs={
@@ -56,6 +71,7 @@ def shader_plaster(nw: NodeWrangler, plaster_colored, **kwargs):
         },
     )
 
+    # 创建 BSDF 节点
     principled_bsdf = nw.new_node(
         Nodes.PrincipledBSDF,
         input_kwargs={
@@ -64,6 +80,7 @@ def shader_plaster(nw: NodeWrangler, plaster_colored, **kwargs):
         },
     )
 
+    # 输出材质节点
     nw.new_node(
         Nodes.MaterialOutput,
         input_kwargs={"Surface": principled_bsdf, "Displacement": displacement},

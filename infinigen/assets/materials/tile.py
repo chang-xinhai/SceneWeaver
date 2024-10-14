@@ -50,12 +50,17 @@ def mix_shader(nw, base_shader, offset, rotations, mortar, alternating, selectio
                     color = links[0].from_socket
                 else:
                     color = bsdf.inputs[0].default_value
+
+                # 在这段代码中，0、6 和 7 是 MixRGB 节点输入参数的索引，表示不同的输入值。具体说明如下：
+                # 0: 这是第一个输入，通常对应于混合的因子。在此例中，它传入了 darken_factor，控制了基础颜色的暗度。
+                # 6: 这是第二个输入，传入的是基础颜色 color，这就是将要进行混合的颜色。
+                # 7: 这是第三个输入，传入的是通过 nw.scalar_sub(1, mortar) 计算得出的值。这一值调整了混合效果，影响最终的颜色输出。
                 color = nw.new_node(
                     Nodes.MixRGB,
                     input_kwargs={
-                        0: darken_factor,
-                        6: color,
-                        7: nw.scalar_sub(1, mortar),
+                        0: darken_factor, #控制颜色的深度
+                        6: color,  #基础颜色
+                        7: nw.scalar_sub(1, mortar), #调整混合
                     },
                     attrs={"blend_type": "MULTIPLY", "data_type": "RGBA"},
                 ).outputs[2]
@@ -116,22 +121,31 @@ def mix_shader(nw, base_shader, offset, rotations, mortar, alternating, selectio
         Nodes.MaterialOutput, input_kwargs={"Surface": shader, "Displacement": disp}
     )
 
-
+#方形瓷砖材质的着色器
 def shader_square_tile(
     nw: NodeWrangler, base_shader, vertical=False, alternating=None, scale=1, **kwargs
 ):
+    # 随机决定是否交替
     if alternating is None:
         alternating = uniform() < 0.75
+
+    # 生成瓷砖的大小
     size = log_uniform(0.2, 0.4)
+    # 获取纹理坐标和法线
     vec = nw.new_node(Nodes.TextureCoord).outputs["Object"]
     normal = nw.new_node(Nodes.ShaderNodeNormalMap).outputs["Normal"]
+    # 如果是垂直排列，进行向量处理
     if vertical:
         vec = nw.combine(
             nw.separate(nw.vector_math("CROSS_PRODUCT", vec, normal))[-1],
             nw.separate(vec)[-1],
             0,
         )
+
+    # 随机选择旋转角度
     rotation = np.pi / 4 if uniform() < 0.3 else 0
+
+    # 创建映射节点
     vec = nw.new_node(
         Nodes.Mapping,
         [
@@ -142,6 +156,8 @@ def shader_square_tile(
         ],
     )
     vec = nw.combine(*nw.separate(vec)[:2], 0)
+
+    # 创建砖块纹理并获取颜色和缝隙信息
     offset, mortar = map(
         nw.new_node(
             Nodes.BrickTexture,
@@ -157,12 +173,20 @@ def shader_square_tile(
         ).outputs.get,
         ["Color", "Fac"],
     )
+    import pdb
+    pdb.set_trace()
+
+    # 创建棋盘纹理选择
     selections = [
         nw.new_node(
             Nodes.CheckerTexture, [vec, (0, 0, 0, 1), (1, 1, 1, 1), 1 / size]
         ).outputs[1]
     ]
+    
+    # 定义旋转角度
     rotations = np.pi / 2 * np.arange(2)
+
+    # 混合基础着色器
     mix_shader(nw, base_shader, offset, rotations, mortar, alternating, selections)
 
 
@@ -565,7 +589,7 @@ def apply(
                     shader_crossed_tile,
                 ]
             )
-
+    method = shader_square_tile
     return common.apply(
         obj,
         method,
