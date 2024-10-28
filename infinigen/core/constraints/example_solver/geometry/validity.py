@@ -68,8 +68,7 @@ def check_pre_move_validity(scene, a, parent_dict, dx, dy):
 
 def all_relations_valid(state, name):
     rels = state.objs[name].relations
-    import pdb
-    pdb.set_trace()
+
     for i, relation_state in enumerate(rels):
         match relation_state.relation:
             case cl.StableAgainst(_child_tags, _parent_tags, _margin):
@@ -89,8 +88,9 @@ def all_relations_valid(state, name):
 def check_post_move_validity(
     state: State, name: str, disable_collision_checking=False, visualize=False
 ):  # MARK
-    import pdb
-    pdb.set_trace()
+    # import pdb
+
+    # pdb.set_trace()
     scene = state.trimesh_scene
     objstate = state.objs[name]
 
@@ -103,6 +103,7 @@ def check_post_move_validity(
     if len(collision_objs) == 0:
         return True
 
+    # check relation
     if not all_relations_valid(state, name):
         if visualize:
             vis_obj = butil.copy(objstate.obj)
@@ -110,18 +111,28 @@ def check_post_move_validity(
 
         return False
 
+    #check collision
     if disable_collision_checking:
         return True
     if t.Semantics.NoCollision in objstate.tags:
         return True
-    import pdb
-    pdb.set_trace()
-    collide = any_touching_expand(  # mark
-        scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache, obj_info=state.obj_info
+    
+
+    # objstate.obj.location
+    # Vector((2.1989827156066895, 12.716106414794922, 0.8305753469467163))
+    # objstate.obj.rotation_euler
+    # Euler((0.0, -0.0, 1.570796012878418), 'XYZ')
+    
+    touch = any_touching_expand(  # mark
+        scene,
+        objstate.obj.name,
+        collision_objs,
+        bvh_cache=state.bvh_cache,
+        # obj_info=state.obj_info,
     )
-    touch = any_touching(  # mark
-        scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
-    )
+    # touch = any_touching(  # mark
+    #     scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
+    # )
     if not constrain_contact(touch, should_touch=None, max_depth=0.0001):
         if visualize:
             vis_obj = butil.copy(objstate.obj)
@@ -134,14 +145,13 @@ def check_post_move_validity(
             f"validity failed - {name} touched {contact_names[0]} {len(contact_names)=}"
         )
         return False
-    
+
     # available = path_to_door(  # mark
     #     scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
     # )
 
     # supposed to go through the consgraph here
     return True
-
 
 
 # @gin.configurable
@@ -187,7 +197,7 @@ def check_post_move_validity(
 #             f"validity failed - {name} touched {contact_names[0]} {len(contact_names)=}"
 #         )
 #         return False
-    
+
 #     # available = path_to_door(  # mark
 #     #     scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
 #     # )

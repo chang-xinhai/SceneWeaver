@@ -79,7 +79,8 @@ class WallArtFactory(AssetFactory):
         self.frame_surface.apply(frame)
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
         import pdb
-   #MARK
+
+        # MARK
         pdb.set_trace()
         obj = join_objects([obj, frame])
         return obj

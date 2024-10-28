@@ -49,9 +49,6 @@ from infinigen.core.util.test_utils import (
     load_txt_list,
 )
 from infinigen.terrain import Terrain
-from infinigen_examples import (
-    generate_nature,  # noqa F401 # needed for nature gin configs to load
-)
 from infinigen_examples.indoor_constraint_examples import home_constraints
 from infinigen_examples.util import constraint_util as cu
 from infinigen_examples.util.generate_indoors_util import (
@@ -61,6 +58,8 @@ from infinigen_examples.util.generate_indoors_util import (
     place_cam_overhead,
     restrict_solving,
 )
+
+# from . import generate_nature  # noqa F401 # needed for nature gin configs to load
 
 logger = logging.getLogger(__name__)
 
@@ -143,12 +142,10 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
     )
 
     p.run_stage("sky_lighting", lighting.sky_lighting.add_lighting, use_chance=False)
-    bpy.context.view_layer.update()
+
     consgraph = home_constraints()
-    stages = default_greedy_stages()  #'rooms', 'on_floor', 'on_wall', 'on_ceiling', 'side_obj', 'obj_ontop_obj', 'obj_on_support'
+    stages = default_greedy_stages()
     checks.check_all(consgraph, stages, all_vars)
-    import pdb
-    pdb.set_trace()
 
     stages, consgraph, limits = restrict_solving(stages, consgraph)
 
@@ -161,8 +158,8 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                     # TODO: add constraints to home_constraints for garages, offices, balconies, etc
                     # t.Semantics.Bedroom,
                     # t.Semantics.LivingRoom,
-                    # t.Semantics.Kitchen,
-                    t.Semantics.Bathroom,
+                    t.Semantics.Kitchen,
+                    # t.Semantics.Bathroom,
                     # t.Semantics.DiningRoom,
                 ]
             )
@@ -177,27 +174,10 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
 
     state: state_def.State = p.run_stage("solve_rooms", solve_rooms, use_chance=False)
 
-    for area in bpy.context.screen.areas:
-        if area.type == "VIEW_3D":
-            with bpy.context.temp_override(area=area):
-                area.spaces.active.shading.type = "MATERIAL"
-            for region in area.regions:
-                if region.type == "WINDOW":
-                    override = {
-                        "area": area,
-                        "region": region,
-                        "edit_object": bpy.context.edit_object,
-                    }
-                    bpy.ops.view3d.view_all(override)
-
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-
     def solve_large():
         assignments = greedy.iterate_assignments(
             stages["on_floor"], state, all_vars, limits, nonempty=True
         )
-        import pdb
-        pdb.set_trace()
         for i, vars in enumerate(assignments):
             solver.solve_objects(
                 consgraph,
@@ -209,37 +189,15 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
             )
         return solver.state
 
-    # def invisible_others():
-    #     # rooms_split["exterior"].hide_viewport = True
-    #     # rooms_split["exterior"].hide_render = True
-    #     mesh = butil.get_collection("placeholders:room_shells")
-    #     mesh.hide_viewport = True
-    #     # invisible_to_camera.apply(mesh.objects)
-    #     mesh = butil.get_collection("placeholders:portal_cutters")
-    #     mesh.hide_viewport = True
-    #     # invisible_to_camera.apply(mesh.objects)
-    #     mesh = butil.get_collection("placeholders:room_meshes")
-    #     mesh.hide_viewport = True
-    #     # invisible_to_camera.apply(mesh.objects)
-    #     return
-
-    # p.run_stage("invisible_others", invisible_others, use_chance=False)
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-
     state = p.run_stage("solve_large", solve_large, use_chance=False, default=state)
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-    solved_rooms = [  # [bpy.data.objects['bedroom_0-0']]
+    solved_rooms = [
         state.objs[assignment[cu.variable_room]].obj
         for assignment in greedy.iterate_assignments(
             stages["on_floor"], state, [cu.variable_room], limits
         )
     ]
-
-    # array([[10.5      ,  0.       ,  0.       ],
-    #   [17.5      ,  4.5      ,  3.4867084]])
     solved_bound_points = np.concatenate([butil.bounds(r) for r in solved_rooms])
-    # (array([10.5,  0. ,  0. ]), array([17.5      ,  4.5      ,  3.4867084]))
     solved_bbox = (
         np.min(solved_bound_points, axis=0),
         np.max(solved_bound_points, axis=0),
@@ -251,7 +209,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
             for obj in solver.get_bpy_objects(r.Domain({t.Semantics.Room}))
         ]
     )
-    # (array([0., 0., 0.]), array([17.5      , 15.5      ,  3.4867084]))
     house_bbox = (np.min(house_bbox, axis=0), np.max(house_bbox, axis=0))
 
     camera_rigs = placement.camera.spawn_camera_rigs()
@@ -282,7 +239,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return scene_preprocessed
 
     scene_preprocessed = p.run_stage("pose_cameras", pose_cameras, use_chance=False)
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     def animate_cameras():
         cam_util.animate_cameras(camera_rigs, solved_bbox, scene_preprocessed, pois=[])
@@ -290,8 +246,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
     p.run_stage(
         "animate_cameras", animate_cameras, use_chance=False, prereq="pose_cameras"
     )
-    import pdb
-    pdb.set_trace()
+
     p.run_stage(
         "populate_intermediate_pholders",
         populate.populate_state_placeholders,
@@ -324,16 +279,12 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return solver.state
 
     state = p.run_stage("solve_medium", solve_medium, use_chance=False, default=state)
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     def solve_small():
         n_steps = overrides["solve_steps_small"]
-
         for i, vars in enumerate(
             greedy.iterate_assignments(stages["obj_ontop_obj"], state, all_vars, limits)
         ):
-            import pdb
-            pdb.set_trace()
             solver.solve_objects(
                 consgraph,
                 stages["obj_ontop_obj"],
@@ -358,7 +309,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return solver.state
 
     state = p.run_stage("solve_small", solve_small, use_chance=False, default=state)
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     p.run_stage(
         "populate_assets", populate.populate_state_placeholders, state, use_chance=False
@@ -389,7 +339,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         )
 
     p.run_stage("floating_objs", place_floating, use_chance=False, default=state)
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     door_filter = r.Domain({t.Semantics.Door}, [(cl.AnyRelation(), stages["rooms"])])
     window_filter = r.Domain(
@@ -412,7 +361,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         lambda: room_dec.room_stairs(state, room_meshes),
         use_chance=False,
     )
-
     p.run_stage(
         "skirting_floor",
         lambda: make_skirting_board(room_meshes, t.Subpart.SupportSurface),
@@ -446,7 +394,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         rooms_split["ceiling"].objects,
         use_chance=False,
     )
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     # state.print()
     state.to_json(output_folder / "solve_state.json")
@@ -542,7 +489,6 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                         area.spaces.active.region_3d.view_perspective = "CAMERA"
                         break
                 break
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     return {
         "height_offset": height,

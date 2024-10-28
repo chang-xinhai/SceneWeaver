@@ -421,6 +421,6 @@ class KitchenCabinetFactory(KitchenCabinetBaseFactory):
         intervals = intervals / intervals.sum() * params["Dimensions"][1]
         self.cabinet_widths = intervals.tolist()
 
-    def create_placeholder(self, **kwargs) -> bpy.types.Object: #MARK
+    def create_placeholder(self, **kwargs) -> bpy.types.Object:  # MARK
         x, y, z = self.dimensions
         return new_bbox(-x / 2 * 1.2, x / 2 * 1.2, 0, y * 1.1, 0, (z + 0.06) * 1.03)

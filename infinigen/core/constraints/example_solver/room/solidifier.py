@@ -273,7 +273,7 @@ class BlueprintSolidifier:
                     obj=c, tags=tags, relations=list(cut_state(k_) for k_ in k)
                 )
 
-        return State(objs=obj_states)
+        return State(objs=obj_states) #MARK init state, parse scene for the first time
 
     def make_room(self, obj, exterior_edges=None):
         obj = polygon2obj(canonicalize(obj), True)

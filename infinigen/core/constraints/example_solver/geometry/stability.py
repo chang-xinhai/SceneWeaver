@@ -95,7 +95,7 @@ def stable_against(
     visualize=False,
     allow_overhangs=False,
 ):
-    #这个函数stable_against主要用于检查两个对象在三维空间中的稳定性。
+    # 这个函数stable_against主要用于检查两个对象在三维空间中的稳定性。
     # 首先，它获取相关的对象和它们的平面表示。
     # 然后，函数检查两个对象的法向量是否平行，以确保它们是稳定的。
     # 接下来，它会将一个对象的网格投影到另一个对象的平面上，并根据允许的条件（例如是否允许悬垂）来判断它们是否重叠或相互包含。
@@ -103,9 +103,8 @@ def stable_against(
     """
     check paralell, close to, and not overhanging.
     """
-    #LAST
-    import pdb
-    pdb.set_trace()
+    # LAST
+
     """
     relation_state = RelationState(relation=StableAgainst({Subpart.Bottom, -Subpart.Top, -Subpart.Back, -Subpart.Front}, {Subpart.Visible, Subpart.SupportSurface, -Subpart.Ceiling, -Subpart.Wall}), target_name='bathroom_0-0', child_plane_idx=0, parent_plane_idx=0)
     """
@@ -307,7 +306,9 @@ def move_obj_random_pt(
     scene = state.trimesh_scene
     b_obj = iu.blender_objs_from_names(b)[0]
 
+ 
     random_point_global = random_sample_point(state, b_obj, face_mask, plane)
+
     iu.set_location(scene, a, random_point_global)
 
 

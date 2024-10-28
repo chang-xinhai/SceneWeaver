@@ -71,10 +71,10 @@ class AssetFactory:
         # Not intended to be overridden - override create_placeholder instead
 
         logger.debug(f"{self}.spawn_placeholder({i}...)")
-        #MARK
+        # MARK
         with FixedSeed(int_hash((self.factory_seed, i))):
-            obj = self.create_placeholder(i=i, loc=loc, rot=rot)  #MARK size
-        
+            obj = self.create_placeholder(i=i, loc=loc, rot=rot)  # MARK size
+
         has_sensitive_constraint = any(
             c.type in ["FOLLOW_PATH"] for c in obj.constraints
         )
@@ -119,7 +119,7 @@ class AssetFactory:
                 "Attempted to spawn_asset() on an AssetFactory(coarse=True)"
             )
 
-        #TODO
+        # TODO
         user_provided_placeholder = placeholder is not None
 
         if user_provided_placeholder:
@@ -127,9 +127,9 @@ class AssetFactory:
         else:
             placeholder = self.spawn_placeholder(i=i, loc=loc, rot=rot)
             self.finalize_placeholders([placeholder])
-            placeholder
-            center = np.array([v.co for v in placeholder.data.vertices]).mean(axis=0)
-            size = placeholder.dimensions
+            # placeholder
+            # center = np.array([v.co for v in placeholder.data.vertices]).mean(axis=0)
+            # size = placeholder.dimensions
 
         gc_targets = [
             bpy.data.meshes,

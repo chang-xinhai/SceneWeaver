@@ -94,38 +94,48 @@ class Planes:
         )
 
     def compute_all_planes_fast(self, obj, face_mask, tolerance=1e-4):
-        # Cache computations
+        # Cache computations # 缓存计算结果
 
+        # 创建一个顶点缓存，存储每个顶点的全局坐标
         vertex_cache = {
             v.index: global_vertex_coordinates(obj, v) for v in obj.data.vertices
         }
+        # 创建一个法线缓存，存储每个多边形的全局法线，只有在面掩码为真的情况下才计算
         normal_cache = {
             p.index: global_polygon_normal(obj, p)
             for p in obj.data.polygons
             if face_mask[p.index]
         }
 
+        # 用于存储唯一平面
         unique_planes = {}
 
+        # 遍历每个多边形
         for polygon in obj.data.polygons:
+            # 如果当前多边形不在面掩码中，跳过
             if not face_mask[polygon.index]:
                 continue
-
+            
             # Get the normal and a vertex to represent the plane
+            # 获取当前多边形的法线和一个顶点来表示平面
             normal = normal_cache[polygon.index]
 
+            # 如果法线的范数太小，跳过（认为是零法线）
             if np.linalg.norm(normal) < 1e-6:
                 continue
 
+            # 取第一个顶点作为代表
             vertex = vertex_cache[polygon.vertices[0]]
 
             # Hash the plane using both normal and the point
+            # 使用法线和顶点哈希平面
             plane_hash = self.hash_plane(normal, vertex, tolerance)
 
+            # 如果哈希值不在唯一平面字典中，添加到字典
             if plane_hash not in unique_planes:
                 unique_planes[plane_hash] = (obj.name, polygon.index)
 
-        return list(unique_planes.values())
+        return list(unique_planes.values()) # 返回唯一平面的列表
 
     def get_all_planes_deprecated(
         self, obj, face_mask, tolerance=1e-4
@@ -193,7 +203,7 @@ class Planes:
         parent_tags = relation.parent_tags
 
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
-        obj_all_planes = self.get_tagged_planes(obj, obj_tags)
+        obj_all_planes = self.get_tagged_planes(obj, obj_tags) #(obj.name, polygon.index)
 
         # for i, p in enumerate(parent_all_planes):
         #    splitted_parent = planes.extract_tagged_plane(parent_obj, parent_tags, p)
@@ -202,6 +212,8 @@ class Planes:
         #    splitted_parent = planes.extract_tagged_plane(parent_obj, obj_tags, p)
         #    splitted_parent.name = f'obj_plane_{i}'
         # return
+        
+        # print(parent_all_planes)
 
         if relation_state.parent_plane_idx >= len(parent_all_planes):
             logging.warning(

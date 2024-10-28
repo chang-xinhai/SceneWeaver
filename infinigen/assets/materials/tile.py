@@ -589,7 +589,7 @@ def apply(
                     shader_crossed_tile,
                 ]
             )
-    method = shader_square_tile
+    # method = shader_square_tile
     return common.apply(
         obj,
         method,

@@ -86,22 +86,30 @@ class SegmentMaker:
                 k = np.random.choice(list(keys), p=prob / prob.sum())
                 # 获取选择的段的边界
                 x, y, xx, yy = segments[k].bounds
-                w, h = xx - x, yy - y # 计算宽度和高度
-                r = uniform(0.25, 0.75) # 随机生成一个比例
-                line = None # 初始化分割线 
+                w, h = xx - x, yy - y  # 计算宽度和高度
+                r = uniform(0.25, 0.75)  # 随机生成一个比例
+                line = None  # 初始化分割线
                 # 如果宽度大于或等于高度
-                if w >= h: 
+                if w >= h:
                     w_ = unit_cast(r * w)  # 计算新的宽度
-                    bound = max(self.box_ratio * h, constants.SEGMENT_MARGIN)  # 计算下限
+                    bound = max(
+                        self.box_ratio * h, constants.SEGMENT_MARGIN
+                    )  # 计算下限
                     # 检查新的宽度是否满足条件
                     if w_ >= bound and w - w_ >= bound:
-                        line = LineString([(x + w_, -100), (x + w_, 100)]) # 创建垂直分割线
+                        line = LineString(
+                            [(x + w_, -100), (x + w_, 100)]
+                        )  # 创建垂直分割线
                 else:
-                    h_ = unit_cast(r * h) # 计算新的高度
-                    bound = max(self.box_ratio * w, constants.SEGMENT_MARGIN) # 计算下限
+                    h_ = unit_cast(r * h)  # 计算新的高度
+                    bound = max(
+                        self.box_ratio * w, constants.SEGMENT_MARGIN
+                    )  # 计算下限
                     # 检查新的高度是否满足条件
                     if h_ >= bound and h - h_ >= bound:
-                        line = LineString([(-100, y + h_), (100, y + h_)]) # 创建水平分割线
+                        line = LineString(
+                            [(-100, y + h_), (100, y + h_)]
+                        )  # 创建水平分割线
                 # 如果成功创建分割线
                 if line is not None:
                     i = max(segments.keys())  # 获取当前最大段索引
@@ -113,9 +121,9 @@ class SegmentMaker:
                         np.abs(s.area - s_.area) < 1e-3
                         and np.abs(t.area - t_.area) < 1e-3
                     ):
-                        segments[k], segments[i + 1] = s_, t_ # 更新段
-                        break # 成功分割后退出尝试
-        return {k: v for k, v in segments.items()} # 返回所有段
+                        segments[k], segments[i + 1] = s_, t_  # 更新段
+                        break  # 成功分割后退出尝试
+        return {k: v for k, v in segments.items()}  # 返回所有段
 
     def merge_segment(self, segments, shared_edges, attached, i, j):
         assert i != j

@@ -13,7 +13,7 @@ import gin
 import numpy as np
 from tqdm import trange
 
-from debug import invisible_others, visible_others
+# from debug import invisible_others, visible_others
 from infinigen.core.constraints import constraint_language as cl
 from infinigen.core.constraints import reasoning as r
 from infinigen.core.constraints.evaluator import domain_contains
@@ -157,8 +157,7 @@ class Solver:
         abort_unsatisfied: bool = False,
         print_bounds: bool = False,
     ):
-        import pdb
-        pdb.set_trace()
+
 
         filter_domain = copy.deepcopy(filter_domain)
         """
@@ -168,16 +167,14 @@ class Solver:
         ])
         """
 
-        desc_full = (desc, *var_assignments.values()) 
-        #('on_floor_0', 'bathroom_0-0')
+        desc_full = (desc, *var_assignments.values())
+        # ('on_floor_0', 'bathroom_0-0')
 
-
-        dom_assignments = {  
+        dom_assignments = {
             k: r.Domain(self.state.objs[objkey].tags)
             for k, objkey in var_assignments.items()
         }
-        #{Variable(room): Domain({Semantics.Bathroom, SpecificObject(name='bathroom_0-0'), Semantics.Room}, [])}
-
+        # {Variable(room): Domain({Semantics.Bathroom, SpecificObject(name='bathroom_0-0'), Semantics.Room}, [])}
 
         filter_domain = r.substitute_all(filter_domain, dom_assignments)
         """
@@ -192,12 +189,12 @@ class Solver:
                 f"Cannot solve {desc_full=} with non-finalized domain {filter_domain}"
             )
 
-        orig_bounds = r.constraint_bounds(consgraph) #len(orig_bounds) = 63
+        orig_bounds = r.constraint_bounds(consgraph)  # len(orig_bounds) = 63
         bounds = propose_discrete.preproc_bounds(
             orig_bounds, self.state, filter_domain, print_bounds=print_bounds
         )
         # #len(bounds) = 5
-        
+
         if len(bounds) == 0:
             logger.info(f"No objects to be added for {desc_full=}, skipping")
             return self.state
@@ -211,14 +208,16 @@ class Solver:
         )  # [15:25:10.504] [solve] [INFO] | Greedily solve ('on_floor_0', 'bedroom_0-0') - stage has 7/63 bounds, active_count=5/25 objs
 
         self.optim.reset(max_iters=n_steps)
-        ra = (
-            trange(n_steps) if self.optim.print_report_freq == 0 else range(n_steps)
-        )  # range(0, 150)
+        # ra = (
+        #     trange(n_steps) if self.optim.print_report_freq == 0 else range(n_steps)
+        # )  # range(0, 150)
+        ra = trange(n_steps) if self.optim.print_report_freq == 0 else range(n_steps) 
 
+        # 进行迭代
         for j in ra:
-            move_gen = self.choose_move_type(j, n_steps)
-            self.optim.step(consgraph, self.state, move_gen, filter_domain)  # MARK
-        self.optim.save_stats(self.output_folder / f"optim_{desc}.csv")
+            move_gen = self.choose_move_type(j, n_steps) # 选择移动类型
+            self.optim.step(consgraph, self.state, move_gen, filter_domain)  # MARK # 执行优化步骤
+        self.optim.save_stats(self.output_folder / f"optim_{desc}.csv") # 保存优化统计信息
 
         logger.info(
             f"Finished solving {desc_full}, added {len(self.state.objs) - n_start} "

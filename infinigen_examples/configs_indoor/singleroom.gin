@@ -1,2 +1,2 @@
-BlueprintSolidifier.enable_open=True
+BlueprintSolidifier.enable_open=False #EDIT
 restrict_solving.solve_max_rooms=1

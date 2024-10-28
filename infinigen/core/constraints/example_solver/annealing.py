@@ -193,60 +193,64 @@ class SimulatedAnnealingSolver:
         temp: float,
         filter_domain: r.Domain,
     ) -> typing.Tuple[Move, evaluator.EvalResult, int]:
-       
         move_gen = propose_func(consgraph, state, filter_domain, temp)
 
         move = None
         retry = None
-       
+
         for retry, move in enumerate(move_gen):  # MARK # MARK：遍历移动生成器
-            if retry == self.max_invalid_candidates: # 如果达到最大无效候选次数
+            if retry == self.max_invalid_candidates:  # 如果达到最大无效候选次数
                 logger.debug(
                     f"{move_gen=} reached {self.max_invalid_candidates=} without succeeding an apply()"
                 )
-                break # 退出循环
- 
-            succeeded = move.apply(state) # 尝试应用移动到当前状态
+                break  # 退出循环
+
+            succeeded = move.apply(state)  # 尝试应用移动到当前状态
             if succeeded:  # 如果成功应用
                 evaluator.evict_memo_for_move(consgraph, state, self.eval_memo, move)
                 result = self.evaluate_move(consgraph, state, move, filter_domain)
-                return move, result, retry # 返回移动、结果和尝试次数
+                return move, result, retry  # 返回移动、结果和尝试次数
 
             logger.debug(f"{retry=} reverting {move=}")
             evaluator.evict_memo_for_move(consgraph, state, self.eval_memo, move)
-            move.revert(state) # 撤销移动
+            move.revert(state)  # 撤销移动
 
-        else: # 如果循环正常结束（没有找到有效移动）
+        else:  # 如果循环正常结束（没有找到有效移动）
             logger.debug(f"{move_gen=} produced {retry} attempts and none were valid")
 
         return move, None, retry  # 返回最后的移动、无效结果和尝试次数
- 
+
     def curr_temp(self) -> float:
         temp = self.initial_temp * self.cooling_rate**self.curr_iteration
         temp = np.clip(temp, self.final_temp, self.initial_temp)
         return temp
 
     def metrop_hastings_with_viol(self, prop_result: evaluator.EvalResult, temp: float):
-        import pdb
-        pdb.set_trace()
+        # 带有违反约束处理的Metropolis-Hastings算法。
+        # 它根据提案结果和当前结果的损失及违反数量计算接受概率，并决定是否接受提案。
+        # 如果提案的违反数量更少，则直接接受；如果更多，则直接拒绝；
+        # 在相等的情况下，通过随机数和对数概率进行判断。
+
+
         prop_viol = prop_result.viol_count()  # MARK
         curr_viol = self.curr_result.viol_count()
 
-        diff = prop_result.loss() - self.curr_result.loss()
-        log_prob = -diff / temp
+        diff = prop_result.loss() - self.curr_result.loss()  # 计算损失差异
+        log_prob = -diff / temp 
 
-        viol_diff = prop_viol - curr_viol
+        viol_diff = prop_viol - curr_viol # 计算违反数量的差异
 
         result = {"diff": diff, "log_prob": log_prob, "viol_diff": viol_diff}
 
-        if viol_diff < 0:
-            result["accept"] = True
-            return result
-        elif viol_diff > 0:
-            result["accept"] = False
+        if viol_diff < 0: # 如果提案的违反数量少于当前
+            result["accept"] = True # 接受提案
+            return result   # 返回结果
+        elif viol_diff > 0:  # 如果提案的违反数量多于当前
+            result["accept"] = False # 拒绝提案
             return result
 
         # standard metropolis-hastings
+        # 在相等的情况下，通过随机数和对数概率进行判断。
         rv = np.log(np.random.uniform())
         result["accept"] = rv < log_prob
         return result
@@ -257,7 +261,7 @@ class SimulatedAnnealingSolver:
                 consgraph, state, filter_domain
             )
 
-        move_start_time = time.perf_counter()
+        move_start_time = time.perf_counter() # 记录移动开始的时间
 
         is_log_step = (
             self.print_report_freq != 0
@@ -268,7 +272,9 @@ class SimulatedAnnealingSolver:
             and self.curr_iteration % self.print_breakdown_freq == 0
         )
 
-        temp = self.curr_temp()
+        temp = self.curr_temp() # 获取当前温度
+        # 尝试生成移动提案
+        #MARK [1] Find a no collision pose
         move, prop_result, retry = self.retry_attempt_proposals(
             move_gen_func, consgraph, state, temp, filter_domain
         )
@@ -281,11 +287,12 @@ class SimulatedAnnealingSolver:
                 "log_prob": 0,
                 "viol_diff": None,
             }
-        else:
+        else: # 进行马尔可夫链蒙特卡罗采样
+            #MARK [2] Find a pose better than the previous pose
             accept_result = self.metrop_hastings_with_viol(prop_result, temp)
-            if accept_result["accept"]:
-                self.curr_result = prop_result
-                move.accept(state)
+            if accept_result["accept"]: # 如果接受提案
+                self.curr_result = prop_result # 更新当前结果
+                move.accept(state)  # 接受移动
             else:
                 evaluator.evict_memo_for_move(consgraph, state, self.eval_memo, move)
                 move.revert(state)
@@ -293,6 +300,7 @@ class SimulatedAnnealingSolver:
         dt = time.perf_counter() - move_start_time
         elapsed = time.perf_counter() - self.optim_start_time
 
+        # 如果 记录步骤 or 接受结果
         if (self.print_report_freq != 0 and accept_result["accept"]) or is_log_step:
             n = len(state.objs)
             move_log = move_gen_func.__name__ if move is None else move
@@ -302,20 +310,21 @@ class SimulatedAnnealingSolver:
                 1 if log_prob > 7 else np.exp(accept_result["log_prob"])
             )  # avoid overflow warnings. clamp to exp = exp(7) ~= 1000
 
-            loss = self.curr_result.loss()
-            viol = self.curr_result.viol_count()
-            diff = accept_result["diff"]
-            accept = accept_result["accept"]
-            viol_diff = accept_result["viol_diff"] or 0
+            loss = self.curr_result.loss() # 获取当前结果的损失
+            viol = self.curr_result.viol_count() # 获取违反约束的数量
+            diff = accept_result["diff"] # 获取差异值
+            accept = accept_result["accept"] # 获取接受状态
+            viol_diff = accept_result["viol_diff"] or 0 # 获取违反差异
 
             logger.info(
                 f"it={self.curr_iteration}/{self.max_iterations} {dt=:.3f} {n=} "
                 f"{loss=:.3e} {viol=:.1f} "
                 f"{temp=:.2e} {diff=:.2f} {viol_diff=:.1f} {prob=:.2f} {accept=} "
                 f"{move_log}"
-            )
+            )  # 记录信息
 
         if is_log_step:
+             # 追加当前统计信息
             self.stats.append(
                 dict(
                     curr_iteration=self.curr_iteration,
@@ -338,7 +347,7 @@ class SimulatedAnnealingSolver:
             )
 
         if is_report_step and prop_result is not None:
-            df = prop_result.to_df()
+            df = prop_result.to_df() # 将提案结果转换为DataFrame
 
             if self.last_eval_result is not None:
                 last_df = self.last_eval_result.to_df()
@@ -357,16 +366,16 @@ class SimulatedAnnealingSolver:
                     self.last_eval_result.viol_count(),
                     self.curr_result.viol_count(),
                     prop_result.viol_count(),
-                )
+                ) # 打印违反约束的数量
                 last_df.index = ["prev_" + x for x in last_df.index]
                 df = pd.concat([last_df[diff_cols], df[diff_cols]])
 
             print(df)
 
-        if self.curr_iteration % BPY_GARBAGE_COLLECT_FREQUENCY == 0:
+        if self.curr_iteration % BPY_GARBAGE_COLLECT_FREQUENCY == 0:  # 每隔一定迭代次数进行垃圾回收
             butil.garbage_collect(butil.get_all_bpy_data_targets())
 
-        if self.curr_iteration != 0 and self.curr_iteration % 50 == 0:
+        if self.curr_iteration != 0 and self.curr_iteration % 50 == 0: # 每50次迭代报告一次状态
             print(f"CLUTTER REPORT {self.curr_iteration=}")
             print("  State Size", len(state.objs))
             print("  Trimesh", len(state.trimesh_scene.graph.nodes))
@@ -376,5 +385,5 @@ class SimulatedAnnealingSolver:
             print("  Textures", len(bpy.data.materials))
 
         self.curr_iteration += 1
-        if prop_result is not None:
-            self.last_eval_result = prop_result
+        if prop_result is not None: # 如果提案结果不为None
+            self.last_eval_result = prop_result # 更新上次评估结果

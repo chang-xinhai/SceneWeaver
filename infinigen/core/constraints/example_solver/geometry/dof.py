@@ -14,7 +14,7 @@ from shapely.geometry import Point
 
 import infinigen.core.constraints.example_solver.geometry.validity as validity
 import infinigen.core.util.blender as butil
-from debug import invisible_others, visible_others
+# from debug import invisible_others, visible_others
 from infinigen.core import tagging
 from infinigen.core import tags as t
 from infinigen.core.constraints import constraint_language as cl
@@ -251,24 +251,25 @@ def project(points, plane_normal):
     vertices_2D = trimesh.transformations.transform_points(points, to_2D)[:, :2]
     return vertices_2D
 
-#应用关系以对某个对象进行表面采样。
+
+# 应用关系以对某个对象进行表面采样。
 def apply_relations_surfacesample(
     state: state_def.State,
     name: str,
 ):
-    obj_state = state.objs[name] # 获取指定对象的状态
+    obj_state = state.objs[name]  # 获取指定对象的状态
     obj_name = obj_state.obj.name
 
-    parent_objs = [] # 父对象列表
-    parent_planes = [] # 父平面列表
-    obj_planes = [] # 对象平面列表
-    margins = [] # 边距列表
-    parent_tag_list = [] # 父标签列表
+    parent_objs = []  # 父对象列表
+    parent_planes = []  # 父平面列表
+    obj_planes = []  # 对象平面列表
+    margins = []  # 边距列表
+    parent_tag_list = []  # 父标签列表
 
     # 检查对象是否有关系
     # 抛出异常：对象没有关系
     if len(obj_state.relations) == 0:
-        raise ValueError(f"Object {name} has no relations") 
+        raise ValueError(f"Object {name} has no relations")
     # 抛出异常：对象关系超过支持的数量
     elif len(obj_state.relations) > 3:
         raise ValueError(
@@ -301,13 +302,13 @@ def apply_relations_surfacesample(
         obj_planes.append(obj_plane)
         parent_planes.append(parent_plane)
         parent_objs.append(parent_obj)
-        match relation_state.relation: # 根据关系类型执行不同操作
+        match relation_state.relation:  # 根据关系类型执行不同操作
             case cl.StableAgainst(_child_tags, parent_tags, margin):
                 margins.append(margin)  # 添加边距
-                parent_tag_list.append(parent_tags) # 添加父标签
+                parent_tag_list.append(parent_tags)  # 添加父标签
             case cl.SupportedBy(_parent_tags, parent_tags):
-                margins.append(0) # 添加零边距
-                parent_tag_list.append(parent_tags) # 添加父标签
+                margins.append(0)  # 添加零边距
+                parent_tag_list.append(parent_tags)  # 添加父标签
             case _:
                 raise NotImplementedError  # 抛出未实现的异常
 
@@ -317,12 +318,12 @@ def apply_relations_surfacesample(
         rels = [(rels.relation, rels.target_name) for rels in obj_state.relations]
         logger.warning(f"Init was invalid for {name=} {rels=}")
         return None
-    
+
     # 根据自由度（dof）进行处理
     if dof == 0:  # 自由度为0
         iu.translate(state.trimesh_scene, obj_name, T)  # 进行平移
     elif dof == 1:  # 自由度为1
-        assert len(parent_planes) == 2, (name, len(parent_planes)) # 确保父平面数量为2
+        assert len(parent_planes) == 2, (name, len(parent_planes))  # 确保父平面数量为2
         # 获取父对象和平面
         parent_obj1 = parent_objs[0]
         parent_obj2 = parent_objs[1]
@@ -362,7 +363,7 @@ def apply_relations_surfacesample(
             face_mask = tagging.tagged_face_mask(parent_obj2, parent_tags2)
             stability.move_obj_random_pt(
                 state, obj_name, parent_obj2.name, face_mask, parent_plane2
-            )# 随机移动对象
+            )  # 随机移动对象 location
             stability.snap_against(
                 state.trimesh_scene,
                 obj_name,
@@ -370,7 +371,7 @@ def apply_relations_surfacesample(
                 obj_plane2,
                 parent_plane2,
                 margin=margin2,
-            ) # 对齐到父平面
+            )  # 对齐到父平面 rotation
             stability.snap_against(
                 state.trimesh_scene,
                 obj_name,
@@ -383,7 +384,7 @@ def apply_relations_surfacesample(
             face_mask = tagging.tagged_face_mask(parent_obj1, parent_tags1)
             stability.move_obj_random_pt(
                 state, obj_name, parent_obj1.name, face_mask, parent_plane1
-            )# 随机移动对象
+            )  # 随机移动对象
             stability.snap_against(
                 state.trimesh_scene,
                 obj_name,
@@ -402,28 +403,28 @@ def apply_relations_surfacesample(
             )
 
     elif dof == 2:  # 自由度为2
-        assert len(parent_planes) == 1, (name, len(parent_planes)) # 确保父平面数量为1
+        assert len(parent_planes) == 1, (name, len(parent_planes))  # 确保父平面数量为1
         # 遍历对象的关系
         for i, relation_state in enumerate(obj_state.relations):
             parent_obj = state.objs[relation_state.target_name].obj
             obj_plane, parent_plane = state.planes.get_rel_state_planes(
                 state, name, relation_state
             )
-            if obj_plane is None: # 检查对象平面是否存在
+            if obj_plane is None:  # 检查对象平面是否存在
                 continue
-            if parent_plane is None: # 检查父平面是否存在
+            if parent_plane is None:  # 检查父平面是否存在
                 continue
             iu.set_rotation(
                 state.trimesh_scene,
                 obj_name,
-                (0, 0, 2 * np.pi * np.random.randint(0, 4) / 4), # 随机旋转对象
+                (0, 0, 2 * np.pi * np.random.randint(0, 4) / 4),  # 随机旋转对象
             )
             face_mask = tagging.tagged_face_mask(
                 parent_obj, relation_state.relation.parent_tags
             )
             stability.move_obj_random_pt(
                 state, obj_name, parent_obj.name, face_mask, parent_plane
-            )# 随机移动对象
+            )  # 随机移动对象
 
             # 根据关系类型进行对齐
             match relation_state.relation:
@@ -446,7 +447,7 @@ def apply_relations_surfacesample(
                         margin=0,
                     )
                 case _:
-                    raise NotImplementedError # 抛出未实现的异常
+                    raise NotImplementedError  # 抛出未实现的异常
 
     return parent_planes
 
@@ -476,12 +477,10 @@ def try_apply_relation_constraints(
     """
 
     validate_relations_feasible(state, name)
-    
+
     for retry in range(n_try_resolve):
-        
-        
         obj_state = state.objs[name]
-        
+
         if (
             iu.blender_objs_from_names(obj_state.obj.name)[0].dimensions[2]
             > WALL_HEIGHT - WALL_THICKNESS
@@ -489,16 +488,18 @@ def try_apply_relation_constraints(
             logger.warning(
                 f"Object {obj_state.obj.name} is too tall for the room: {obj_state.obj.dimensions[2]}, {WALL_HEIGHT=}, {WALL_THICKNESS=}"
             )
-        #应用关系以对某个对象进行表面采样。
+        # 应用关系以对某个对象进行表面采样。
+        #MARK
         parent_planes = apply_relations_surfacesample(state, name)
 
-        center = np.array([v.co for v in obj_state.obj.data.vertices]).mean(axis=0)
-        state.obj_info[name] = {"location":obj_state.obj.location,
-                                "rotation":obj_state.obj.rotation_euler,
-                                "center":center,
-                                "size":obj_state.obj.dimensions}
+        # center = np.array([v.co for v in obj_state.obj.data.vertices]).mean(axis=0)
+        # state.obj_info[name] = {
+        #     "location": obj_state.obj.location,
+        #     "rotation": obj_state.obj.rotation_euler,
+        #     "center": center,
+        #     "size": obj_state.obj.dimensions,
+        # }
 
-        
         # assignments not valid
         if parent_planes is None:
             logger.debug(f"Found {parent_planes=} for {name=} {retry=}")
@@ -506,11 +507,11 @@ def try_apply_relation_constraints(
                 vis = butil.copy(obj_state.obj)
                 vis.name = obj_state.obj.name[:30] + "_noneplanes_" + str(retry)
             return False
-        #LAST
-        vertices = [v.co for v in obj_state.obj.data.vertices]
-        faces = [v.vertices for v in obj_state.obj.data.polygons]
-        trimesh_obj = trimesh.Trimesh(vertices=vertices, faces=faces)
-        trimesh_obj.export(f"{name}.obj")
+        # # LAST
+        # vertices = [v.co for v in obj_state.obj.data.vertices]
+        # faces = [v.vertices for v in obj_state.obj.data.polygons]
+        # trimesh_obj = trimesh.Trimesh(vertices=vertices, faces=faces)
+        # trimesh_obj.export(f"{name}.obj")
 
         if validity.check_post_move_validity(state, name):
             obj_state.dof_matrix_translation = combined_stability_matrix(parent_planes)

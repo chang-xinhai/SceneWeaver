@@ -29,9 +29,9 @@ def preprocess_obj(obj):
     with butil.ViewportMode(obj, mode="EDIT"):
         # 选择要处理的对象
         butil.select(obj)
-        bpy.ops.mesh.select_all(action="SELECT")# 选择对象的所有面
+        bpy.ops.mesh.select_all(action="SELECT")  # 选择对象的所有面
         # 将所有四边形面转换为三角形，使用“美化”方法
-        bpy.ops.mesh.quads_convert_to_tris(quad_method="BEAUTY", ngon_method="BEAUTY")  
+        bpy.ops.mesh.quads_convert_to_tris(quad_method="BEAUTY", ngon_method="BEAUTY")
 
     # 更新当前视图层，以反映对对象的修改
     bpy.context.view_layer.update()
@@ -62,6 +62,8 @@ def add_to_scene(scene, obj, preprocess=True):
 
     obj_matrix_world = Matrix(obj.matrix_world)
     obj.matrix_world = Matrix.Identity(4)
+
+    #init trimesh obj into scene , without transformation
     tmesh = to_trimesh(obj)
     tmesh.metadata["tags"] = tagging.union_object_tags(obj)
     scene.add_geometry(
@@ -76,5 +78,6 @@ def add_to_scene(scene, obj, preprocess=True):
     tmesh.fcl_obj = col._get_fcl_obj(tmesh)
     tmesh.col_obj = fcl.CollisionObject(tmesh.fcl_obj, t)
     obj.matrix_world = obj_matrix_world
+    # add transformation
     sync_trimesh(scene, obj.name)
     return tmesh

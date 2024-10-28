@@ -133,8 +133,8 @@ def build_color_ramp(nw, x, positions, colors, mode="HSV"):
     # 获取颜色渐变元素
     elements = cr.color_ramp.elements
     # 获取位置的数量
-    size = len(positions) 
-     # 确保颜色的数量与位置数量一致
+    size = len(positions)
+    # 确保颜色的数量与位置数量一致
     assert len(colors) == size
     # 如果位置数量大于 2，添加额外的颜色渐变元素
     if size > 2:

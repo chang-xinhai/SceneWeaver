@@ -72,6 +72,73 @@ def write_attribute(objs, node_func, name=None, data_type=None, apply=False):
 
 
 def read_attr_data(obj, attr, domain="POINT", result_dtype=None) -> np.array:
+
+    # import pdb
+    # pdb.set_trace()
+    # for attr in obj.data.attributes:
+    #     print(f"Attribute Name: {attr.name}, Data Type: {attr.data_type}, Domain: {attr.domain}")
+
+        # if domain == "POINT":
+        #     n = len(obj.data.vertices)
+        # elif domain == "EDGE":
+        #     n = len(obj.data.edges)
+        # elif domain == "FACE":
+        #     n = len(obj.data.polygons) #12
+        # else:
+        #     raise ValueError(f"Unknown domain {domain}")    
+        
+        # data_type_map = {
+        #     'FLOAT': np.float32,
+        #     'INT': np.int32,
+        #     'FLOAT_VECTOR': np.float32,  # Assuming it's a 3-component vector
+        #     # Add more mappings as needed
+        # }
+        # result_dtype = data_type_map.get(attr.data_type, None)
+
+        # if result_dtype is None:
+        #     print(f"Unsupported data type: {attr.data_type}")
+        #     continue
+
+        # dim = node_info.DATATYPE_DIMS[attr.data_type]
+        # field = node_info.DATATYPE_FIELDS[attr.data_type] #"value"
+
+        # values = np.empty(n * dim, dtype=result_dtype)
+
+        # # Get the values for the attribute
+        # attr.data.foreach_get(field, values)
+
+        # print(f"Values: {values}")
+
+
+
+
+# Attribute Name: position, Data Type: FLOAT_VECTOR, Domain: POINT
+# Attribute Name: .select_vert, Data Type: BOOLEAN, Domain: POINT
+# Attribute Name: .edge_verts, Data Type: INT32_2D, Domain: EDGE
+# Attribute Name: .select_edge, Data Type: BOOLEAN, Domain: EDGE
+# Attribute Name: TAG_ceiling, Data Type: INT, Domain: FACE
+# Attribute Name: TAG_support, Data Type: INT, Domain: FACE
+# Attribute Name: TAG_wall, Data Type: INT, Domain: FACE
+# Attribute Name: segment_id, Data Type: INT, Domain: FACE
+# Attribute Name: TAG_visible, Data Type: INT, Domain: FACE
+# Attribute Name: TAG_invisible, Data Type: INT, Domain: FACE
+# Attribute Name: .select_poly, Data Type: BOOLEAN, Domain: FACE
+# Attribute Name: sharp_face, Data Type: BOOLEAN, Domain: FACE
+# Attribute Name: TAG_back, Data Type: BOOLEAN, Domain: FACE
+# Attribute Name: TAG_front, Data Type: BOOLEAN, Domain: FACE
+# Attribute Name: TAG_top, Data Type: BOOLEAN, Domain: FACE
+# Attribute Name: TAG_bottom, Data Type: BOOLEAN, Domain: FACE
+# Attribute Name: .corner_vert, Data Type: INT, Domain: CORNER
+# Attribute Name: .corner_edge, Data Type: INT, Domain: CORNER
+# Attribute Name: UVMap, Data Type: FLOAT2, Domain: CORNER
+# Attribute Name: .vs.UVMap, Data Type: BOOLEAN, Domain: CORNER
+# Attribute Name: .es.UVMap, Data Type: BOOLEAN, Domain: CORNER
+# Attribute Name: .pn.UVMap, Data Type: BOOLEAN, Domain: CORNER
+
+
+
+
+
     if isinstance(attr, str):
         attr = obj.data.attributes[attr]
         domain = attr.domain
@@ -81,18 +148,20 @@ def read_attr_data(obj, attr, domain="POINT", result_dtype=None) -> np.array:
     elif domain == "EDGE":
         n = len(obj.data.edges)
     elif domain == "FACE":
-        n = len(obj.data.polygons)
+        n = len(obj.data.polygons) #12
     else:
         raise ValueError(f"Unknown domain {domain}")
 
     dim = node_info.DATATYPE_DIMS[attr.data_type]
-    field = node_info.DATATYPE_FIELDS[attr.data_type]
+    field = node_info.DATATYPE_FIELDS[attr.data_type] #"value"
 
     if result_dtype is None:
-        result_dtype = node_info.DATATYPE_TO_PYTYPE[attr.data_type]
+        result_dtype = node_info.DATATYPE_TO_PYTYPE[attr.data_type] #<class 'int'>
 
-    data = np.empty(n * dim, dtype=result_dtype)
+    data = np.empty(n * dim, dtype=result_dtype) #array([22, 24, 25, 27, 29, 30, 33, 34, 37, 38, 41, 42])
+    # 从指定的属性数据中批量获取值，并将其存储到 data 数组中
     attr.data.foreach_get(field, data)
+
 
     if dim > 1:
         data = data.reshape(-1, dim)

@@ -63,13 +63,13 @@ class BathroomSinkFactory(BathtubFactory):
             self.surface = material_assignments["surface"].assign_material()
 
     def create_placeholder(self, **kwargs) -> bpy.types.Object:
-        return new_bbox( #LAST
-            -(self.size_extrude + 1) * self.size,
-            0,
-            0,
-            self.width,
-            -self.stand_height if self.has_stand else 0,
-            self.depth,
+        return new_bbox(  # LAST
+            -(self.size_extrude + 1) * self.size, #x min 
+            0, #x max
+            0, # y min
+            self.width, #y max
+            -self.stand_height if self.has_stand else 0, #z_min
+            self.depth, #z max
         )
 
     def create_asset(self, **params) -> bpy.types.Object:

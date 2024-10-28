@@ -25,6 +25,7 @@ from shapely import MultiPolygon, Polygon
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points, unary_union
 from trimesh import Scene
+import mathutils
 
 import infinigen.core.constraints.constraint_language.util as iu
 import infinigen.core.constraints.evaluator.node_impl.symmetry as symmetry
@@ -33,6 +34,8 @@ from infinigen.core import tags as t
 from infinigen.core.constraints.example_solver import state_def
 from infinigen.core.constraints.example_solver.geometry.parse_scene import add_to_scene
 from infinigen.core.util.logging import lazydebug
+
+from infinigen.core.constraints.expand import expand_mesh
 
 # from infinigen.core.util import blender as butil
 
@@ -147,7 +150,7 @@ def any_touching_expand(
     a_tags=None,
     b_tags=None,
     bvh_cache=None,
-    obj_info=None
+    # obj_info=None,
 ):  # MAKR
     """
     Computes one-to-one, many-to-one, one-to-many or many-to-many collisions
@@ -157,7 +160,8 @@ def any_touching_expand(
     # 预处理输入，确保 a、b 和标签的格式一致
     a, b, a_tags, b_tags = preprocess_collision_query_cases(a, b, a_tags, b_tags)
     # 从场景中获取与 a 相关的碰撞检测对象
-    col = iu.col_from_subset(scene, a, a_tags, bvh_cache)
+    col_expand = iu.col_from_subset(scene, a, a_tags, bvh_cache,expand=True)
+    col = iu.col_from_subset(scene, a, a_tags, bvh_cache,expand=False)
     # 检查不同的碰撞情况
 
     if b is None and len(a) == 1:
@@ -171,42 +175,43 @@ def any_touching_expand(
         )
     elif isinstance(b, str):
         # 如果 b 是单个字符串，处理单个碰撞检测
-        # import pdb
-        # pdb.set_trace()
         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
+        geom = scene.geometry[g]
 
-        info = obj_info[b]
-        #size
-        box_mesh = trimesh.creation.box(extents=(info["size"][0]*1.2,info["size"][1]*1.2,info["size"][2]))  # Dimensions: width, height, depth
-
-        obj_info[b] = { "location":obj_state.obj.location,
-                        "rotation":obj_state.obj.rotation_euler,
-                        "center":center,
-                        "size":obj_state.dimensions}
-        scaling_factor = 1.2
-        scale_matrix = np.eye(3) 
-        scale_matrix[:2,:] *= scaling_factor
-
-        mesh_copy = copy.deepcopy(scene.geometry[g])
-        v_mean = mesh_copy.vertices.mean(0)
-        mesh_copy.vertices -= v_mean
-        mesh_copy.vertices = mesh_copy.vertices @ scale_matrix
-        mesh_copy.vertices += v_mean
-     
-
-        hit, names, contacts = col.in_collision_single(
-           mesh_copy, transform=T, return_data=True, return_names=True
+        #expand a
+        hit1, names1, contacts1 = col_expand.in_collision_single(
+            geom, transform=T, return_data=True, return_names=True
         )
-        # hit, names, contacts = col.in_collision_single(
-        #     scene.geometry[g], transform=T, return_data=True, return_names=True
-        # )
-    elif isinstance(b, list):
+        #expand b
+        
+        mesh_expand = expand_mesh(geom,b)
+        hit2, names2, contacts2 = col.in_collision_single(
+            mesh_expand, transform=T, return_data=True, return_names=True
+        )
 
+        #combine 
+
+        hit = hit1 or hit2
+        names = names1 | names2
+        contacts = list(set(contacts1 + contacts2))
+
+    elif isinstance(b, list):
         # 如果 b 是一个列表，处理多个物体之间的碰撞检测
+        #expand a
         col2 = iu.col_from_subset(scene, b, b_tags, bvh_cache)
-        hit, names, contacts = col.in_collision_other(
+        hit1, names1, contacts1 = col_expand.in_collision_other(
             col2, return_names=True, return_data=True
         )
+        #expand b
+        col2_expand = iu.col_from_subset(scene, b, b_tags, bvh_cache, expand=True)
+        hit2, names2, contacts2 = col.in_collision_other(
+            col2_expand, return_names=True, return_data=True
+        )
+        #combine 
+        hit = hit1 or hit2
+        names = names1 | names2
+        contacts = list(set(contacts1 + contacts2))
+        
     else:
         # 如果 b 的类型未处理，抛出错误
         raise ValueError(f"Unhandled case {a=} {b=}")
@@ -232,7 +237,7 @@ def any_touching(
     a_tags=None,
     b_tags=None,
     bvh_cache=None,
-):  # MAKR
+):  # MARK
     """
     Computes one-to-one, many-to-one, one-to-many or many-to-many collisions
 
@@ -255,28 +260,11 @@ def any_touching(
         )
     elif isinstance(b, str):
         # 如果 b 是单个字符串，处理单个碰撞检测
-       
         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
-
-        scaling_factor = 1.0
-        scale_matrix = np.eye(3) 
-        scale_matrix[:2,:] *= scaling_factor
-
-        mesh_copy = copy.deepcopy(scene.geometry[g])
-        v_mean = mesh_copy.vertices.mean(0)
-        mesh_copy.vertices -= v_mean
-        mesh_copy.vertices = mesh_copy.vertices @ scale_matrix
-        mesh_copy.vertices += v_mean
-     
-
         hit, names, contacts = col.in_collision_single(
-           mesh_copy, transform=T, return_data=True, return_names=True
+            scene.geometry[g], transform=T, return_data=True, return_names=True
         )
-        # hit, names, contacts = col.in_collision_single(
-        #     scene.geometry[g], transform=T, return_data=True, return_names=True
-        # )
     elif isinstance(b, list):
-
         # 如果 b 是一个列表，处理多个物体之间的碰撞检测
         col2 = iu.col_from_subset(scene, b, b_tags, bvh_cache)
         hit, names, contacts = col.in_collision_other(
