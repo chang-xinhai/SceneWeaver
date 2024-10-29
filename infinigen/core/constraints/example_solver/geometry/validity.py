@@ -86,7 +86,8 @@ def all_relations_valid(state, name):
 
 @gin.configurable
 def check_post_move_validity(
-    state: State, name: str, disable_collision_checking=False, visualize=False
+    state: State, name: str, disable_collision_checking=False, visualize=False,
+    expand_collision=False
 ):  # MARK
     # import pdb
 
@@ -111,28 +112,31 @@ def check_post_move_validity(
 
         return False
 
-    #check collision
+    # check collision
     if disable_collision_checking:
         return True
     if t.Semantics.NoCollision in objstate.tags:
         return True
-    
 
     # objstate.obj.location
     # Vector((2.1989827156066895, 12.716106414794922, 0.8305753469467163))
     # objstate.obj.rotation_euler
     # Euler((0.0, -0.0, 1.570796012878418), 'XYZ')
+    # if "SimpleBookcaseFactory" in name:
+    # import pdb
+    # pdb.set_trace()
     
-    touch = any_touching_expand(  # mark
-        scene,
-        objstate.obj.name,
-        collision_objs,
-        bvh_cache=state.bvh_cache,
-        # obj_info=state.obj_info,
-    )
-    # touch = any_touching(  # mark
-    #     scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
-    # )
+    if expand_collision:
+        touch = any_touching_expand(  # mark
+            scene,
+            objstate.obj.name,
+            collision_objs,
+            bvh_cache=state.bvh_cache,
+        )
+    else:
+        touch = any_touching(  # mark
+            scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
+        )
     if not constrain_contact(touch, should_touch=None, max_depth=0.0001):
         if visualize:
             vis_obj = butil.copy(objstate.obj)

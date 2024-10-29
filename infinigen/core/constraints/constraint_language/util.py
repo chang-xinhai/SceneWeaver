@@ -1,6 +1,7 @@
 # Copyright (C) 2024, Princeton University.
 # This source code is licensed under the BSD 3-Clause license found in the LICENSE file in the root directory of this source tree.
 
+import copy
 import functools
 import logging
 import math
@@ -18,11 +19,9 @@ from mathutils import Matrix, Vector
 from shapely import LineString, MultiPolygon, Point, Polygon
 from sklearn.decomposition import PCA
 from trimesh import Scene
-from infinigen.core.constraints.expand import expand_mesh
-
-import copy
 
 from infinigen.core import tagging
+from infinigen.core.constraints.expand import expand_mesh
 from infinigen.core.util import blender as butil
 
 logger = logging.getLogger(__name__)
@@ -291,7 +290,7 @@ def subset(scene: Scene, incl):
 
 def add_object_cached(col, name, col_obj, fcl_obj):
     geom = fcl_obj  # 将 fcl_obj 赋值给 geom
-    o = col_obj     # 将 col_obj 赋值给 o
+    o = col_obj  # 将 col_obj 赋值给 o
     # 添加碰撞对象到集合
     if name in col._objs:  # 如果名称已经在对象集合中
         col._manager.unregisterObject(col._objs[name])  # 从管理器中注销之前的对象
@@ -303,11 +302,12 @@ def add_object_cached(col, name, col_obj, fcl_obj):
     col._manager.update()  # 更新管理器状态
     return o  # 返回新注册的对象
 
-def col_from_subset(scene, names, tags=None, bvh_cache=None,expand=False):
+
+def col_from_subset(scene, names, tags=None, bvh_cache=None, expand=False,export=False,return_geom=False):
     if isinstance(names, str):
         names = [names]
 
-    if bvh_cache is not None and bvh_caching_config():
+    if (not expand) and (not return_geom) and bvh_cache is not None and bvh_caching_config():
         tag_key = frozenset(tags) if tags is not None else None
         key = (frozenset(names), tag_key)
         res = bvh_cache.get(key)
@@ -315,21 +315,24 @@ def col_from_subset(scene, names, tags=None, bvh_cache=None,expand=False):
             return res
 
     col = trimesh.collision.CollisionManager()
-
+    geoms = []
     for name in names:
         T, g = scene.graph[name]  # 从场景图中获取变换矩阵和几何体索引
         geom = scene.geometry[g]  # 获取几何体
         if expand:
             # print(name)
-            mesh_expand = expand_mesh(geom,name)
+            mesh_expand = expand_mesh(geom, name)
             geom = copy.deepcopy(mesh_expand)
             T = trimesh.transformations.identity_matrix()  # 设置变换矩阵为单位矩阵
             t = fcl.Transform(T[:3, :3], T[:3, 3])  # 创建 FCL 变换对象
             geom.fcl_obj = col._get_fcl_obj(geom)  # 获取 FCL 对象
             geom.col_obj = fcl.CollisionObject(geom.fcl_obj, t)  # 创建碰撞对象
-            
+           
+            if export:
+                geom.export(name+".obj")
+              
+
         if tags is not None and len(tags) > 0:  # 如果存在标签并且标签数量大于零
-          
             obj = blender_objs_from_names(name)[0]  # 从名称中获取Blender对象
             mask = tagging.tagged_face_mask(obj, tags)  # 获取面标记掩码
             if not mask.any():  # 如果没有面被标记
@@ -343,15 +346,19 @@ def col_from_subset(scene, names, tags=None, bvh_cache=None,expand=False):
             assert len(geom.faces) == mask.sum()  # 确保面数匹配
         # col.add_object(name, geom, T)
         add_object_cached(col, name, geom.col_obj, geom.fcl_obj)  # 使用缓存添加对象
+        geoms.append(geom)
 
     if len(col._objs) == 0:  # 如果没有对象被添加
         logger.debug(f"{names=} got no objs, returning None")
         col = None
 
-    if bvh_cache is not None and bvh_caching_config():  # 如果存在缓存并且缓存配置有效
+    if (not expand) and (not return_geom) and bvh_cache is not None and bvh_caching_config():  # 如果存在缓存并且缓存配置有效
         bvh_cache[key] = col  # 将结果存入缓存
+    if return_geom:
+        return col,geoms
+    else:
+        return col  # 返回碰撞体集合
 
-    return col  # 返回碰撞体集合
 
 
 def plot_geometry(ax, geom, color="blue"):
@@ -369,16 +376,18 @@ def plot_geometry(ax, geom, color="blue"):
         ax.plot(geom.x, geom.y, "o", color=color)
 
 
-def sync_trimesh(scene: trimesh.Scene, obj_name: str): #MARK trimesh
-    bpy.context.view_layer.update() # 更新Blender的视图层，以反映当前场景的变化
+def sync_trimesh(scene: trimesh.Scene, obj_name: str):  # MARK trimesh
+    bpy.context.view_layer.update()  # 更新Blender的视图层，以反映当前场景的变化
     blender_obj = bpy.data.objects[obj_name]  # 获取指定名称的Blender对象
     mesh = meshes_from_names(scene, obj_name)[0]  # 从场景中根据对象名称获取网格数据
-    T_old = mesh.current_transform # 保存网格的当前变换
-    T = np.array(blender_obj.matrix_world) # 获取Blender对象的世界变换矩阵
+    T_old = mesh.current_transform  # 保存网格的当前变换
+    T = np.array(blender_obj.matrix_world)  # 获取Blender对象的世界变换矩阵
     mesh.apply_transform(T @ np.linalg.inv(T_old))  # 应用变换，将新变换应用到网格
-    mesh.current_transform = np.array(blender_obj.matrix_world) # 更新网格的当前变换为Blender对象的世界变换
+    mesh.current_transform = np.array(
+        blender_obj.matrix_world
+    )  # 更新网格的当前变换为Blender对象的世界变换
     t = fcl.Transform(T[:3, :3], T[:3, 3])  # 创建一个Transform对象，包含旋转和位移
-    mesh.col_obj.setTransform(t) # 将变换应用到网格的碰撞对象上
+    mesh.col_obj.setTransform(t)  # 将变换应用到网格的碰撞对象上
 
 
 def translate(scene: trimesh.Scene, a: str, translation):
@@ -388,7 +397,7 @@ def translate(scene: trimesh.Scene, a: str, translation):
         sync_trimesh(scene, a)
 
 
-def rotate(scene: trimesh.Scene, a: str, axis, angle): #MARK rotation
+def rotate(scene: trimesh.Scene, a: str, axis, angle):  # MARK rotation
     blender_obj = bpy.data.objects[a]
     rotation_matrix = trimesh.transformations.rotation_matrix(angle, axis)
     transform_matrix = Matrix(rotation_matrix).to_4x4()

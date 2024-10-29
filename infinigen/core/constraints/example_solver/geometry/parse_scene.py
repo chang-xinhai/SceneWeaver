@@ -63,7 +63,7 @@ def add_to_scene(scene, obj, preprocess=True):
     obj_matrix_world = Matrix(obj.matrix_world)
     obj.matrix_world = Matrix.Identity(4)
 
-    #init trimesh obj into scene , without transformation
+    # init trimesh obj into scene , without transformation
     tmesh = to_trimesh(obj)
     tmesh.metadata["tags"] = tagging.union_object_tags(obj)
     scene.add_geometry(

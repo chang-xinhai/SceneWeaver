@@ -115,7 +115,7 @@ class Planes:
             # 如果当前多边形不在面掩码中，跳过
             if not face_mask[polygon.index]:
                 continue
-            
+
             # Get the normal and a vertex to represent the plane
             # 获取当前多边形的法线和一个顶点来表示平面
             normal = normal_cache[polygon.index]
@@ -135,7 +135,7 @@ class Planes:
             if plane_hash not in unique_planes:
                 unique_planes[plane_hash] = (obj.name, polygon.index)
 
-        return list(unique_planes.values()) # 返回唯一平面的列表
+        return list(unique_planes.values())  # 返回唯一平面的列表
 
     def get_all_planes_deprecated(
         self, obj, face_mask, tolerance=1e-4
@@ -203,7 +203,9 @@ class Planes:
         parent_tags = relation.parent_tags
 
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
-        obj_all_planes = self.get_tagged_planes(obj, obj_tags) #(obj.name, polygon.index)
+        obj_all_planes = self.get_tagged_planes(
+            obj, obj_tags
+        )  # (obj.name, polygon.index)
 
         # for i, p in enumerate(parent_all_planes):
         #    splitted_parent = planes.extract_tagged_plane(parent_obj, parent_tags, p)
@@ -212,7 +214,7 @@ class Planes:
         #    splitted_parent = planes.extract_tagged_plane(parent_obj, obj_tags, p)
         #    splitted_parent.name = f'obj_plane_{i}'
         # return
-        
+
         # print(parent_all_planes)
 
         if relation_state.parent_plane_idx >= len(parent_all_planes):

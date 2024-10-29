@@ -3,50 +3,50 @@ import copy
 import mathutils
 import numpy as np
 
-
+D_base = 0.3
 EXPAND_DISTANCE = {
 
     #front
-    "LargeShelfFactory":[0.5,0,0],
-    "LargeShelfBaseFactory":[0.5,0,0],
-    # "LargePlantContainerFactory":[0.5,0,0],
-    "KitchenSpaceFactory":[0.5,0,0],
-    "KitchenCabinetBaseFactory":[0.5,0,0],
-    "KitchenCabinetFactory":[0.5,0,0],
-    "CabinetDrawerBaseFactory":[0.5,0,0],
-    "TVStandFactory":[0.5,0,0],
-    "CabinetDoorBaseFactory":[0.5,0,0],
-    "CabinetDoorIkeaFactory":[0.5,0,0],
-    "CabinetBaseFactory":[0.5,0,0],
-    "CellShelfFactory":[0.5,0,0],
-    "CellShelfBaseFactory":[0.5,0,0],
-    "SimpleBookcaseFactory":[0.5,0,0],
-    "SimpleBookcaseBaseFactory":[0.5,0,0],
-    "SidetableDeskFactory":[0.5,0,0],
-    "SimpleDeskFactory":[0.5,0,0],
-    "SimpleDeskBaseFactory":[0.5,0,0],
-    "SingleCabinetFactory":[0.5,0,0],
-    "SingleCabinetBaseFactory":[0.5,0,0],
-    "TriangleShelfBaseFactory":[0.5,0,0],
-    "TriangleShelfFactory":[0.5,0,0],
-    "ArmChairFactory":[0.5,0,0],
-    "SofaFactory":[0.5,0,0],
-    "BathroomSinkFactory":[0.5,0,0],
-    "ToiletFactory":[0.5,0,0],
-    "StandingSinkFactory":[0.5,0,0],
-    "OvenFactory":[0.5,0,0],
-    "BeverageFridgeFactory":[0.5,0,0],
-    "DishwasherFactory":[0.5,0,0],
-    "MicrowaveFactory":[0.5,0,0],
+    "LargeShelfFactory":[D_base,0,0],
+    "LargeShelfBaseFactory":[D_base,0,0],
+    # "LargePlantContainerFactory":[D_base,0,0],
+    "KitchenSpaceFactory":[D_base,0,0],
+    "KitchenCabinetBaseFactory":[D_base,0,0],
+    "KitchenCabinetFactory":[D_base,0,0],
+    "CabinetDrawerBaseFactory":[D_base,0,0],
+    "TVStandFactory":[D_base,0,0],
+    "CabinetDoorBaseFactory":[D_base,0,0],
+    "CabinetDoorIkeaFactory":[D_base,0,0],
+    "CabinetBaseFactory":[D_base,0,0],
+    "CellShelfFactory":[D_base,0,0],
+    "CellShelfBaseFactory":[D_base,0,0],
+    "SimpleBookcaseFactory":[D_base,0,0],
+    "SimpleBookcaseBaseFactory":[D_base,0,0],
+    "SidetableDeskFactory":[D_base,0,0],
+    "SimpleDeskFactory":[D_base,0,0],
+    "SimpleDeskBaseFactory":[D_base,0,0],
+    "SingleCabinetFactory":[D_base,0,0],
+    "SingleCabinetBaseFactory":[D_base,0,0],
+    "TriangleShelfBaseFactory":[D_base,0,0],
+    "TriangleShelfFactory":[D_base,0,0],
+    "ArmChairFactory":[D_base,0,0],
+    "SofaFactory":[D_base,0,0],
+    "BathroomSinkFactory":[D_base,0,0],
+    "ToiletFactory":[D_base,0,0],
+    "StandingSinkFactory":[D_base,0,0],
+    "OvenFactory":[D_base,0,0],
+    "BeverageFridgeFactory":[D_base,0,0],
+    "DishwasherFactory":[D_base,0,0],
+    "MicrowaveFactory":[D_base,0,0],
     
 
     # front,side
-    "BedFactory":[0.5,0,0.5],
-    "BedFrameFactory":[0.5,0,0.5],
+    "BedFactory":[D_base,0,D_base],
+    "BedFrameFactory":[D_base,0,D_base],
     
     #front,back,side
-    "KitchenIslandFactory":[0.5,0.5,0.8],
-    "CountertopFactory":[0.5,0.5,0.8],
+    "KitchenIslandFactory":[D_base,D_base,2*D_base],
+    "CountertopFactory":[D_base,D_base,2*D_base],
    
 }
 
@@ -66,8 +66,8 @@ def expand_mesh(geom,name):
     d_front,d_back,d_side = get_expand_distance(name)
 
     if  d_front==0 and d_back==0 and d_side==0:
-        mesh_copy = copy.deepcopy(geom)
-        return mesh_copy
+        return geom
+    
 
     T_old = geom.current_transform
     mesh_copy = copy.deepcopy(geom)
@@ -87,16 +87,24 @@ def expand_mesh(geom,name):
     scaling_factor_front = ((front-back)/2*scale[0]+d_front)/scale[0]/((front-back)/2)
     scaling_factor_back = ((front-back)/2*scale[0]+d_back)/scale[0]/((front-back)/2)
     scaling_factor_side = ((right-left)*scale[1]+d_side)/scale[1]/(right-left)
-    print(name,scaling_factor_front,scaling_factor_side)
+    print(name,scaling_factor_front,scaling_factor_back,scaling_factor_side)
 
     scale_matrix = np.eye(3)
-    scale_matrix[scale_matrix[0, :]>0] *= scaling_factor_front # front
-    scale_matrix[scale_matrix[0, :]<0] *= scaling_factor_back # back
+ 
+    scale_matrix[0,:] *= scaling_factor_front # front
+
+    vertices[vertices[:,0]>0] = vertices[vertices[:,0]>0] @ scale_matrix
+
+    scale_matrix = np.eye(3)
+    scale_matrix[0,:] *= scaling_factor_back # back
+    vertices[vertices[:,0]<0] = vertices[vertices[:,0]<0] @ scale_matrix
+
+    scale_matrix = np.eye(3)
     scale_matrix[1, :] *= scaling_factor_side # side
     vertices = vertices @ scale_matrix
 
     ### move back to original pose, finish expand
     vertices += v_center
-    geom.vertices = vertices
+    mesh_copy.vertices = vertices
     mesh_copy.apply_transform(T_old) 
     return mesh_copy

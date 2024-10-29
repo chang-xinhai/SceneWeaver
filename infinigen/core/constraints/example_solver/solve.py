@@ -156,9 +156,8 @@ class Solver:
         desc: str,
         abort_unsatisfied: bool = False,
         print_bounds: bool = False,
+        expand_collision: bool = False
     ):
-
-
         filter_domain = copy.deepcopy(filter_domain)
         """
         Domain({Semantics.Object, -Semantics.Room}, [
@@ -211,13 +210,24 @@ class Solver:
         # ra = (
         #     trange(n_steps) if self.optim.print_report_freq == 0 else range(n_steps)
         # )  # range(0, 150)
-        ra = trange(n_steps) if self.optim.print_report_freq == 0 else range(n_steps) 
+        ra = trange(n_steps) if self.optim.print_report_freq == 0 else range(n_steps)
 
         # 进行迭代
         for j in ra:
-            move_gen = self.choose_move_type(j, n_steps) # 选择移动类型
-            self.optim.step(consgraph, self.state, move_gen, filter_domain)  # MARK # 执行优化步骤
-        self.optim.save_stats(self.output_folder / f"optim_{desc}.csv") # 保存优化统计信息
+            # print(j)
+            # if j==6:
+           
+            
+            move_gen = self.choose_move_type(j, n_steps)  # 选择移动类型
+            # print(move_gen , "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            self.optim.step(
+                consgraph, self.state, move_gen, filter_domain,expand_collision
+            )  # MARK # 执行优化步骤
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            
+        self.optim.save_stats(
+            self.output_folder / f"optim_{desc}.csv"
+        )  # 保存优化统计信息
 
         logger.info(
             f"Finished solving {desc_full}, added {len(self.state.objs) - n_start} "

@@ -156,11 +156,11 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                     # Only these roomtypes have constraints written in home_constraints.
                     # Others will be empty-ish besides maybe storage and plants
                     # TODO: add constraints to home_constraints for garages, offices, balconies, etc
-                    # t.Semantics.Bedroom,
-                    # t.Semantics.LivingRoom,
+                    t.Semantics.Bedroom,
+                    t.Semantics.LivingRoom,
                     t.Semantics.Kitchen,
-                    # t.Semantics.Bathroom,
-                    # t.Semantics.DiningRoom,
+                    t.Semantics.Bathroom,
+                    t.Semantics.DiningRoom,
                 ]
             )
         }
@@ -173,12 +173,29 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return solver.solve_rooms(scene_seed, consgraph, stages["rooms"])
 
     state: state_def.State = p.run_stage("solve_rooms", solve_rooms, use_chance=False)
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+    for area in bpy.context.screen.areas:
+        if area.type == "VIEW_3D":
+            with bpy.context.temp_override(area=area):
+                area.spaces.active.shading.type = "MATERIAL"
+            for region in area.regions:
+                if region.type == "WINDOW":
+                    override = {
+                        "area": area,
+                        "region": region,
+                        "edit_object": bpy.context.edit_object,
+                    }
+                    bpy.ops.view3d.view_all(override)
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+              
     def solve_large():
+       
         assignments = greedy.iterate_assignments(
             stages["on_floor"], state, all_vars, limits, nonempty=True
         )
         for i, vars in enumerate(assignments):
+          
             solver.solve_objects(
                 consgraph,
                 stages["on_floor"],
@@ -186,10 +203,31 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                 n_steps=overrides["solve_steps_large"],
                 desc=f"on_floor_{i}",
                 abort_unsatisfied=overrides.get("abort_unsatisfied_large", False),
+                expand_collision=True
             )
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         return solver.state
 
+    def invisible_others():
+        # rooms_split["exterior"].hide_viewport = True
+        # rooms_split["exterior"].hide_render = True
+        mesh = butil.get_collection("placeholders:room_shells")
+        mesh.hide_viewport = True
+        # invisible_to_camera.apply(mesh.objects)
+        mesh = butil.get_collection("placeholders:portal_cutters")
+        mesh.hide_viewport = True
+        # invisible_to_camera.apply(mesh.objects)
+        mesh = butil.get_collection("placeholders:room_meshes")
+        mesh.hide_viewport = True
+        # invisible_to_camera.apply(mesh.objects)
+        return
+    
+    # p.run_stage("invisible_others", invisible_others, use_chance=False)
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+
     state = p.run_stage("solve_large", solve_large, use_chance=False, default=state)
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     solved_rooms = [
         state.objs[assignment[cu.variable_room]].obj
@@ -239,7 +277,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return scene_preprocessed
 
     scene_preprocessed = p.run_stage("pose_cameras", pose_cameras, use_chance=False)
-
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
     def animate_cameras():
         cam_util.animate_cameras(camera_rigs, solved_bbox, scene_preprocessed, pois=[])
 

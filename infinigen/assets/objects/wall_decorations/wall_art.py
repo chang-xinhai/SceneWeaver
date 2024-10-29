@@ -81,7 +81,7 @@ class WallArtFactory(AssetFactory):
         import pdb
 
         # MARK
-        pdb.set_trace()
+        # pdb.set_trace()
         obj = join_objects([obj, frame])
         return obj
 

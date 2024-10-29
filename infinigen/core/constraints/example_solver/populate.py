@@ -96,7 +96,7 @@ def populate_state_placeholders(state: State, filter=None, final=True):
         )
         os.generator.finalize_assets([os.obj])
         butil.put_in_collection(os.obj, unique_assets)
- 
+
         # print(center)
         # state.obj_info[os.obj.name] = {  # "category":os.obj.name.split("(")[0],
         #     "location": placeholder.location,

@@ -31,7 +31,7 @@ class TranslateMove(moves.Move):
         norm = np.linalg.norm(self.translation)
         return f"{self.__class__.__name__}({self.names}, {norm:.2e})"
 
-    def apply(self, state: State):
+    def apply(self, state: State,expand_collision=False):
         (target_name,) = self.names
 
         os = state.objs[target_name]
@@ -39,7 +39,7 @@ class TranslateMove(moves.Move):
 
         iu.translate(state.trimesh_scene, os.obj.name, self.translation)
 
-        if not validity.check_post_move_validity(state, target_name):
+        if not validity.check_post_move_validity(state, target_name,expand_collision=expand_collision):
             return False
 
         return True
@@ -59,7 +59,7 @@ class RotateMove(moves.Move):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.names}, {self.angle:.2e})"
 
-    def apply(self, state: State):
+    def apply(self, state: State,expand_collision=False):
         (target_name,) = self.names
 
         os = state.objs[target_name]
@@ -67,7 +67,7 @@ class RotateMove(moves.Move):
 
         iu.rotate(state.trimesh_scene, os.obj.name, self.axis, self.angle)
 
-        if not validity.check_post_move_validity(state, target_name):
+        if not validity.check_post_move_validity(state, target_name, expand_collision=expand_collision):
             return False
 
         return True
@@ -84,11 +84,11 @@ class ReinitPoseMove(moves.Move):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.names})"
 
-    def apply(self, state: State):
+    def apply(self, state: State, expand_collision=False): 
         (target_name,) = self.names
         ostate = state.objs[target_name]
         self._backup_pose = pose_backup(ostate)
-        return dof.try_apply_relation_constraints(state, target_name)
+        return dof.try_apply_relation_constraints(state, target_name, expand_collision=expand_collision)
 
     def revert(self, state: State):
         (target_name,) = self.names

@@ -48,7 +48,7 @@ def sample_rand_placeholder(gen_class: type[AssetFactory]):
             GLOBAL_GENERATOR_SINGLETON_CACHE[gen_class] = gen
 
     inst_seed = np.random.randint(1e7)
-    #MARK placeholder
+    # MARK placeholder
     if usage_lookup.has_usage(gen_class, t.Semantics.RealPlaceholder):
         new_obj = gen.spawn_placeholder(inst_seed, loc=(0, 0, 0), rot=(0, 0, 0))
     elif usage_lookup.has_usage(gen_class, t.Semantics.AssetAsPlaceholder):
@@ -85,7 +85,7 @@ class Addition(moves.Move):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.gen_class.__name__}, {len(self.relation_assignments)} relations)"
 
-    def apply(self, state: State):  # mark
+    def apply(self, state: State, expand_collision=False):  # mark
         (target_name,) = self.names
         assert target_name not in state.objs
 
@@ -107,7 +107,8 @@ class Addition(moves.Move):
         )
 
         state.objs[target_name] = objstate
-        success = dof.try_apply_relation_constraints(state, target_name)  # check
+    
+        success = dof.try_apply_relation_constraints(state, target_name,expand_collision=expand_collision)  # check
         logger.debug(f"{self} {success=}")
         return success
 
@@ -129,7 +130,7 @@ class Resample(moves.Move):
     _backup_obj = None
     _backup_poseinfo = None
 
-    def apply(self, state: State):
+    def apply(self, state: State, expand_collision=False):
         assert len(self.names) == 1
         target_name = self.names[0]
 
@@ -141,7 +142,7 @@ class Resample(moves.Move):
         scene = state.trimesh_scene
         scene.graph.transforms.remove_node(os.obj.name)
         scene.delete_geometry(os.obj.name + "_mesh")
-   
+
         os.obj, os.generator = sample_rand_placeholder(os.generator.__class__)
 
         if self.align_corner is not None:
@@ -152,7 +153,7 @@ class Resample(moves.Move):
         parse_scene.add_to_scene(state.trimesh_scene, os.obj, preprocess=True)
         dof.apply_relations_surfacesample(state, target_name)
 
-        return validity.check_post_move_validity(state, target_name)
+        return validity.check_post_move_validity(state, target_name, expand_collision)
 
     def revert(self, state: State):
         (target_name,) = self.names

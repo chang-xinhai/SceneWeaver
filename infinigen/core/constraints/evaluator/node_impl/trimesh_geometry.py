@@ -15,6 +15,7 @@ from typing import Union
 
 import bpy
 import gin
+import mathutils
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -25,7 +26,6 @@ from shapely import MultiPolygon, Polygon
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points, unary_union
 from trimesh import Scene
-import mathutils
 
 import infinigen.core.constraints.constraint_language.util as iu
 import infinigen.core.constraints.evaluator.node_impl.symmetry as symmetry
@@ -33,9 +33,8 @@ from infinigen.core import tagging
 from infinigen.core import tags as t
 from infinigen.core.constraints.example_solver import state_def
 from infinigen.core.constraints.example_solver.geometry.parse_scene import add_to_scene
-from infinigen.core.util.logging import lazydebug
-
 from infinigen.core.constraints.expand import expand_mesh
+from infinigen.core.util.logging import lazydebug
 
 # from infinigen.core.util import blender as butil
 
@@ -142,6 +141,44 @@ class ContactResult:
     names: list[str]
     contacts: list
 
+@dataclass
+class Contact:
+    depth: float
+    names: list[str]
+
+def bbox_collision(src_geoms,tar_geoms):
+    contacts = []
+    hit = False
+    for src_geom in src_geoms:
+        bounds1 = (src_geom.bounds)
+        for tar_geom in tar_geoms:
+            bounds2 = (tar_geom.bounds)
+            observed_depth = min([min(i,j) for i,j in zip((bounds1[1]-bounds2[0]),(bounds2[1]-bounds1[0]))])
+            if observed_depth>0:
+                hit = True
+                contact = Contact(depth=observed_depth)
+                contacts.append(contact)
+
+    
+    return hit,None,contacts
+
+def intersection(src_geoms,tar_geoms):
+    contacts = []
+    hit = False
+    for src_geom in src_geoms:
+        for tar_geom in tar_geoms:
+            intersection = trimesh.boolean.intersection([src_geom, tar_geom])
+            if not intersection.is_empty:
+                hit = True
+                area = intersection.area
+                bounds = intersection.bounds  # Returns an array with min and max points
+                size = bounds[1] - bounds[0] 
+                size.sort() #small -> big
+                depth = area/size[-1]/size[-2]
+                contact = Contact(depth=depth,names=["not known"])
+                contacts.append(contact)
+    
+    return hit,None,contacts
 
 def any_touching_expand(
     scene: Scene,
@@ -158,10 +195,15 @@ def any_touching_expand(
     In all cases, returns True if any one object from a and b touch
     """
     # 预处理输入，确保 a、b 和标签的格式一致
+
     a, b, a_tags, b_tags = preprocess_collision_query_cases(a, b, a_tags, b_tags)
     # 从场景中获取与 a 相关的碰撞检测对象
-    col_expand = iu.col_from_subset(scene, a, a_tags, bvh_cache,expand=True)
-    col = iu.col_from_subset(scene, a, a_tags, bvh_cache,expand=False)
+    # import pdb
+    # pdb.set_trace()
+    # print(a)
+    col,geoms_target = iu.col_from_subset(scene, a, a_tags, bvh_cache,return_geom=True)
+    col_expand,geoms_expand_target = iu.col_from_subset(scene, a, a_tags, bvh_cache, expand=True,export=False,return_geom=True)
+    
     # 检查不同的碰撞情况
 
     if b is None and len(a) == 1:
@@ -170,6 +212,8 @@ def any_touching_expand(
         hit, names, contacts = None, (a, b), []
     elif b is None:
         # 如果 b 为空且 a 有多个元素，检查内部碰撞
+        import pdb
+        pdb.set_trace()
         hit, names, contacts = col.in_collision_internal(
             return_data=True, return_names=True
         )
@@ -177,41 +221,55 @@ def any_touching_expand(
         # 如果 b 是单个字符串，处理单个碰撞检测
         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
         geom = scene.geometry[g]
+        mesh_expand = expand_mesh(geom, b)
 
-        #expand a
-        hit1, names1, contacts1 = col_expand.in_collision_single(
-            geom, transform=T, return_data=True, return_names=True
-        )
-        #expand b
-        
-        mesh_expand = expand_mesh(geom,b)
-        hit2, names2, contacts2 = col.in_collision_single(
-            mesh_expand, transform=T, return_data=True, return_names=True
-        )
-
-        #combine 
+        hit1,name1,contacts1 = intersection([geom],geoms_expand_target)
+        hit2,name2,contacts2 = intersection([mesh_expand],geoms_target)
 
         hit = hit1 or hit2
-        names = names1 | names2
-        contacts = list(set(contacts1 + contacts2))
+        names = []
+        contacts = contacts1 + contacts2
+        # # expand a
+        # if "SimpleBookcaseFactory" in b:
+        #     hit1, names1, contacts1 = col_expand.in_collision_single(
+        #         geom, transform=T, return_data=True, return_names=True, debug=True
+        #     )
+        # else:
+        #     hit1, names1, contacts1 = col_expand.in_collision_single(
+        #         geom, transform=T, return_data=True, return_names=True, debug=False
+        #     )
+        # geom.export(b+"bbbbb.obj")
+        # expand b
+        # import pdb
+        # pdb.set_trace()
+
+        # mesh_expand = expand_mesh(geom, b)
+        # bound_expand_source = (mesh_expand.bounds)
+
+        # hit2, names2, contacts2 = col.in_collision_single(
+        #     mesh_expand, transform=T, return_data=True, return_names=True
+        # )
+        # mesh_expand.export(b+"bbbbb_expand.obj")
+
+        # combine
+
+        # hit = hit1 or hit2
+        # names = names1 | names2
+        # contacts = list(set(contacts1 + contacts2))
 
     elif isinstance(b, list):
         # 如果 b 是一个列表，处理多个物体之间的碰撞检测
-        #expand a
-        col2 = iu.col_from_subset(scene, b, b_tags, bvh_cache)
-        hit1, names1, contacts1 = col_expand.in_collision_other(
-            col2, return_names=True, return_data=True
-        )
-        #expand b
-        col2_expand = iu.col_from_subset(scene, b, b_tags, bvh_cache, expand=True)
-        hit2, names2, contacts2 = col.in_collision_other(
-            col2_expand, return_names=True, return_data=True
-        )
-        #combine 
+        # expand a
+        col2,geoms = iu.col_from_subset(scene, b, b_tags, bvh_cache,return_geom=True)
+        hit1,name1,contacts1 = bbox_collision(geoms,geoms_expand_target)
+        # expand b
+        col2_expand,geoms_expand = iu.col_from_subset(scene, b, b_tags, bvh_cache, expand=True,return_geom=True)
+        hit2,name2,contacts2 = bbox_collision(geoms_expand,geoms_target)
+        # combine
         hit = hit1 or hit2
-        names = names1 | names2
+        names = []
         contacts = list(set(contacts1 + contacts2))
-        
+
     else:
         # 如果 b 的类型未处理，抛出错误
         raise ValueError(f"Unhandled case {a=} {b=}")

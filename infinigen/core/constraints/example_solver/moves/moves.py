@@ -20,7 +20,7 @@ class Move:
     def __post_init__(self):
         assert isinstance(self.names, list)
 
-    def apply(self, state: state_def.State):
+    def apply(self, state: state_def.State,expand_collision=False):
         raise NotImplementedError
 
     def revert(self, state: state_def.State):

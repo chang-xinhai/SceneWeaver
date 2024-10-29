@@ -23,7 +23,7 @@ class Deletion(Move):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.names})"
 
-    def apply(self, state):
+    def apply(self, state,expand_collision=False):
         (target_name,) = self.names
         self._backup_state = state.objs[target_name]
 

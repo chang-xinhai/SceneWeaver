@@ -98,6 +98,7 @@ def geometry_nodes(nw: NodeWrangler, **kwargs):
         )
     except TypeError:
         import pdb
+
         pdb.set_trace()
     group_output = nw.new_node(
         Nodes.GroupOutput,

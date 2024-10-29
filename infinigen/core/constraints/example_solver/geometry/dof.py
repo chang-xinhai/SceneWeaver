@@ -14,6 +14,7 @@ from shapely.geometry import Point
 
 import infinigen.core.constraints.example_solver.geometry.validity as validity
 import infinigen.core.util.blender as butil
+
 # from debug import invisible_others, visible_others
 from infinigen.core import tagging
 from infinigen.core import tags as t
@@ -463,7 +464,7 @@ def validate_relations_feasible(state: state_def.State, name: str) -> bool:
 
 @gin.configurable
 def try_apply_relation_constraints(
-    state: state_def.State, name: str, n_try_resolve=10, visualize=False
+    state: state_def.State, name: str, n_try_resolve=10, visualize=False, expand_collision=False
 ):
     """
     name is in objs.name
@@ -489,7 +490,7 @@ def try_apply_relation_constraints(
                 f"Object {obj_state.obj.name} is too tall for the room: {obj_state.obj.dimensions[2]}, {WALL_HEIGHT=}, {WALL_THICKNESS=}"
             )
         # 应用关系以对某个对象进行表面采样。
-        #MARK
+        # MARK
         parent_planes = apply_relations_surfacesample(state, name)
 
         # center = np.array([v.co for v in obj_state.obj.data.vertices]).mean(axis=0)
@@ -512,8 +513,9 @@ def try_apply_relation_constraints(
         # faces = [v.vertices for v in obj_state.obj.data.polygons]
         # trimesh_obj = trimesh.Trimesh(vertices=vertices, faces=faces)
         # trimesh_obj.export(f"{name}.obj")
-
-        if validity.check_post_move_validity(state, name):
+        # if "SimpleBookcaseFactory" in name:
+     
+        if validity.check_post_move_validity(state, name, expand_collision=expand_collision):
             obj_state.dof_matrix_translation = combined_stability_matrix(parent_planes)
             obj_state.dof_rotation_axis = combine_rotation_constraints(parent_planes)
             # invisible_others()

@@ -348,7 +348,7 @@ def union_object_tags(obj):
 def tagged_face_mask(obj: bpy.types.Object, tags: Union[t.Subpart]) -> np.ndarray:
     # ASSUMES: object is triangulated, no quads/polygons
     # find the face that satisfy tags
-    #MARK Important
+    # MARK Important
     # import pdb
 
     # pdb.set_trace()
@@ -373,7 +373,7 @@ def tagged_face_mask(obj: bpy.types.Object, tags: Union[t.Subpart]) -> np.ndarra
         if v == 0:
             name_parts = []
         else:
-            #convert masked tag to name tag
+            # convert masked tag to name tag
             name_parts = _name_for_tagval(v).split(".")
             # ['interior', 'invisible', 'room', 'wall']
         # print(name_parts)
@@ -458,6 +458,8 @@ def extract_mask(
                 f"extract_mask({obj.name=}) got {res=} with {len(res.data.polygons)=}"
             )
     elif res is None:
+        import pdb
+        pdb.set_trace()
         logger.warning(f"extract_mask({obj.name=}) failed to extract any faces")
         return butil.spawn_vert()
 

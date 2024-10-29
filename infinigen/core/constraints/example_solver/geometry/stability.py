@@ -306,7 +306,6 @@ def move_obj_random_pt(
     scene = state.trimesh_scene
     b_obj = iu.blender_objs_from_names(b)[0]
 
- 
     random_point_global = random_sample_point(state, b_obj, face_mask, plane)
 
     iu.set_location(scene, a, random_point_global)

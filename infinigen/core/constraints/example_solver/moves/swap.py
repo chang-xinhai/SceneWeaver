@@ -25,7 +25,7 @@ class Swap(Move):
     def __post_init__(self):
         raise NotImplementedError(f"{self.__class__.__name__} untested")
 
-    def apply(self, state: state_def.State):
+    def apply(self, state: state_def.State, expand_collision=False):
         target1, target2 = self.names
 
         o1 = state[target1].obj

@@ -174,7 +174,7 @@ def shader_square_tile(
         ).outputs.get,
         ["Color", "Fac"],
     )
-    #MARK
+    # MARK
 
     # 创建棋盘纹理选择
     selections = [
