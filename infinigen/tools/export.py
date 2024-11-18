@@ -645,6 +645,7 @@ def set_center_of_mass():
 
 
 def bake_object(obj, dest, img_size, export_usd):
+
     if not uv_unwrap(obj):
         return
 
@@ -858,12 +859,12 @@ def export_single_obj(
 def export_curr_scene(
     output_folder: Path,
     format="usdc",
-    image_res=1024,
-    vertex_colors=False,
-    individual_export=False,
-    omniverse_export=False,
-    pipeline_folder=None,
-    task_uniqname=None,
+    image_res=1024, # 图像分辨率，默认为1024
+    vertex_colors=False,# 是否导出顶点颜色，默认为False
+    individual_export=False,# 是否单独导出每个对象，默认为False
+    omniverse_export=False, # 是否导出为Omniverse格式，默认为False
+    pipeline_folder=None,# 用于某些管道的文件夹路径，默认None
+    task_uniqname=None, # 任务唯一名称，默认None
 ) -> Path:
     export_usd = format in ["usda", "usdc"]
 
@@ -873,13 +874,14 @@ def export_curr_scene(
 
     logging.info(f"Exporting to directory {export_folder=}")
 
-    remove_obj_parents()
-    delete_objects()
-    triangulate_meshes()
-    if omniverse_export:
+    remove_obj_parents()  # 删除对象的父级
+    delete_objects()# 删除不需要的对象
+    triangulate_meshes() # 三角化网格（转换为三角面）
+    if omniverse_export:  # 如果是Omniverse导出，拆分玻璃材质
         split_glass_mats()
-    rename_all_meshes()
+    rename_all_meshes() # 重命名所有网格
 
+    #处理散射物体
     scatter_cols = []
     if export_usd:
         if bpy.data.collections.get("scatter"):
@@ -888,7 +890,7 @@ def export_curr_scene(
             scatter_cols.append(bpy.data.collections["scatters"])
         for col in scatter_cols:
             for obj in col.all_objects:
-                remove_shade_smooth(obj)
+                remove_shade_smooth(obj) # 移除散射物体的平滑阴影
 
     # remove 0 polygon meshes except for scatters
     # if export_usd:
@@ -900,6 +902,7 @@ def export_curr_scene(
     #             logging.info(f"{obj.name} has no faces, removing...")
     #             bpy.data.objects.remove(obj, do_unlink=True)
 
+    #更新物体可见性并应用修改器
     collection_views, obj_views = update_visibility()
 
     for obj in bpy.data.objects:
@@ -911,19 +914,21 @@ def export_curr_scene(
             realizeInstances(obj)
             apply_all_modifiers(obj)
 
+    #配置渲染设置
     bpy.context.scene.render.engine = "CYCLES"
     bpy.context.scene.cycles.device = "GPU"
     bpy.context.scene.cycles.samples = 1  # choose render sample
     # Set the tile size
-    bpy.context.scene.cycles.tile_x = image_res
+    bpy.context.scene.cycles.tile_x = image_res # 设置X方向的tile大小
     bpy.context.scene.cycles.tile_y = image_res
 
     # iterate through all objects and bake them
+    #烘焙场景纹理
     bake_scene(
-        folderPath=export_folder / "textures",
-        image_res=image_res,
-        vertex_colors=vertex_colors,
-        export_usd=export_usd,
+        folderPath=export_folder / "textures",# 设置纹理保存的文件夹
+        image_res=image_res, # 设置图像分辨率
+        vertex_colors=vertex_colors, # 是否烘焙顶点颜色
+        export_usd=export_usd,  # 是否导出为USD格式
     )
 
     for collection, status in collection_views.items():

@@ -77,8 +77,8 @@ class WallArtFactory(AssetFactory):
                 segments=self.frame_bevel_segments,
             )
         self.frame_surface.apply(frame)
-        bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
-        import pdb
+        # bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+        # import pdb
 
         # MARK
         # pdb.set_trace()

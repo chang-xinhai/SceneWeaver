@@ -66,6 +66,13 @@ def lookup_generator(preds: set[t.Semantics]):
     options.sort(key=lambda x: x.__name__)
     np.random.shuffle(options)
 
+
+    #[<class 'infinigen.assets.objects.shelves.simple_bookcase.SimpleBookcaseFactory'>, 
+    # <class 'infinigen.assets.objects.shelves.kitchen_cabinet.KitchenCabinetFactory'>, 
+    # <class 'infinigen.assets.objects.shelves.single_cabinet.SingleCabinetFactory'>, 
+    # <class 'infinigen.assets.objects.shelves.large_shelf.LargeShelfFactory'>, 
+    # <class 'infinigen.assets.objects.shelves.cell_shelf.CellShelfFactory'>]
+
     return options
 
 
@@ -96,12 +103,14 @@ def propose_addition_bound_gen(
             f"Attempted to propose unconstrained {gen_class.__name__} with no relations"
         )
 
-    found_tags = usage_lookup.usages_of_factory(gen_class)
-    goal_pos, *_ = t.decompose_tags(goal_bound.domain.tags)
+    found_tags = usage_lookup.usages_of_factory(gen_class) #{Semantics.Bed, Semantics.Furniture, Semantics.Object, FromGenerator(BedFactory), Semantics.RealPlaceholder}
+    goal_pos, *_ = t.decompose_tags(goal_bound.domain.tags)#{Semantics.Object, FromGenerator(BedFactory), Semantics.Bed, Semantics.Furniture}
+    # 如果找到的标签不符合目标位置的约束条件，抛出错误
     if not t.implies(found_tags, goal_pos) and found_tags.issuperset(goal_pos):
         raise ValueError(f"Got {gen_class=} for {goal_pos=}, but it had {found_tags=}")
-
+    # 计算目标边界和过滤域的交集，创建一个新的边界
     prop_dom = goal_bound.domain.intersection(filter_domain)
+    # 更新交集域的标签
     prop_dom.tags.update(found_tags)
 
     # logger.debug(f'GOAL {goal_bound.domain} \nFILTER {filter_domain}\nPROP {prop_dom}\n\n')
@@ -112,31 +121,34 @@ def propose_addition_bound_gen(
         prop_dom,
     )
 
-    assert active_for_stage(prop_dom, filter_domain)
+    assert active_for_stage(prop_dom, filter_domain) # 确保提议的域在过滤域内有效
 
+    # 筛选出有效的关系，只选择非否定关系
     search_rels = [
         rd for rd in prop_dom.relations if not isinstance(rd[0], cl.NegatedRelation)
     ]
 
+    # 遍历所有关系，找到符合条件的分配
     i = None
     for i, assignments in enumerate(
         propose_relations.find_assignments(curr, search_rels)
     ):
         logger.debug("Found assignments %d %s %s", i, len(assignments), assignments)
+        # 如果找到有效的分配，则提出一个新的添加动作
         yield moves.Addition(
             names=[
                 f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
-            ],  # decided later
-            gen_class=gen_class,
-            relation_assignments=assignments,
-            temp_force_tags=prop_dom.tags,
+            ],  # decided later # 随机生成一个名称，基于生成器类的名称
+            gen_class=gen_class,  # 使用传入的生成器类
+            relation_assignments=assignments,  # 传入分配的关系
+            temp_force_tags=prop_dom.tags,  # 临时强制标签
         )
 
-    if i is None:
+    if i is None: # 如果没有找到有效的分配
         # raise ValueError(f'Found no assignments for {prop_dom}')
         logger.debug(f"Found no assignments for {prop_dom.repr(abbrv=True)}")
         pass
-    else:
+    else: # 如果找到所有分配并处理完
         logger.debug(f"Exhausted all assignments for {gen_class=}")
 
 
@@ -153,6 +165,7 @@ def preproc_bounds(
     shuffle=True,
     print_bounds=False,
 ):
+    
     if print_bounds:
         print(
             f"{preproc_bounds.__name__} for {filter.get_objs_named()} (total {len(bounds)}):"
@@ -170,6 +183,8 @@ def preproc_bounds(
                 f"{preproc_bounds.__name__} found non-finalized {b.domain=}"
             )
 
+
+    # 计算每个边界的对象数量（即在该边界中的对象数量）
     bounds = [b for b in bounds if active_for_stage(b.domain, filter)]
 
     if shuffle:
@@ -183,16 +198,16 @@ def preproc_bounds(
         b = bounds[i]
         bc = bound_counts[i]
         if b.high is not None and b.high < bc:
-            res = 1
+            res = 1 # has more than needed
         elif b.low is not None and b.low > bc:
-            res = -1
+            res = -1 # need more to fit lower bound
         else:
-            res = 0
+            res = 0 # in proper range, fit requirment
         return -res if reverse else res
 
     order = sorted(order, key=key)
 
-    return [bounds[i] for i in order if key(i) != 1]
+    return [bounds[i] for i in order if key(i) != 1]   #filter out those has more than needed
 
 
 def propose_addition(
@@ -201,7 +216,9 @@ def propose_addition(
     filter_domain: r.Domain,
     temperature: float,
 ):
+ 
     bounds = r.constraint_bounds(cons)
+    #filter bounds, and reorder bounds with cnt requirments
     bounds = preproc_bounds(bounds, curr, filter_domain)
 
     if len(bounds) == 0:
@@ -209,17 +226,21 @@ def propose_addition(
         return
 
     for i, bound in enumerate(bounds):
+        #bound=Bound(domain=Domain({Semantics.Furniture, FromGenerator(BedFactory), Semantics.Bed, Semantics.Object, -Semantics.Room}, [...
         if bound.low is None:
             # bounds with low=None are supposed to cap other bounds, not introduce new objects
             continue
-
+        
         fac_options = lookup_generator(preds=bound.domain.tags)
+            # [<class 'infinigen.assets.objects.seating.bed.BedFactory'>]
+
         if len(fac_options) == 0:
             if bound.low is None or bound.low == 0:
                 continue
             raise ValueError(f"Found no generators for {bound}")
 
         for gen_class in fac_options:
+            #gen_class=<class 'infinigen.assets.objects.seating.bed.BedFactory'>
             yield from propose_addition_bound_gen(
                 cons, curr, bounds, i, gen_class, filter_domain
             )
@@ -248,7 +269,7 @@ def propose_deletion(
         for cand in candidates:
             yield moves.Deletion([cand])
 
-
+# 提出对物体之间关系的“平面”进行更改的提议
 def propose_relation_plane_change(
     cons: cl.Node,
     curr: state_def.State,

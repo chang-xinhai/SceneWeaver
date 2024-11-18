@@ -174,6 +174,7 @@ class Solver:
             for k, objkey in var_assignments.items()
         }
         # {Variable(room): Domain({Semantics.Bathroom, SpecificObject(name='bathroom_0-0'), Semantics.Room}, [])}
+        #{Variable(room): Domain({Semantics.Bedroom, SpecificObject(name='bedroom_0-0'), Semantics.Room}, []), Variable(obj): Domain({Semantics.Furniture, FromGenerator(BedFactory), Semantics.Bed, Semantics.Object, Semantics.RealPlaceholder, -Semantics.Room}, [])}
 
         filter_domain = r.substitute_all(filter_domain, dom_assignments)
         """
@@ -187,8 +188,9 @@ class Solver:
             raise ValueError(
                 f"Cannot solve {desc_full=} with non-finalized domain {filter_domain}"
             )
-
+     
         orig_bounds = r.constraint_bounds(consgraph)  # len(orig_bounds) = 63
+        # find objects than can be add to fit requirment
         bounds = propose_discrete.preproc_bounds(
             orig_bounds, self.state, filter_domain, print_bounds=print_bounds
         )
@@ -198,13 +200,16 @@ class Solver:
             logger.info(f"No objects to be added for {desc_full=}, skipping")
             return self.state
 
-        active_count = greedy.update_active_flags(self.state, var_assignments)  # 5
+        active_count = greedy.update_active_flags(self.state, var_assignments)  # 5,17
 
-        n_start = len(self.state.objs)
+        n_start = len(self.state.objs) #37
         logger.info(
             f"Greedily solve {desc_full} - stage has {len(bounds)}/{len(orig_bounds)} bounds, "
             f"{active_count=}/{len(self.state.objs)} objs"
-        )  # [15:25:10.504] [solve] [INFO] | Greedily solve ('on_floor_0', 'bedroom_0-0') - stage has 7/63 bounds, active_count=5/25 objs
+        )  
+        # [15:25:10.504] [solve] [INFO] | Greedily solve ('on_floor_0', 'bedroom_0-0') - stage has 7/63 bounds, active_count=5/25 objs
+        # [10:56:47.439] [solve] [INFO] | Greedily solve ('obj_ontop_obj_0', 'bedroom_0-0', '195935_BedFactory') - stage has 2/63 bounds, active_count=17/37 objs
+
 
         self.optim.reset(max_iters=n_steps)
         # ra = (
@@ -223,7 +228,7 @@ class Solver:
             self.optim.step(
                 consgraph, self.state, move_gen, filter_domain,expand_collision
             )  # MARK # 执行优化步骤
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
             
         self.optim.save_stats(
             self.output_folder / f"optim_{desc}.csv"

@@ -169,20 +169,26 @@ class LampFactory(AssetFactory):
             return params
 
     def create_asset(self, i, **params):
+      
         obj = butil.spawn_cube()
+        # 调用butil.modify_mesh()方法修改该对象的网格
         butil.modify_mesh(
             obj,
             "NODES",
             node_group=nodegroup_lamp_geometry(),
             ng_inputs=self.params,
-            apply=True,
+            apply=True, # 是否应用修改
         )
 
         if np.random.uniform() < 0.6:
+            # 如果条件成立，调用self.bulb_fac(i)生成灯泡对象
             bulb = self.bulb_fac(i)
+            # 将灯泡对象作为子对象，父级为创建的obj，且不进行逆变换和变换
             butil.parent_to(bulb, obj, no_inverse=True, no_transform=True)
+            # 调整灯泡的位置，z坐标设置为obj的边界框最高点减去ShadeHeight的一半
             bulb.location.z = obj.bound_box[-2][2] - self.params["ShadeHeight"] * 0.5
-
+            
+        # 选择对象并将其设置为平面阴影模式（flat shading）
         with butil.SelectObjects(obj):
             bpy.ops.object.shade_flat()
 
@@ -818,18 +824,18 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             ("NodeSocketMaterial", "MetalMaterial", None),
         ],
     )
-
+    # 创建一个 Combine XYZ 节点，用于组合坐标
     combine_xyz_1 = nw.new_node(
         Nodes.CombineXYZ, input_kwargs={"Z": group_input.outputs["BaseHeight"]}
     )
-
+    # 创建一条直线曲线，用于构建基座
     curve_line_1 = nw.new_node(Nodes.CurveLine, input_kwargs={"End": combine_xyz_1})
-
+    # 创建圆形曲线，用于构建基座的形状
     curve_circle_1 = nw.new_node(
         Nodes.CurveCircle,
         input_kwargs={"Radius": group_input.outputs["BaseRadius"], "Resolution": 100},
     )
-
+     # 将曲线转为网格
     curve_to_mesh_1 = nw.new_node(
         Nodes.CurveToMesh,
         input_kwargs={
@@ -838,11 +844,11 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "Fill Caps": True,
         },
     )
-
+    # 创建一个 Combine XYZ 节点，用于组合 Z 坐标
     combine_xyz = nw.new_node(
         Nodes.CombineXYZ, input_kwargs={"Z": group_input.outputs["BaseHeight"]}
     )
-
+    # 创建贝塞尔曲线段，用于表示灯杆的形状
     bezier_segment = nw.new_node(
         Nodes.CurveBezierSegment,
         input_kwargs={
@@ -853,18 +859,18 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "Resolution": 100,
         },
     )
-
+    # 创建一条直线曲线，用于灯杆
     curve_line = nw.new_node(Nodes.CurveLine, input_kwargs={"End": combine_xyz})
-
+    # 将两条曲线合并
     join_geometry_2 = nw.new_node(
         Nodes.JoinGeometry, input_kwargs={"Geometry": [bezier_segment, curve_line]}
     )
-
+    # 创建另一个圆形曲线，用于灯座
     curve_circle = nw.new_node(
         Nodes.CurveCircle,
         input_kwargs={"Radius": group_input.outputs["StandRadius"], "Resolution": 100},
     )
-
+    # 将合并的曲线转换为网格
     curve_to_mesh = nw.new_node(
         Nodes.CurveToMesh,
         input_kwargs={
@@ -873,11 +879,11 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "Fill Caps": True,
         },
     )
-
+    # 将两个网格合并
     join_geometry = nw.new_node(
         Nodes.JoinGeometry, input_kwargs={"Geometry": [curve_to_mesh_1, curve_to_mesh]}
     )
-
+    # 设置合并网格的材质
     set_material = nw.new_node(
         Nodes.SetMaterial,
         input_kwargs={
@@ -885,7 +891,7 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "Material": group_input.outputs["BlackMaterial"],
         },
     )
-
+    # 创建乘法节点，用于计算支架高度
     multiply = nw.new_node(
         Nodes.Math,
         input_kwargs={0: group_input.outputs["ShadeHeight"], 1: 0.4000},
@@ -897,7 +903,7 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
         input_kwargs={0: group_input.outputs["ShadeHeight"], 1: 0.2000},
         attrs={"operation": "MULTIPLY"},
     )
-
+    # 进行加法运算，用于控制灯泡反向的效果
     multiply_add = nw.new_node(
         Nodes.Math,
         input_kwargs={
@@ -907,7 +913,7 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
         },
         attrs={"operation": "MULTIPLY_ADD"},
     )
-
+    # 调用一个子节点组，构建灯头的几何体
     lamp_head = nw.new_node(
         nodegroup_lamp_head().name,
         input_kwargs={
@@ -922,19 +928,19 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "MetalMaterial": group_input.outputs["MetalMaterial"],
         },
     )
-
+    # 从贝塞尔曲线中采样数据，确定灯头的定位
     sample_curve = nw.new_node(
         Nodes.SampleCurve,
         input_kwargs={"Curves": bezier_segment, "Factor": 1.0000},
         attrs={"use_all_curves": True},
     )
-
+    # 将曲线切线与欧拉旋转对齐
     align_euler_to_vector = nw.new_node(
         Nodes.AlignEulerToVector,
         input_kwargs={"Vector": sample_curve.outputs["Tangent"]},
         attrs={"axis": "Z"},
     )
-
+    # 对灯头进行平移和旋转变换
     transform = nw.new_node(
         Nodes.Transform,
         input_kwargs={
@@ -943,19 +949,19 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "Rotation": align_euler_to_vector,
         },
     )
-
+    # 将材质和变换后的灯头几何合并
     join_geometry_1 = nw.new_node(
         Nodes.JoinGeometry, input_kwargs={"Geometry": [set_material, transform]}
     )
-
+    # 计算合并几何的包围盒
     bounding_box = nw.new_node(
         Nodes.BoundingBox, input_kwargs={"Geometry": join_geometry_1}
     )
-
+    # 创建一条新的直线曲线，用于生成灯具的支架部分
     curve_line_2 = nw.new_node(
         Nodes.CurveLine, input_kwargs={"End": (0.0000, 0.0000, 0.1000)}
     )
-
+    # 对支架进行变换
     transform_geometry = nw.new_node(
         Nodes.Transform,
         input_kwargs={
@@ -964,11 +970,11 @@ def nodegroup_lamp_geometry(nw: NodeWrangler):
             "Rotation": align_euler_to_vector,
         },
     )
-
+    # 对变换后的支架曲线进行采样
     sample_curve_1 = nw.new_node(
         Nodes.SampleCurve, input_kwargs={"Curves": transform_geometry, "Factor": 1.0000}
     )
-
+    # 创建节点组输出，包含灯具的几何体、包围盒和光源位置
     group_output = nw.new_node(
         Nodes.GroupOutput,
         input_kwargs={

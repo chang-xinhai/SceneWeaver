@@ -194,6 +194,7 @@ class SimulatedAnnealingSolver:
         filter_domain: r.Domain,
         expand_collision = False
     ) -> typing.Tuple[Move, evaluator.EvalResult, int]:
+ 
         move_gen = propose_func(consgraph, state, filter_domain, temp)
 
         move = None

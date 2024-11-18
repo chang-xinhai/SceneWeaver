@@ -3,9 +3,8 @@ import copy
 import mathutils
 import numpy as np
 
-D_base = 0.3
+D_base = 0.0
 EXPAND_DISTANCE = {
-
     #front
     "LargeShelfFactory":[D_base,0,0],
     "LargeShelfBaseFactory":[D_base,0,0],
@@ -42,7 +41,7 @@ EXPAND_DISTANCE = {
 
     # front,side
     "BedFactory":[D_base,0,D_base],
-    "BedFrameFactory":[D_base,0,D_base],
+    # "BedFrameFactory":[D_base,0,D_base],
     
     #front,back,side
     "KitchenIslandFactory":[D_base,D_base,2*D_base],
@@ -55,9 +54,9 @@ def get_expand_distance(name):
         if name.startswith(key):
             # import pdb
             # pdb.set_trace()
-            print(name,EXPAND_DISTANCE[key])
+            # print(name,EXPAND_DISTANCE[key])
             return EXPAND_DISTANCE[key]
-    print(name," not expand !!!!!!!")
+    # print(name," not expand !!!!!!!")
     return [0,0,0]
 
 

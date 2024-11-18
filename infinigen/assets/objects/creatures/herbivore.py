@@ -312,7 +312,7 @@ class HerbivoreFactory(AssetFactory):
             postprocess_func=herbivore_postprocessing,
             **kwargs,
         )
-
+        # 将根对象设置为 placeholder 的子对象，父子关系不考虑逆向变换
         butil.parent_to(root, placeholder, no_inverse=True)
 
         if self.hair:

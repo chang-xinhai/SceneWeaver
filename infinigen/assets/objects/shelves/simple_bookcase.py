@@ -843,13 +843,15 @@ class SimpleBookcaseBaseFactory(AssetFactory):
             scale=(1, 1, 1),
         )
         obj = bpy.context.active_object
-
+        # objs[0].dimensions
+        # Vector((1.0, 1.0, 0.0))
         obj_params = self.get_asset_params(i)
         surface.add_geomod(
             obj, geometry_nodes, apply=True, attributes=[], input_kwargs=obj_params
         )
         tagging.tag_system.relabel_obj(obj)
-
+        # obj.dimensions
+        # Vector((0.38895025849342346, 0.5141952633857727, 0.7557282447814941))
         return obj
 
 

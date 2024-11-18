@@ -601,6 +601,7 @@ def modify_mesh(
             f"modifer.new() returned None, ensure {obj.type=} is valid for modifier {type=}"
         )
 
+    # 遍历传入的所有额外参数，并将它们设置为修改器的属性
     for k, v in kwargs.items():
         setattr(mod, k, v)
     if ng_inputs is not None:

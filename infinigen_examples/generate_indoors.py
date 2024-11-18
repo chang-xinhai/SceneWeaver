@@ -157,10 +157,10 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                     # Others will be empty-ish besides maybe storage and plants
                     # TODO: add constraints to home_constraints for garages, offices, balconies, etc
                     t.Semantics.Bedroom,
-                    t.Semantics.LivingRoom,
-                    t.Semantics.Kitchen,
-                    t.Semantics.Bathroom,
-                    t.Semantics.DiningRoom,
+                    # t.Semantics.LivingRoom,
+                    # t.Semantics.Kitchen,
+                    # t.Semantics.Bathroom,
+                    # t.Semantics.DiningRoom,
                 ]
             )
         }
@@ -173,7 +173,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return solver.solve_rooms(scene_seed, consgraph, stages["rooms"])
 
     state: state_def.State = p.run_stage("solve_rooms", solve_rooms, use_chance=False)
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     for area in bpy.context.screen.areas:
         if area.type == "VIEW_3D":
@@ -187,7 +187,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                         "edit_object": bpy.context.edit_object,
                     }
                     bpy.ops.view3d.view_all(override)
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
               
     def solve_large():
        
@@ -205,7 +205,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                 abort_unsatisfied=overrides.get("abort_unsatisfied_large", False),
                 expand_collision=True
             )
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         return solver.state
 
     def invisible_others():
@@ -227,7 +227,10 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
 
 
     state = p.run_stage("solve_large", solve_large, use_chance=False, default=state)
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # p.run_stage("invisible_others", invisible_others, use_chance=False)
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # import pdb
+    # pdb.set_trace()
 
     solved_rooms = [
         state.objs[assignment[cu.variable_room]].obj
@@ -277,7 +280,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return scene_preprocessed
 
     scene_preprocessed = p.run_stage("pose_cameras", pose_cameras, use_chance=False)
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
     def animate_cameras():
         cam_util.animate_cameras(camera_rigs, solved_bbox, scene_preprocessed, pois=[])
 
@@ -320,6 +323,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
 
     def solve_small():
         n_steps = overrides["solve_steps_small"]
+       
         for i, vars in enumerate(
             greedy.iterate_assignments(stages["obj_ontop_obj"], state, all_vars, limits)
         ):
@@ -608,5 +612,9 @@ if __name__ == "__main__":
                 continue
             if len(args.debug) == 0 or any(name.endswith(x) for x in args.debug):
                 logging.getLogger(name).setLevel(logging.DEBUG)
-
+    
+    import match
+    match.debug()
+    import pdb
+    pdb.set_trace()
     main(args)

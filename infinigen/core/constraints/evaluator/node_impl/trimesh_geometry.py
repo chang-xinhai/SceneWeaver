@@ -162,23 +162,31 @@ def bbox_collision(src_geoms,tar_geoms):
     
     return hit,None,contacts
 
-def intersection(src_geoms,tar_geoms):
+def intersection(src_geoms,tar_geoms,src_names,target_names):
     contacts = []
+    names = []
     hit = False
-    for src_geom in src_geoms:
-        for tar_geom in tar_geoms:
+
+    for src_geom,src_name in zip(src_geoms,src_names):
+        for tar_geom,target_name in zip(tar_geoms,target_names):
             intersection = trimesh.boolean.intersection([src_geom, tar_geom])
+            # if "BedFactory" in src_name and "bedroom" in target_name:
+            #     import pdb
+            #     pdb.set_trace()
             if not intersection.is_empty:
                 hit = True
-                area = intersection.area
+                volume = intersection.volume
                 bounds = intersection.bounds  # Returns an array with min and max points
                 size = bounds[1] - bounds[0] 
                 size.sort() #small -> big
-                depth = area/size[-1]/size[-2]
+                depth = volume/size[-1]/size[-2]
+                # depth = size[0]
                 contact = Contact(depth=depth,names=["not known"])
                 contacts.append(contact)
+                names.append((src_name,target_name))
+            
     
-    return hit,None,contacts
+    return hit,names,contacts
 
 def any_touching_expand(
     scene: Scene,
@@ -222,15 +230,17 @@ def any_touching_expand(
         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
         geom = scene.geometry[g]
         mesh_expand = expand_mesh(geom, b)
-
-        hit1,name1,contacts1 = intersection([geom],geoms_expand_target)
-        hit2,name2,contacts2 = intersection([mesh_expand],geoms_target)
+        # if "BedFactory" in b:
+        #     import pdb
+        #     pdb.set_trace()
+        hit1,name1,contacts1 = intersection([geom],geoms_expand_target,[b],a)
+        hit2,name2,contacts2 = intersection([mesh_expand],geoms_target,[b],a)
 
         hit = hit1 or hit2
-        names = []
+        names = name1+name2
         contacts = contacts1 + contacts2
         # # expand a
-        # if "SimpleBookcaseFactory" in b:
+        
         #     hit1, names1, contacts1 = col_expand.in_collision_single(
         #         geom, transform=T, return_data=True, return_names=True, debug=True
         #     )

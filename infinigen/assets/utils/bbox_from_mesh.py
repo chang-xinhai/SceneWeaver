@@ -84,6 +84,7 @@ def box_from_corners(min_corner, max_corner):
 
 def bbox_mesh_from_hipoly(gen: AssetFactory, inst_seed: int, use_pholder=False):
     objs = []
+
     objs.append(gen.spawn_placeholder(inst_seed, loc=(0, 0, 0), rot=(0, 0, 0)))
     if not use_pholder:
         objs.append(gen.spawn_asset(inst_seed, placeholder=objs[-1]))

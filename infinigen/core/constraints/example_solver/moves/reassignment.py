@@ -44,6 +44,10 @@ def restore_pose_backup(state, name, bak):
 
 @dataclass
 class RelationPlaneChange(moves.Move):
+    #这段代码定义了一个名为 RelationPlaneChange 的类，
+    # 继承自 moves.Move，其作用是表示一个改变物体之间关系平面的动作。
+    # 该类通过 apply 方法执行平面变更，revert 方法恢复到变更前的状态。
+    
     relation_idx: int
     plane_idx: int
 

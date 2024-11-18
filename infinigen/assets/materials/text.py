@@ -160,6 +160,8 @@ class Text:
         fig = plt.figure(figsize=(self.size, self.size), dpi=self.dpi)
         ax = fig.add_axes((0, 0, 1, 1))
         ax.set_facecolor(self.random_color)
+        # import pdb
+        # pdb.set_trace()
         locs = self.get_locs(bbox, self.n_patches + self.n_texts + self.n_barcodes)
         self.add_divider(bbox)
         self.add_patches(locs[: self.n_patches], bbox)

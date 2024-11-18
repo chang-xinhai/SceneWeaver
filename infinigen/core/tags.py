@@ -81,6 +81,7 @@ class Semantics(EnumTag):
     Cookware = "cookware"
     Utensils = "utensils"
     ClothDrapeItem = "cloth-drape"
+    Objaverse = "objaverse"
 
     # Object Access Type
     AccessTop = "access-top"

@@ -20,6 +20,11 @@ def center(obj):
 
 
 def origin2lowest(obj, vertical=False, centered=False, approximate=False):
+    #调整一个对象的位置，使得对象的最低点（根据坐标系的z轴）对齐到原点或者其他目标位置。
+    # 三种对齐模式：
+    # approximate：近似方式，将对象的前10%点的平均位置设为目标位置，z坐标对齐最低点。
+    # centered：将对象的中心位置对齐到目标位置，z坐标对齐最低点。
+    # vertical：仅调整z坐标，使得最低点对齐。
     co = read_co(obj)
     if not len(co):
         return

@@ -86,18 +86,26 @@ class TablewareFactory(AssetFactory):
         )
 
     def finalize_assets(self, assets):
+        # 调用 assign_material 函数给 assets 分配材质，传递一个空列表作为参数
         assign_material(assets, [])
+        # 调用 self.surface.apply 方法，给 assets 应用表面材质，并传入 metal_color 参数
         self.surface.apply(assets, metal_color=self.metal_color)
+        # 如果 has_inside 属性为 True，表示物体有内部表面，应用内部表面材质
         if self.has_inside:
+            # 调用 inside_surface.apply 方法给 assets 应用内部表面材质，设置选择为 "inside"，并清除已有材质
             self.inside_surface.apply(
                 assets, selection="inside", clear=True, metal_color="bw+natural"
             )
+        # 如果 has_guard 属性为 True，表示物体有防护表面，应用防护表面材质
         if self.has_guard:
+            # 调用 guard_surface.apply 方法给 assets 应用防护表面材质，设置选择为 "guard"
             self.guard_surface.apply(
                 assets, selection="guard", metal_color=self.metal_color
             )
+        # 如果 scratch 属性存在（表示物体有划痕效果），应用划痕效果
         if self.scratch:
             self.scratch.apply(assets)
+        # 如果 edge_wear 属性存在（表示物体有边缘磨损效果），应用边缘磨损效果
         if self.edge_wear:
             self.edge_wear.apply(assets)
 
