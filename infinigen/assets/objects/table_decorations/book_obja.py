@@ -12,8 +12,10 @@ import numpy as np
 from numpy.random import uniform
 
 import GPT
+
 # import GPT.retrieve
 from GPT.constants import OBJATHOR_ASSETS_DIR
+
 # from GPT.retrieve import ObjectRetriever
 from infinigen.assets.material_assignments import AssetList
 from infinigen.assets.materials import text
@@ -291,7 +293,7 @@ class BookStackFactory(AssetFactory):
         #                 min(1,self.placeholder_size_z/obj.dimensions[2]),
         #             ]
         #         )
-        
+
         # obj.scale = scale
 
         return obj

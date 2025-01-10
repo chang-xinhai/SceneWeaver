@@ -1,5 +1,3 @@
-
-
 ### 1. get big object, count, and relation
 step_1_big_object_prompt_system = """
 You are an experienced layout designer to design a 3D scene. 
@@ -8,7 +6,7 @@ Your goal is to help me choose objects to put in the scene.
 You will receive:
 1. The roomtype you need to design.
 
-You need to return:
+You need to return a dict including:
 1. A list of big-furniture categories that stand on the floor, marked with count. 
 You can refer but not limited to this category list: ['BeverageFridge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink', 'StandingSink', 'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack', 'CeilingClassicLamp', 'CeilingLight', 'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'Countertop', 'KitchenCabinet', 'KitchenIsland', 'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase', 'TableCocktail', 'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror', 'WallArt', 'WallShelf']
 Do not return objects like rug. 
@@ -34,11 +32,12 @@ Failure case of relation:
 4.[chair, table, side_by_side],[chair, bed, front_against]: Each category, such as chair can only have one relationship. 2 relations will cause failure.
 
 Here is the example: 
-Roomtype: Bedroom
-Category list of big object: {"bed":1, "wardrobe":1, "nightstand":2, "bench":1}
-Object against the wall: [bed, wardrobe, nightstand]
-Relation between big objects: [nightstand, bed, side_by_side], [bench, bed, front_to_front]
-
+{
+    "Roomtype": "Bedroom",
+    "Category list of big object": {"bed":"1", "wardrobe":"1", "nightstand":"2", "bench":"1"},
+    "Object against the wall": ["bed", "wardrobe", "nightstand"],
+    "Relation between big objects": [["nightstand", "bed", "side_by_side"], ["bench", "bed", "front_to_front"]]
+}
 """
 step_1_big_object_prompt_user = """
 Here is the roomtype you need to design:
@@ -51,7 +50,7 @@ Here is your response:
 
 #### 2. get small object and relation
 
-step_2_small_object_prompt_system = f"""
+step_2_small_object_prompt_system = """
 You are an experienced layout designer to design a 3D scene. 
 Your goal is to help me choose small objects to put in the scene.
 
@@ -59,7 +58,7 @@ You will receive:
 1. The roomtype you need to design.
 2. The big furniture that exist in this room.
 
-You need to return:
+You need to return a dict including:
 1. A list of small-furniture categories that belongs to (on or inside) the big furniture. Format as a python list. 
 Use [book] instead of ["book"]. Do not use quota in name, such as baby's or teacher's.
 Enhance the immersion of the scene by incorporating more categories and increasing their quantities.
@@ -71,10 +70,12 @@ The optional relation is :
 2.on: obj1 is placed on the top of or inside obj2.
 
 Here is the example: 
-Roomtype: Bedroom
-List of big furniture: [bed, wardrobe, nightstand, bench]
-List of small furniture: [book, plant, lamp, clothes]
-Relation: [book, nightstand, on, 2], [plant, nightstand, ontop, 1], [lamp, nightstand, ontop, 1], [clothes, bench, ontop, 2], [clothes, wardrobe, on, 4]
+{
+    "Roomtype": "Bedroom",
+    "List of big furniture": ["bed", "wardrobe", "nightstand", "bench"],
+    "List of small furniture": ["book", "plant", "lamp", "clothes"],
+    "Relation": ["book", "nightstand", "on", "2"], ["plant", "nightstand", "ontop", "1"], ["lamp", "nightstand", "ontop", "1"], ["clothes", "bench", "ontop", "2"], ["clothes", "wardrobe", "on", "4"]
+}
 
 """
 
@@ -98,7 +99,7 @@ You will receive:
 1. The roomtype you need to design.
 2. A list of given open-vocabulary category names.
 
-You need to return:
+You need to return a dict including:
 1. The mapping of given category name with the most similar standard category name. 
 
 *** Important ***
@@ -106,9 +107,11 @@ The standard category list: ['appliances.BeverageFridgeFactory', 'appliances.Dis
 You can only use category name from the standard list. If no standard category is matched, return null.
 
 Here is the example: 
-Roomtype: {roomtype}
-list of given category names: [bed, nightstand, lamp, wardrobe]
-Mapping results: {"bed": 'seating.BedFactory',"nightstand": 'shelves.SingleCabinetFactory',"lamp": 'lamp.DeskLampFactory','wardrobe': null}
+{
+    "Roomtype": "{roomtype}"
+    "list of given category names": ["bed", "nightstand", "lamp", "wardrobe"]
+    "Mapping results": {"bed": "seating.BedFactory","nightstand": "shelves.SingleCabinetFactory","lamp": "lamp.DeskLampFactory", "wardrobe": null}
+}
 """
 step_3_class_name_prompt_user = """
 Here is the roomtype you need to design:
@@ -160,7 +163,7 @@ Do not use functions that are not shown in the example.
 Roomtype: Bedroom
 
 Big-object count: 
-{"bed":1, "desks":1, "floor lamps":1, "nightstand":2}
+{"bed":"1", "desks":"1", "floor lamps":"1", "nightstand":"2"}
 
 Relation between big object:
 [nightstand, beds, leftright_leftright]

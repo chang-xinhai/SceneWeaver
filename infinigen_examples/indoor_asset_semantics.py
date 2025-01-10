@@ -2,6 +2,7 @@
 # This source code is licensed under the BSD 3-Clause license found in the LICENSE file in the root directory of this source tree.
 
 # Authors: Alexander Raistrick
+import infinigen.assets.static_assets as static_assets
 
 from infinigen.assets.objects import (
     appliances,
@@ -126,6 +127,7 @@ def home_asset_usage():
         shelves.LargeShelfFactory,
         shelves.KitchenCabinetFactory,
         shelves.SingleCabinetFactory,
+        static_assets.StaticShelfFactory,
     }
 
     used_as[Semantics.SideTable] = {
@@ -140,6 +142,7 @@ def home_asset_usage():
             tables.TableCocktailFactory,
             shelves.SimpleDeskFactory,
             tables.CoffeeTableFactory,
+            static_assets.StaticTableFactory,
         },
     )
 
@@ -152,6 +155,7 @@ def home_asset_usage():
     used_as[Semantics.LoungeSeating] = {
         seating.SofaFactory,
         seating.ArmChairFactory,
+        static_assets.StaticSofaFactory,
     }
 
     used_as[Semantics.Seating] = set.union(
@@ -188,6 +192,7 @@ def home_asset_usage():
             bathroom.BathtubFactory,
             seating.SofaFactory,
             shelves.TVStandFactory,
+            static_assets.StaticSofaFactory,
         },
     )
 
@@ -287,6 +292,7 @@ def home_asset_usage():
         shelves.LargeShelfFactory,
         table_decorations.SinkFactory,
         tables.TableCocktailFactory,
+        static_assets.StaticShelfFactory,
     }
 
     used_as[Semantics.PlaceholderBBox] = {

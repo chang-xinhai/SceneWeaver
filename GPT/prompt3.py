@@ -8,8 +8,39 @@ import json
 import re
 
 
+def extract_json(input_string):
+    # Step 1: Extract the JSON string
+    start_idx = None
+    brace_count = 0
+    json_string = ""
+    for i, char in enumerate(input_string):
+        if char == '{':
+            if start_idx is None:
+                start_idx = i  # Mark the start of the JSON
+            brace_count += 1
+        elif char == '}':
+            brace_count -= 1
+
+        if start_idx is not None:
+            json_string += char
+
+        if brace_count == 0 and start_idx is not None:
+            # Found the complete JSON structure
+            break
+    if not json_string:
+        raise ValueError("No valid JSON found in the input string.")
+    
+    # Step 2: Convert the JSON string to a dictionary
+    try:
+        json_dict = json.loads(json_string)
+        return json_dict
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Error decoding JSON: {e}")
+    
+
+
 def extract_data(input_string):
-    # First, try to extract a JSON object
+
     json_match = re.search(r"{.*?}", input_string, re.DOTALL)
     if json_match:
         extracted_json = json_match.group(0)
@@ -42,30 +73,34 @@ def extract_data(input_string):
 
 def lst2str(lst):
     if isinstance(lst[0], list):
-        lst = ["["+", ".join(i)+"]" for i in lst]
-        lst = "\n".join(lst)
+        s = ["["+", ".join(i)+"]" for i in lst]
+        s = "\n".join(s)
+        return s
     else:
         return "["+", ".join(lst)+"]"
 
-    return lst
+    
 
 gpt = gpt()
 
 roomtype = "Living Room"
 results = dict()
+
 ### 1. get big object, count, and relation
 user_prompt = prompts.step_1_big_object_prompt_user.format(roomtype=roomtype)
 prompt_payload = gpt.get_payload(prompts.step_1_big_object_prompt_system,user_prompt)
 gpt_text_response = gpt(payload=prompt_payload, verbose=True)
 print(gpt_text_response)
 
-response = [i for i in gpt_text_response.split("\n") if len(i)>0]
-big_category_dict = extract_data(response[0])
+# gpt_text_response ='{\n    "Roomtype": "Living Room",\n    "Category list of big object": {\n        "sofa": 2,\n        "armchair": 2,\n        "coffee table": 1,\n        "TV stand": 1,\n        "large shelf": 1,\n        "side table": 2,\n        "floor lamp": 2\n    },\n    "Object against the wall": ["TV stand", "large shelf"],\n    "Relation between big objects": [\n        ["armchair", "coffee table", "front_against"],\n        ["sofa", "coffee table", "front_against"],\n        ["side table", "sofa", "side_by_side"],\n        ["floor lamp", "armchair", "side_by_side"]\n    ]\n}'
+
+# response = [i for i in gpt_text_response.split("\n") if len(i)>0]
+gpt_dict_response = extract_json(gpt_text_response)
+big_category_dict = gpt_dict_response["Category list of big object"]
 big_category_list = list(big_category_dict.keys())
-category_against_wall = extract_data(response[1])[0]
-relation_big_object = [extract_data(i) for i in response[2:]]
-relation_big_object = [i for i in relation_big_object if i is not None]
-relation_big_object = reduce(lambda x, y: x + y, relation_big_object)
+category_against_wall = gpt_dict_response["Object against the wall"]
+relation_big_object = gpt_dict_response["Relation between big objects"]
+
 
 
 # # Category list of big objects: [1 checkout counter, 5 bookshelves, 2 reading tables, 8 chairs]
@@ -79,13 +114,12 @@ s = lst2str(big_category_list)
 user_prompt = prompts.step_2_small_object_prompt_user.format(big_category_list=s,roomtype=roomtype)
 prompt_payload = gpt.get_payload(prompts.step_2_small_object_prompt_system, user_prompt)
 gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+print(gpt_text_response)
+# gpt_text_response = '{\n    "Roomtype": "Living Room",\n    "List of big furniture": ["sofa", "armchair", "coffee table", "TV stand", "large shelf", "side table", "floor lamp"],\n    "List of small furniture": ["remote control", "book", "magazine", "decorative bowl", "photo frame", "vase", "candle", "coaster", "plant"],\n    "Relation": [\n        ["remote control", "coffee table", "ontop", 2],\n        ["book", "large shelf", "on", 5],\n        ["magazine", "coffee table", "ontop", 3],\n        ["decorative bowl", "coffee table", "ontop", 1],\n        ["photo frame", "side table", "ontop", 2],\n        ["vase", "side table", "ontop", 1],\n        ["candle", "large shelf", "on", 3],\n        ["coaster", "coffee table", "ontop", 4],\n        ["plant", "side table", "ontop", 1]\n    ]\n}'
 
-response = [i for i in gpt_text_response.split("\n") if (len(i)>0 and "[" in i and "]" in i)]
-response = [i.replace("\"","") for i in response]
-small_category_list = extract_data(response[0])[0]
-relation_small_object = [extract_data(i) for i in response[1:]]
-relation_small_object = [i for i in relation_small_object if i is not None]
-relation_small_object = reduce(lambda x, y: x + y, relation_small_object)
+gpt_dict_response = extract_json(gpt_text_response)
+small_category_list = gpt_dict_response["List of small furniture"]
+relation_small_object = gpt_dict_response["Relation"]
 
 # List of small furniture: ["books", "lamps", "magazines", "decorative items", "cash register"]
 # Relation: [
@@ -98,14 +132,18 @@ relation_small_object = reduce(lambda x, y: x + y, relation_small_object)
 
 
 
-#### 3. get object class name in infinigen
+# #### 3. get object class name in infinigen
 category_list = big_category_list + small_category_list
 s = lst2str(category_list)
 user_prompt = prompts.step_3_class_name_prompt_user.format(category_list=s,roomtype=roomtype)
 prompt_payload = gpt.get_payload(prompts.step_3_class_name_prompt_system, user_prompt)
 gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+print(gpt_text_response)
 
-name_mapping = extract_data(gpt_text_response.replace("'","\"").replace("None", "null"))
+# gpt_text_response = '{\n    "Roomtype": "Bookstore",\n    "list of given category names": ["sofa", "armchair", "coffee table", "TV stand", "large shelf", "side table", "floor lamp", "remote control", "book", "magazine", "decorative bowl", "photo frame", "vase", "candle", "coaster", "plant"],\n    "Mapping results": {\n        "sofa": "seating.SofaFactory",\n        "armchair": "seating.ArmChairFactory",\n        "coffee table": "tables.CoffeeTableFactory",\n        "TV stand": "shelves.TVStandFactory",\n        "large shelf": "shelves.LargeShelfFactory",\n        "side table": "tables.SideTableFactory",\n        "floor lamp": "lamp.FloorLampFactory",\n        "remote control": null,\n        "book": "table_decorations.BookStackFactory",\n        "magazine": null,\n        "decorative bowl": "tableware.BowlFactory",\n        "photo frame": null,\n        "vase": "table_decorations.VaseFactory",\n        "candle": null,\n        "coaster": null,\n        "plant": "tableware.PlantContainerFactory"\n    }\n}'
+
+gpt_dict_response = extract_json(gpt_text_response.replace("'","\"").replace("None", "null"))
+name_mapping = gpt_dict_response["Mapping results"]
 # Mapping results: {
 #     "books": 'table_decorations.BookFactory',
 #     "bookmarks": None,

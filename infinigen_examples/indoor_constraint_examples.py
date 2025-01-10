@@ -21,6 +21,8 @@ from infinigen.assets.objects import (
     tableware,
     wall_decorations,
 )
+from infinigen.assets import static_assets
+
 from infinigen.core.constraints import constraint_language as cl
 from infinigen.core.constraints import usage_lookup
 from infinigen.core.tags import Semantics, Subpart
@@ -300,16 +302,16 @@ def home_constraints():
     # endregion
 
     # region living room
-
-    Sofa_obj = furniture[seating.SofaFactory]
-    CoffeeTable_obj = furniture[tables.CoffeeTableFactory]
+    Sofa_obj = furniture[static_assets.StaticSofaFactory]
+    CoffeeTable_obj = furniture[static_assets.StaticTableFactory]
     TVStand_obj = wallfurn[shelves.TVStandFactory]
-    LargeShelf_obj = wallfurn[shelves.LargeShelfFactory]
+    LargeShelf_obj = wallfurn[static_assets.StaticShelfFactory]
     ArmChair_obj = furniture[seating.ArmChairFactory]
-    SideTable_obj = furniture[tables.SideTableFactory]
+    SideTable_obj = furniture[static_assets.StaticTableFactory]
     plant_obj = obj[tableware.PlantContainerFactory]
     vase_obj = obj[table_decorations.VaseFactory]
-    # FloorLamp_obj = furniture[lamp.FloorLampFactory].related_to(ArmChair_obj,cu.side_by_side)
+    books_obj = obj[table_decorations.BookStackFactory]
+    # FloorLamp_obj = furn   iture[lamp.FloorLampFactory].related_to(ArmChair_obj,cu.side_by_side)
     FloorLamp_obj = (
         obj[lamp.FloorLampFactory]
         .related_to(rooms, cu.on_floor)
@@ -321,6 +323,16 @@ def home_constraints():
             * CoffeeTable_obj.related_to(Sofa_obj.related_to(r), cu.front_against).count().in_range(1, 1)
             * TVStand_obj.related_to(r).count().in_range(1, 1)
             * LargeShelf_obj.related_to(r).count().in_range(1, 1)
+            * LargeShelf_obj.related_to(r).all(
+                lambda s: (
+                    plant_obj.related_to(s, cu.on).count().in_range(1, 1)
+                    * (plant_obj.related_to(s, cu.on).count() >= 0)
+                    * vase_obj.related_to(s, cu.on).count().in_range(1, 1)
+                    * (vase_obj.related_to(s, cu.on).count() >= 0)
+                    * books_obj.related_to(s, cu.on).count().in_range(3, 3)
+                    * (books_obj.related_to(s, cu.on).count() >= 0)
+                )
+            )
             * ArmChair_obj.related_to(r).count().in_range(2, 2)
             * SideTable_obj.related_to(r).count().in_range(2, 2)
             * SideTable_obj.related_to(Sofa_obj.related_to(r), cu.side_by_side).count().in_range(2, 2)
