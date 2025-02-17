@@ -17,9 +17,11 @@ from infinigen.core import tags as t
 from infinigen.core.constraints import usage_lookup
 from infinigen.core.constraints.constraint_language import util as iu
 from infinigen.core.constraints.constraint_language.util import delete_obj
-
-from infinigen.core.constraints.example_solver.geometry import dof, parse_scene, validity
-
+from infinigen.core.constraints.example_solver.geometry import (
+    dof,
+    parse_scene,
+    validity,
+)
 from infinigen.core.constraints.example_solver.state_def import ObjectState, State
 from infinigen.core.placement.factory import AssetFactory
 from infinigen.core.util import blender as butil
@@ -35,7 +37,7 @@ logger = logging.getLogger(__name__)
 GLOBAL_GENERATOR_SINGLETON_CACHE = {}
 
 
-def sample_rand_placeholder(gen_class: type[AssetFactory], dimension = None):
+def sample_rand_placeholder(gen_class: type[AssetFactory], dimension=None):
     singleton_gen = usage_lookup.has_usage(gen_class, t.Semantics.SingleGenerator)
 
     if singleton_gen and gen_class in GLOBAL_GENERATOR_SINGLETON_CACHE:
@@ -48,17 +50,23 @@ def sample_rand_placeholder(gen_class: type[AssetFactory], dimension = None):
 
     # if dimension is not None:
     #     gen.params['Dimensions'] = dimension
-    
+
     inst_seed = np.random.randint(1e7)
     # MARK placeholder
     if usage_lookup.has_usage(gen_class, t.Semantics.RealPlaceholder):
-        new_obj = gen.spawn_placeholder(inst_seed, loc=(0, 0, 0), rot=(0, 0, 0))  #generate bbox with dimension
+        new_obj = gen.spawn_placeholder(
+            inst_seed, loc=(0, 0, 0), rot=(0, 0, 0)
+        )  # generate bbox with dimension
     elif usage_lookup.has_usage(gen_class, t.Semantics.AssetAsPlaceholder):
-        new_obj = gen.spawn_asset(inst_seed, loc=(0, 0, 0), rot=(0, 0, 0)) #generate asset
+        new_obj = gen.spawn_asset(
+            inst_seed, loc=(0, 0, 0), rot=(0, 0, 0)
+        )  # generate asset
     elif usage_lookup.has_usage(gen_class, t.Semantics.PlaceholderBBox):
         new_obj = bbox_from_mesh.bbox_mesh_from_hipoly(gen, inst_seed, use_pholder=True)
     else:
-        new_obj = bbox_from_mesh.bbox_mesh_from_hipoly(gen, inst_seed) #generate bbox with asset
+        new_obj = bbox_from_mesh.bbox_mesh_from_hipoly(
+            gen, inst_seed
+        )  # generate bbox with asset
 
     if new_obj.type != "MESH":
         raise ValueError(f"Addition created {new_obj.name=} with type {new_obj.type}")
@@ -96,7 +104,9 @@ class Addition(moves.Move):
         assert target_name not in state.objs
 
         # self._new_obj, gen = sample_rand_placeholder(self.gen_class)
-        self._new_obj, gen = sample_rand_placeholder(self.gen_class, dimension=(1,1,1))
+        self._new_obj, gen = sample_rand_placeholder(
+            self.gen_class, dimension=(1, 1, 1)
+        )
 
         # center = np.array([v.co for v in self._new_obj.data.vertices]).mean(axis=0)
         # size = self._new_obj.dimensions
@@ -144,14 +154,16 @@ class Addition(moves.Move):
         position,
         rotation,
         gen_class,
-        meshpath,
+        asset_file=None,
         expand_collision=False,
     ):  # mark
         assert target_name not in state.objs
+        import copy
 
         self._new_obj, gen = sample_rand_placeholder(gen_class)
-
-        self._new_obj = resize_obj(self._new_obj, size)
+        
+        if size is not None:
+            self._new_obj = resize_obj(self._new_obj, size)
 
         parse_scene.add_to_scene(state.trimesh_scene, self._new_obj, preprocess=True)
 
@@ -170,19 +182,31 @@ class Addition(moves.Move):
 
         # name = "SofaFactory(1351066).bbox_placeholder(2179127)"
         name = self._new_obj.name
+
+        if gen_class.__name__ == "MetaCategoryFactory":
+            position = gen.location_orig
+            import os
+            room_width = os.getenv("room_width")
+            room_height = os.getenv("room_height")
+            position[0] += int(room_width)/2
+            position[1] += int(room_height)/2
+
         iu.translate(state.trimesh_scene, name, position)
         iu.rotate(state.trimesh_scene, name, np.array([0, 0, 1]), rotation)
 
         success = dof.try_apply_relation_constraints(
-            state, target_name, expand_collision=expand_collision,n_try_resolve=1, use_initial=True, closest_surface=True
+            state,
+            target_name,
+            expand_collision=expand_collision,
+            n_try_resolve=1,
+            use_initial=True,
+            closest_surface=True,
         )  # check
         logger.debug(f"{self} {success=}")
         return success
 
         # save_path = "debug.blend"
         # bpy.ops.wm.save_as_mainfile(filepath=save_path)
-
-        
 
     def revert(self, state: State):
         to_delete = list(butil.iter_object_tree(self._new_obj))
@@ -191,19 +215,23 @@ class Addition(moves.Move):
         (new_name,) = self.names
         del state.objs[new_name]
 
+
 def resize_obj(obj, size, apply_transform=True):
-    x_dim, y_dim,z_dim = size
+    
+    x_dim, y_dim, z_dim = size
+    if x_dim==-1:
+        return obj
     x_scale = x_dim / obj.dimensions[0]
     y_scale = y_dim / obj.dimensions[1]
     z_scale = z_dim / obj.dimensions[2]
-        
+
     obj.scale = (x_scale, y_scale, z_scale)
 
     if apply_transform:
         butil.apply_transform(obj, True)
-        
+
     return obj
-        
+
 
 @dataclass
 class Resample(moves.Move):

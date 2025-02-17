@@ -29,11 +29,11 @@ def domain_contains(dom: r.Domain, state: state_def.State, obj: state_def.Object
             #     and domain_contains(dom, state, state.objs[relstate.target_name])
             #     for relstate in obj.relations
             # ):
-            # for relstate in obj.relations:
-            #     a = relstate.relation.intersects(rel.rel)
-            #     b = domain_contains(dom, state, state.objs[relstate.target_name])
-            #     y = a and b 
-            #     x = 1
+            for relstate in obj.relations:
+                a = relstate.relation.intersects(rel.rel)
+                b = domain_contains(dom, state, state.objs[relstate.target_name])
+                y = a and b
+                x = 1
             if any(
                 relstate.relation.intersects(rel.rel)
                 and domain_contains(dom, state, state.objs[relstate.target_name])
@@ -42,11 +42,11 @@ def domain_contains(dom: r.Domain, state: state_def.State, obj: state_def.Object
                 # logger.debug(f"domain_contains failed, {obj} satisfies negative {rel} {dom}")
                 return False
         else:
-            # for relstate in obj.relations:
-            #     a = relstate.relation.intersects(rel)
-            #     b = domain_contains(dom, state, state.objs[relstate.target_name])
-            #     y = a and b 
-            #     x = 1
+            for relstate in obj.relations:
+                a = relstate.relation.intersects(rel)
+                b = domain_contains(dom, state, state.objs[relstate.target_name])
+                y = a and b
+                x = 1
             if not any(
                 relstate.relation.intersects(rel)
                 and domain_contains(dom, state, state.objs[relstate.target_name])
@@ -62,6 +62,7 @@ def domain_contains(dom: r.Domain, state: state_def.State, obj: state_def.Object
 #     return [
 #         k for k, o in curr.objs.items() if domain_contains(dom, curr, o) and o.active
 #     ]
+
 
 def objkeys_in_dom(dom: r.Domain, curr: state_def.State):
     lst = []

@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 from numpy.random import uniform
 
-from infinigen.assets import static_assets, objaverse_assets
+from infinigen.assets import  objaverse_assets, static_assets
 from infinigen.assets.objects import (
     appliances,
     bathroom,
@@ -303,10 +303,11 @@ def home_constraints():
     # region living room
     Sofa_obj = furniture[seating.SofaFactory]
 
-    cabinet_obj = furniture[shelves.SingleCabinetFactory]
+    bookcase_obj = furniture[shelves.SimpleBookcaseFactory]
     FloorLamp_obj = obj[lamp.FloorLampFactory].related_to(rooms, cu.on_floor)
     desk_obj = furniture[shelves.SimpleDeskFactory]
     plant_obj = obj[tableware.LargePlantContainerFactory].related_to(rooms, cu.on_floor)
+    plant1_obj = obj[tableware.PlantContainerFactory]
     # FloorLamp_obj = furn   iture[lamp.FloorLampFactory].related_to(ArmChair_obj,cu.side_by_side)
     
     constraints["living_room"] = newroom.all(
@@ -329,6 +330,12 @@ def home_constraints():
             * desk_obj.related_to(r).all(
                 lambda s: (
                     plant_obj.related_to(s, cu.front_to_front).count().in_range(1, 1)
+                    * plant1_obj.related_to(s, cu.ontop).count().in_range(1, 1)
+                )
+            )
+            * bookcase_obj.related_to(r).all(
+                lambda s: (
+                    plant1_obj.related_to(s, cu.on).count().in_range(1, 1)
                 )
             )
             # * SideTable_obj.related_to(r).count().in_range(2, 2)

@@ -120,6 +120,8 @@ def  stable_against(
     relation = StableAgainst({Subpart.Bottom, -Subpart.Top, -Subpart.Back, -Subpart.Front}, {Subpart.Visible, Subpart.SupportSurface, -Subpart.Ceiling, -Subpart.Wall})
 
     """
+    if obj_name=="5048934_BookStackFactory": 
+        a =1 
     assert isinstance(relation, cl.StableAgainst)
 
     logger.debug(f"stable against {obj_name=} {relation_state=}")
@@ -187,8 +189,7 @@ def  stable_against(
             TRANS_MULT = 0.1
             translation = TRANS_MULT * sa.dof_matrix_translation @ gradient
             iu.translate(state.trimesh_scene, sa.obj.name, translation)
-            
-
+ 
     else:
         if obj_name=='6569851_FloorLampFactory':
             a = 1
@@ -206,7 +207,7 @@ def  stable_against(
             TRANS_MULT = 0.1
             translation = TRANS_MULT * sa.dof_matrix_translation @ gradient
             iu.translate(state.trimesh_scene, sa.obj.name, translation)
-
+            
 
     if visualize:
         fig, ax = plt.subplots()

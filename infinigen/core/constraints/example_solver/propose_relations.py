@@ -132,12 +132,12 @@ def find_assignments(
     candidates = objkeys_in_dom(dom, curr)
     random.shuffle(candidates)
 
-    if len(candidates) == 0: #YYD add
+    if len(candidates) == 0:  # YYD add
         yield assignments
         return
 
     for parent_candidate_name in candidates:  # 遍历候选对象
-        if parent_candidate_name!='newroom_0-0':
+        if parent_candidate_name != "newroom_0-0":
             a = 1
         logging.debug(f"{parent_candidate_name=}")  # 调试信息
         # 获取当前候选对象的状态
@@ -171,10 +171,8 @@ def find_given_assignments(
     curr: state_def.State,
     relations: list[tuple[cl.Relation, r.Domain]],
     assignments: list[state_def.RelationState] = None,
-    parent_obj_name = None
+    parent_obj_name=None,
 ) -> typing.Iterator[list[state_def.RelationState]]:
-
-
     if assignments is None:
         assignments = []
         # print('FIND ASSIGNMENTS TOPLEVEL')
@@ -209,12 +207,12 @@ def find_given_assignments(
     candidates = objkeys_in_dom(dom, curr)
     random.shuffle(candidates)
 
-    if len(candidates) == 0: #YYD add
+    if len(candidates) == 0:  # YYD add
         yield assignments
         return
 
     for parent_candidate_name in candidates:  # 遍历候选对象
-        if parent_candidate_name!='newroom_0-0':
+        if parent_candidate_name != "newroom_0-0":
             parent_candidate_name = parent_obj_name  # when parent is not room, set parent obj name as the given name
         logging.debug(f"{parent_candidate_name=}")  # 调试信息
         # 获取当前候选对象的状态

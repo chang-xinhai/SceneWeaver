@@ -175,7 +175,10 @@ def clean_names(obj=None):
                     ".", "_"
                 )  # if uv has '.' in name the node will export wrong in USD
 
-    for mat in bpy.data.materials:
+    
+    # for mat in bpy.data.materials:
+    for i in range(len(bpy.data.materials)):
+        mat = bpy.data.materials[i]
         if mat is None:
             continue
         mat.name = (mat.name).replace(" ", "_")
@@ -936,7 +939,7 @@ def export_curr_scene(
 
     for obj, status in obj_views.items():
         obj.hide_render = status
-
+ 
     clean_names()
 
     for obj in bpy.data.objects:
@@ -950,7 +953,7 @@ def export_curr_scene(
             if obj.type == "MESH" and len(obj.data.polygons) == 0:
                 logging.info(f"{obj.name} has no faces, removing...")
                 bpy.data.objects.remove(obj, do_unlink=True)
-
+    
     if individual_export:
         bpy.ops.object.select_all(action="SELECT")
         bpy.ops.object.location_clear()  # send all objects to (0,0,0)

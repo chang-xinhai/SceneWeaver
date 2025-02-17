@@ -20,7 +20,6 @@ from infinigen.core.placement.placement import parse_asset_name
 from infinigen.core.util import blender as butil
 from infinigen_examples.util.visible import invisible_others, visible_others
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -62,10 +61,10 @@ def populate_state_placeholders(state: State, filter=None, final=True):
             if t.Semantics.Room in os.tags:
                 os.obj = bpy.data.objects[os.obj.name + ".meshed"]
 
-    targets = []# 用于存放待处理的目标对象
+    targets = []  # 用于存放待处理的目标对象
     # 遍历状态中的所有对象
     for objkey, os in state.objs.items():
-        if objkey=="8634849_Blackboard":
+        if objkey == "8634849_Blackboard":
             a = 1
         # 如果对象没有生成器，则跳过
         if os.generator is None:
@@ -83,23 +82,23 @@ def populate_state_placeholders(state: State, filter=None, final=True):
         # 将当前对象的 objkey 加入目标列表
         targets.append(objkey)
 
-    update_state_mesh_objs = [] # 用于存放需要更新的网格对象信息
+    update_state_mesh_objs = []  # 用于存放需要更新的网格对象信息
     # 遍历目标对象，执行生成和处理
     for i, objkey in enumerate(targets):
-        if objkey=="8634849_Blackboard":
+        if objkey == "8634849_Blackboard":
             a = 1
         os = state.objs[objkey]
-        placeholder = os.obj # 获取占位符对象
+        placeholder = os.obj  # 获取占位符对象
 
         logger.info(f"Populating {i}/{len(targets)} {placeholder.name=}")
 
-        old_objname = placeholder.name# 记录原对象的名称
-        update_state_mesh_objs.append((objkey, old_objname)) # 将旧对象信息加入更新列表
+        old_objname = placeholder.name  # 记录原对象的名称
+        update_state_mesh_objs.append((objkey, old_objname))  # 将旧对象信息加入更新列表
 
-        *_, inst_seed = parse_asset_name(placeholder.name) # 解析资产名称并提取实例种子
+        *_, inst_seed = parse_asset_name(placeholder.name)  # 解析资产名称并提取实例种子
         # print(placeholder.name)
         if "BookStackFactory" in placeholder.name:
-            a = 1 
+            a = 1
 
         # 使用生成器生成新的对象，并设置位置、旋转等属性
         os.obj = os.generator.spawn_asset(
@@ -108,10 +107,13 @@ def populate_state_placeholders(state: State, filter=None, final=True):
             rot=placeholder.rotation_euler,  # MARK
         )
         if os.size is not None:
-            from infinigen.core.constraints.example_solver.moves.addition import resize_obj
+            from infinigen.core.constraints.example_solver.moves.addition import (
+                resize_obj,
+            )
+
             os.obj = resize_obj(os.obj, os.size, apply_transform=False)
-        os.generator.finalize_assets([os.obj]) # 完成生成器资产的最终处理
-        butil.put_in_collection(os.obj, unique_assets)# 将生成的对象放入唯一资产集合中
+        os.generator.finalize_assets([os.obj])  # 完成生成器资产的最终处理
+        butil.put_in_collection(os.obj, unique_assets)  # 将生成的对象放入唯一资产集合中
 
         # print(center)
         # state.obj_info[os.obj.name] = {  # "category":os.obj.name.split("(")[0],
@@ -135,8 +137,7 @@ def populate_state_placeholders(state: State, filter=None, final=True):
             logger.debug(
                 f"{populate_state_placeholders.__name__} cut {cutter.name=} from {cut_objs=}"
             )
-            update_state_mesh_objs += cut_objs # 更新网格对象列表
-       
+            update_state_mesh_objs += cut_objs  # 更新网格对象列表
 
     unique_assets.hide_viewport = False  # 恢复显示资产集合的视图
     # 如果是最终的处理，则返回
@@ -156,4 +157,6 @@ def populate_state_placeholders(state: State, filter=None, final=True):
         parse_scene.preprocess_obj(os.obj)
         if not final:
             tagging.tag_canonical_surfaces(os.obj)  # 标记标准表面
-        parse_scene.add_to_scene(state.trimesh_scene, os.obj, preprocess=True)  # 添加到场景
+        parse_scene.add_to_scene(
+            state.trimesh_scene, os.obj, preprocess=True
+        )  # 添加到场景

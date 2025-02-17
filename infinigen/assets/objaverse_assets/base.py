@@ -3,23 +3,12 @@
 
 # Authors: Lingjie Mei
 
-import math
+
 import random
-
 import bpy
-from numpy.random import uniform
-
 from GPT.constants import OBJATHOR_ASSETS_DIR
-from infinigen.assets.material_assignments import AssetList
-from infinigen.assets.utils.decorate import read_co, write_attribute
-from infinigen.assets.utils.misc import assign_material
 from infinigen.assets.utils.object import join_objects, new_bbox, origin2lowest
-from infinigen.core import surface
-from infinigen.core.nodes.node_info import Nodes
-from infinigen.core.nodes.node_wrangler import NodeWrangler
 from infinigen.core.placement.factory import AssetFactory
-from infinigen.core.util import blender as butil
-from infinigen.core.util.math import FixedSeed
 
 
 class ObjaverseFactory(AssetFactory):

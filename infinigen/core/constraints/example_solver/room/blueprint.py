@@ -4,6 +4,8 @@
 
 # Authors: Lingjie Mei, Karhan Kayan: fix constants
 
+import json
+import os
 from copy import deepcopy
 
 import gin
@@ -26,8 +28,7 @@ from .segment import SegmentMaker
 from .solidifier import BlueprintSolidifier
 from .solver import BlueprintSolver, BlueprintStaircaseSolver
 from .utils import unit_cast
-import json
-import os
+
 
 @gin.configurable
 class RoomSolver:
@@ -38,11 +39,13 @@ class RoomSolver:
         iters_mult=150,
     ):
         self.factory_seed = factory_seed
-        #load room size
+        # load room size
         GPT_RESULTS = os.getenv("GPT_RESULTS")
-        with open(GPT_RESULTS,"r") as f:
+        with open(GPT_RESULTS, "r") as f:
             info = json.load(f)
         self.width, self.height = info["roomsize"]
+        os.environ["room_width"] = str(self.width)
+        os.environ["room_height"] = str(self.height)
 
         with FixedSeed(factory_seed):
             self.graph_maker = GraphMaker(factory_seed)

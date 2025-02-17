@@ -31,6 +31,8 @@ from .room import MultistoryRoomSolver, RoomSolver
 from infinigen.core.tags import Semantics, Subpart
 
 from infinigen.assets.objaverse_assets import GeneralObjavFactory
+
+from infinigen.assets.metascene_assets import GeneralMetaFactory
 from infinigen.assets.objects import (
             appliances,
             bathroom,
@@ -308,19 +310,23 @@ class Solver:
         with open(PATH_TO_SCENES,"r") as f:
             info = json.load(f)
         self.name_mapping = info["name_mapping"]
-        self.Placement = info["Placement"]
+        self.Placement_big = info["Placement_big"]
+        self.Placement_small = info["Placement_small"]
         self.category_against_wall = info["category_against_wall"]
 
         return
     
     @gin.configurable
-    def init_graph(
+    def init_graph_gpt(
         self,
         # filter_domain: r.Domain,
         var_assignments: dict[str, str],
         stage = "large" #large, medium, small
     ):  
-        
+        if stage=="small":
+            Placement = self.Placement_small
+        else:
+            Placement = self.Placement_big
         # dom_assignments = {
         #     k: r.Domain(self.state.objs[objkey].tags)
         #     for k, objkey in var_assignments.items()
@@ -331,34 +337,47 @@ class Solver:
         # filter_domains["on_floor"] = r.substitute_all(stages_local["on_floor"], dom_assignments)
         # filter_domains["on_floor_against_wall"] = r.substitute_all(stages_local["on_floor_against_wall"], dom_assignments)
         
-        for key, value in self.Placement.items():
+        for key, value in Placement.items():
             
             for num in value.keys():
                 if num=='3':
                     a = 1
-                position = value[num]["position"] + [0]
+                
+                position = value[num]["position"]
+                if len(value[num]["position"])==2:
+                    position += [0]
                 rotation = value[num]["rotation"] * math.pi / 180
                 size = value[num]["size"]
                 name = key
                 module_and_class = self.name_mapping[name]
-                
-                if "parent" in value[num]:
-                    this_stage = "medium"
-                    if this_stage!=stage:
-                        continue
+                if stage == "small":
+                    this_stage = "small"
                     parent_key,parent_num, relation = value[num]["parent"]
-                    parent_obj_name = self.Placement[parent_key][parent_num]["name"]
+                    parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
+                    against_wall = False
+                    on_floor = False
+                    size = [-1,-1,-1]
                 else:
-                    this_stage = "large"
-                    if this_stage!=stage:
-                        continue
-                    parent_obj_name = None
+                    if "parent" in value[num]:
+                        this_stage = "medium"
+                        if this_stage!=stage:
+                            continue
+                        parent_key,parent_num, relation = value[num]["parent"]
+                        parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
+                    else:
+                        this_stage = "large"
+                        if this_stage!=stage:
+                            continue
+                        parent_obj_name = None
 
-                against_wall = True if key in self.category_against_wall else False
-                filter_domain = self.calc_filter_domain(value, num, on_floor=True, against_wall=against_wall)
+                    against_wall = True if key in self.category_against_wall else False
+                    on_floor = True
+                
+                filter_domain = self.calc_filter_domain(value, num, on_floor=on_floor, against_wall=against_wall)
 
                 if module_and_class is None:
                     gen_class = GeneralObjavFactory              
+                    size = value[num]["size"]
                     x_dim, y_dim, z_dim = size
                     category = name
                     gen_class.x_dim = x_dim
@@ -393,13 +412,13 @@ class Solver:
                     target_name = f"{np.random.randint(1e7)}_{class_name}"
                     # target_name = np.random.randint(1e7)+"_SofaFactory"
                     
-                    meshpath = ""
+                    meshpath = None
 
                     move.apply_init(
                         self.state, target_name, size, position, rotation, gen_class, meshpath
                     )
 
-                    self.Placement[key][num]["name"] = target_name
+                    Placement[key][num]["name"] = target_name
                     
                     break
                 # invisible_others()
@@ -408,14 +427,113 @@ class Solver:
                 
         return self.state
 
+    @gin.configurable
+    def init_graph_metascene(
+        self,
+        # filter_domain: r.Domain,
+        var_assignments: dict[str, str],
+        stage = "large" #large, medium, small
+    ):  
+        basedir = "/mnt/fillipo/huangyue/recon_sim/7_anno_v4/export_stage1/scene0019_00/"
+        metadata = f"{basedir}/metadata.json"
+        import json
+        with open(metadata,"r") as f:
+            Placement = json.load(f)
+        for key,value in Placement.items():
+            if value in ["wall","ceiling","floor"]:
+                continue
+            
+
+            position = [0,0,0]
+
+            rotation = 0
+            size = None
+            name = key
+            module_and_class = "MetaScene"
+            parent_obj_name = None
+            against_wall = False
+            on_floor = True
+
+            # if stage == "small":
+            #     this_stage = "small"
+            #     parent_key,parent_num, relation = value[num]["parent"]
+            #     parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
+            #     against_wall = False
+            #     on_floor = False
+            #     size = [-1,-1,-1]
+            # else:
+            #     if "parent" in value[num]:
+            #         this_stage = "medium"
+            #         if this_stage!=stage:
+            #             continue
+            #         parent_key,parent_num, relation = value[num]["parent"]
+            #         parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
+            #     else:
+            #         this_stage = "large"
+            #         if this_stage!=stage:
+            #             continue
+            #         parent_obj_name = None
+
+            #     against_wall = True if key in self.category_against_wall else False
+            #     on_floor = True
+            
+            filter_domain = self.calc_filter_domain(value, num=None, on_floor=on_floor, against_wall=against_wall)
+
+            if module_and_class=="MetaScene":
+                gen_class = copy.deepcopy(GeneralMetaFactory)
+                size = None
+                # x_dim, y_dim, z_dim = size
+                category = value
+                # gen_class.x_dim = x_dim
+                # gen_class.y_dim = y_dim
+                # gen_class.z_dim = z_dim
+                gen_class._category = category
+                gen_class._asset_file = f"{basedir}/{key}.glb"
+                class_name = category
+            
+            search_rels = filter_domain.relations
+            # 筛选出有效的关系，只选择非否定关系
+            search_rels = [
+                rd for rd in search_rels if not isinstance(rd[0], cl.NegatedRelation)
+            ]
+
+            assign = propose_relations.find_given_assignments(self.state, search_rels, parent_obj_name=parent_obj_name)
+            for i, assignments in enumerate(assign):
+                found_tags = usage_lookup.usages_of_factory( gen_class )  
+                move = moves.Addition(
+                    names=[
+                        f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
+                    ],  # decided later # 随机生成一个名称，基于生成器类的名称
+                    gen_class=gen_class,  # 使用传入的生成器类
+                    relation_assignments=assignments,  # 传入分配的关系
+                    temp_force_tags=found_tags,  # 临时强制标签
+                )
+                
+                target_name = f"{np.random.randint(1e7)}_{class_name}"
+                # target_name = np.random.randint(1e7)+"_SofaFactory"
+                
+                asset_file = f"{basedir}/{key}.glb"
+
+                move.apply_init(
+                    self.state, target_name, size, position, rotation, gen_class, asset_file
+                )
+
+                # Placement[key][num]["name"] = target_name
+                break
+            # invisible_others()
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            # visible_others()
+                
+        return self.state
+    
     def get_bpy_objects(self, domain: r.Domain) -> list[bpy.types.Object]:
         objkeys = domain_contains.objkeys_in_dom(domain, self.state)
         return [self.state.objs[k].obj for k in objkeys]
 
-    def calc_filter_domain(self, value, num, on_floor=True, against_wall=False):
-        if "parent" in value[num]:
+    def calc_filter_domain(self, value, num=None, on_floor=True, against_wall=False):
+        if num is not None and "parent" in value[num]:
             parent_key,parent_num, relation = value[num]["parent"]
-            parent_obj_name = self.Placement[parent_key][parent_num]["name"]
+            parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
             var_assignments = {cu.variable_room: 'newroom_0-0',
                                 cu.variable_obj: parent_obj_name}            
         else:
@@ -428,43 +546,14 @@ class Solver:
             k: r.Domain(self.state.objs[objkey].tags)
             for k, objkey in var_assignments.items()
         }
-        stage = self.get_stage(on_floor=on_floor, against_wall=against_wall, parent=parent_key, relation=relation)
+        stage = self.get_stage(is_on_floor=on_floor, against_wall=against_wall, parent=parent_key, relation=relation)
         filter_domain = r.substitute_all(stage, dom_assignments)
 
         return filter_domain
-        
          
-        # if key in self.category_against_wall:
-        #     filter_domain = filter_domains["on_floor_against_wall"]
-        # else:
-        #     filter_domain = filter_domains["on_floor"]
-
-        
-        # if key == "FloorLamp" :
-        #     var_assignments = {cu.variable_room: 'newroom_0-0',
-        #                         cu.variable_obj: '1351066_SofaFactory'}
-        #     dom_assignments = {
-        #         k: r.Domain(self.state.objs[objkey].tags)
-        #         for k, objkey in var_assignments.items()
-        #     }
-        #     stage = stages_local["side_by_side_sofa"]
-        #     filter_domain = r.substitute_all(stage, dom_assignments)
-
-        # if key == "Chair" :
-        #     var_assignments = {cu.variable_room: 'newroom_0-0',
-        #                         cu.variable_obj: '1351066_SimpleDeskFactory'}
-        #     dom_assignments = {
-        #         k: r.Domain(self.state.objs[objkey].tags)
-        #         for k, objkey in var_assignments.items()
-        #     }
-        #     stage = stages_local["front_to_front_desk"]
-        #     filter_domain = r.substitute_all(stage, dom_assignments)
-
-        
-                
 
 
-    def get_stage(self, on_floor, against_wall, parent=None, relation=None):
+    def get_stage(self, is_on_floor, against_wall, parent=None, relation=None):
     
         import importlib
         on_floor = cu.on_floor
@@ -493,43 +582,14 @@ class Solver:
         else:
             stage = primary
 
-        if on_floor:
+        if is_on_floor:
             stage = stage.with_relation(on_floor, all_room)
         if against_wall:
             stage = stage.with_relation(cu.against_wall, all_room)
 
-        # sofa_domain = r.Domain(usage_lookup.usages_of_factory(seating.SofaFactory) )
-        # greedy_stages["side_by_side_sofa"] = secondary.with_relation(cu.leftright_leftright, sofa_domain).with_relation(on_floor, all_room)
-        # desk_domain = r.Domain(usage_lookup.usages_of_factory(shelves.SimpleDeskFactory) )
-        # greedy_stages["front_to_front_desk"] = secondary.with_relation(cu.front_to_front, desk_domain).with_relation(on_floor, all_room)
+        
         
         return stage
     
 
 
-
-
-# imported_modules = {
-#     "appliances": appliances,
-#     "bathroom": bathroom,
-#     "decor": decor,
-#     "elements": elements,
-#     "lamp": lamp,
-#     "seating": seating,
-#     "shelves": shelves,
-#     "table_decorations": table_decorations,
-#     "tables": tables,
-#     "tableware": tableware,
-#     "wall_decorations": wall_decorations,
-# }
-
-# import inspect
-# def get_classes_from_module(module=seating):
-#     return [name for name, obj in vars(module).items() if inspect.isclass(obj)]
-
-
-# modulenames =dict()
-# for modulename, module in imported_modules.items():
-#     class_list = get_classes_from_module(module)
-#     for name in class_list:
-#         modulenames[modulename + "." + name] = 

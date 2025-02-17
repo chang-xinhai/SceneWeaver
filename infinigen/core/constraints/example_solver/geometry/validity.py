@@ -76,7 +76,9 @@ def all_relations_valid(state, name, use_initial=False):
             case cl.StableAgainst(_child_tags, _parent_tags, _margin):
                 if "OfficeChairFactory" in name:
                     a = 1
-                res = stable_against(state, name, relation_state, use_initial=use_initial)
+                res = stable_against(
+                    state, name, relation_state, use_initial=use_initial
+                )
                 # import pdb
                 # pdb.set_trace()
 
@@ -100,7 +102,7 @@ def check_post_move_validity(
     visualize=False,
     expand_collision=False,
     return_touch=False,
-    use_initial=False
+    use_initial=False,
 ):  # MARK
     # import pdb
     # pdb.set_trace()
@@ -121,8 +123,10 @@ def check_post_move_validity(
     # check relation
     if "ArmChairFactory" in name:
         a = 1
+    if name == "5048934_BookStackFactory":
+        a = 1
     if not all_relations_valid(state, name, use_initial=use_initial):
-        print("all_relations_valid not valid ",name)
+        print("all_relations_valid not valid ", name)
         if visualize:
             vis_obj = butil.copy(objstate.obj)
             vis_obj.name = f"validity_relations_fail_{name}"
@@ -146,7 +150,100 @@ def check_post_move_validity(
     # Euler((0.0, -0.0, 1.570796012878418), 'XYZ')
     # if "SimpleBookcaseFactory" in name:
 
-    
+    if expand_collision:
+        touch = any_touching_expand(  # mark
+            scene,
+            objstate.obj.name,
+            collision_objs,
+            bvh_cache=state.bvh_cache,
+        )
+
+    else:
+        touch = any_touching(  # mark
+            scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
+        )
+    if not constrain_contact(touch, should_touch=None, max_depth=0.0001):
+        if visualize:
+            vis_obj = butil.copy(objstate.obj)
+            vis_obj.name = f"validity_contact_fail_{name}"
+
+        contact_names = [
+            [x for x in t.names if not x.startswith("_")] for t in touch.contacts
+        ]
+        logger.debug(
+            f"validity failed - {name} touched {contact_names[0]} {len(contact_names)=}"
+        )
+        if return_touch:
+            return False, touch
+        else:
+            return False
+
+    # available = path_to_door(  # mark
+    #     scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
+    # )
+
+    # supposed to go through the consgraph here
+    if return_touch:
+        return False, touch
+    else:
+        return True
+
+
+@gin.configurable
+def move_for_relation_and_collision(
+    state: State,
+    name: str,
+    disable_collision_checking=False,
+    visualize=False,
+    expand_collision=False,
+    return_touch=False,
+    use_initial=False,
+):  # MARK
+    # import pdb
+    # pdb.set_trace()
+    scene = state.trimesh_scene
+    objstate = state.objs[name]
+
+    collision_objs = [
+        os.obj.name
+        for k, os in state.objs.items()
+        if k != name and t.Semantics.NoCollision not in os.tags
+    ]
+
+    if len(collision_objs) == 0:
+        return True
+    # invisible_others()
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # visible_others()
+    # check relation
+    if "ArmChairFactory" in name:
+        a = 1
+    if name == "5048934_BookStackFactory":
+        a = 1
+    if not all_relations_valid(state, name, use_initial=use_initial):
+        print("all_relations_valid not valid ", name)
+        if visualize:
+            vis_obj = butil.copy(objstate.obj)
+            vis_obj.name = f"validity_relations_fail_{name}"
+        # if return_touch:
+        #     return False, None
+        # else:
+        #     return False
+    if "FloorLampFactory" in name:
+        a = 1
+    # check collision
+    if disable_collision_checking:
+        return True
+    if t.Semantics.NoCollision in objstate.tags:
+        if return_touch:
+            return True, None
+        else:
+            return True
+    # objstate.obj.location
+    # Vector((2.1989827156066895, 12.716106414794922, 0.8305753469467163))
+    # objstate.obj.rotation_euler
+    # Euler((0.0, -0.0, 1.570796012878418), 'XYZ')
+    # if "SimpleBookcaseFactory" in name:
 
     if expand_collision:
         touch = any_touching_expand(  # mark

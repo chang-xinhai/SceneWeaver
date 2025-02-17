@@ -40,20 +40,26 @@ ANGLE_STEP_SIZE = (2 * np.pi) / 8
 #         and not (require_rot_free and o.dof_rotation_axis is None)
 #     ]
 
+
 def get_pose_candidates(
     consgraph: cl.Node,
     state: state_def.State,
     filter_domain: r.Domain,
     require_rot_free: bool = False,
-):  
+):
     results = []
     for k, o in state.objs.items():
-        if "ChairFactory" in k and "Office" not in k:
+        if "1100409_BookStackFactory" in k and "Office" not in k:
             a = 1
-        if o.active and domain_contains(filter_domain, state, o) and not (require_rot_free and o.dof_rotation_axis is None):
+        if (
+            o.active
+            and domain_contains(filter_domain, state, o)
+            and not (require_rot_free and o.dof_rotation_axis is None)
+        ):
             results.append(k)
-    
+
     return results
+
 
 def propose_translate(
     consgraph: cl.Node,

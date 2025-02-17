@@ -1,4 +1,2 @@
 from .base import ObjaverseFactory
-from .objaverse_category import (
-    GeneralObjavFactory
-)
+from .objaverse_category import GeneralObjavFactory

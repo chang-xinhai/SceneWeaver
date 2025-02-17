@@ -50,7 +50,8 @@ down_dir = np.array([0, 0, -1])
 
 bottom = {t.Subpart.Bottom, -t.Subpart.Top, -t.Subpart.Front, -t.Subpart.Back}
 back = {t.Subpart.Back, -t.Subpart.Top, -t.Subpart.Front}
-top = {t.Subpart.Top, -t.Subpart.Back, -t.Subpart.Bottom, -t.Subpart.Front}
+top = {t.Subpart.Top, -t.Subpart.Back, -t.Subpart.Bottom, -t.Subpart.Front, -t.Subpart.SupportSurface}
+# top = {t.Subpart.Top, -t.Subpart.Back, -t.Subpart.Bottom, -t.Subpart.Front}
 side = {-t.Subpart.Top, -t.Subpart.Bottom, -t.Subpart.Back, -t.Subpart.SupportSurface}
 front = {
     t.Subpart.Front,
@@ -75,7 +76,8 @@ hanging = cl.StableAgainst(top, ceilingtags, margin=0.05)
 side_against_wall = cl.StableAgainst(side, walltags, margin=0.05)
 
 ontop = cl.StableAgainst(bottom, top)
-on = cl.StableAgainst(bottom, {t.Subpart.SupportSurface})
+on = cl.StableAgainst(bottom, {t.Subpart.SupportSurface, -t.Subpart.Top})
+# on = cl.StableAgainst(bottom, {t.Subpart.SupportSurface}) 
 
 front_against = cl.StableAgainst(
     front, side, margin=0.05, check_z=False

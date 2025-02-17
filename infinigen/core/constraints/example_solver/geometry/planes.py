@@ -194,7 +194,9 @@ class Planes:
             planes = self.compute_all_planes_fast(obj, mask)
         return planes
 
-    def get_rel_state_planes(self, state, name: str, relation_state: tuple, closest_surface=False):
+    def get_rel_state_planes(
+        self, state, name: str, relation_state: tuple, closest_surface=False
+    ):
         obj = state.objs[name].obj
         relation = relation_state.relation
 
@@ -234,12 +236,14 @@ class Planes:
             obj_plane = obj_all_planes[relation_state.child_plane_idx]
 
         if closest_surface and obj_plane is not None and parent_plane is not None:
-            parent_plane_idx, child_plane_idx = self.get_closest_surface(state, 
-                                                                         relation_state, 
-                                                                         parent_obj, 
-                                                                         obj, 
-                                                                         parent_all_planes, 
-                                                                         obj_all_planes)
+            parent_plane_idx, child_plane_idx = self.get_closest_surface(
+                state,
+                relation_state,
+                parent_obj,
+                obj,
+                parent_all_planes,
+                obj_all_planes,
+            )
 
             relation_state.parent_plane_idx = parent_plane_idx
             relation_state.child_plane_idx = child_plane_idx
@@ -251,23 +255,18 @@ class Planes:
 
     @staticmethod
     def get_closest_surface(
-        state, 
-        relation_state, 
-        parent_obj, 
-        obj, 
-        parent_all_planes, 
-        obj_all_planes
-        ):
+        state, relation_state, parent_obj, obj, parent_all_planes, obj_all_planes
+    ):
         parent_plane_idx = relation_state.parent_plane_idx
         child_plane_idx = relation_state.child_plane_idx
-        if len(parent_all_planes)<=1:
+        if len(parent_all_planes) <= 1:
             return parent_plane_idx, child_plane_idx
 
         relation = relation_state.relation
         obj_tags = relation.child_tags
         parent_tags = relation.parent_tags
 
-        #calculate object's plane center 
+        # calculate object's plane center
         centers = []
         for obj_plane in obj_all_planes:
             obj_plane_trimesh = state.planes.get_tagged_submesh(
@@ -275,9 +274,9 @@ class Planes:
             )
             verts = np.array(obj_plane_trimesh.vertices)
             centers.append(verts.mean(axis=0))
-        center = np.array(centers).mean(axis=0)[None,:]
-        
-        #find closest parent plane
+        center = np.array(centers).mean(axis=0)[None, :]
+
+        # find closest parent plane
         min_d = 1000
         for idx, parent_plane in enumerate(parent_all_planes):
             parent_plane_trimesh = state.planes.get_tagged_submesh(
@@ -288,10 +287,7 @@ class Planes:
                 min_d = abs(distance)
                 parent_plane_idx = idx
 
-
         return parent_plane_idx, child_plane_idx
-        
-
 
     @staticmethod
     def planerep_to_poly(planerep):

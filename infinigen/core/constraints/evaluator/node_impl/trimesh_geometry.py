@@ -178,6 +178,8 @@ def intersection(src_geoms, tar_geoms, src_names, target_names):
 
     for src_geom, src_name in zip(src_geoms, src_names):
         for tar_geom, target_name in zip(tar_geoms, target_names):
+            if "SingleCabinetFactory" in target_name:
+                a = 1
             intersection = trimesh.boolean.intersection([src_geom, tar_geom])
             # if "BedFactory" in src_name and "bedroom" in target_name:
             #     import pdb
@@ -196,6 +198,122 @@ def intersection(src_geoms, tar_geoms, src_names, target_names):
 
     return hit, names, contacts
 
+
+# def any_touching_expand(
+#     scene: Scene,
+#     a: Union[str, list[str]],
+#     b: Union[str, list[str]] = None,
+#     a_tags=None,
+#     b_tags=None,
+#     bvh_cache=None,
+#     # obj_info=None,
+# ):  # MAKR
+#     """
+#     Computes one-to-one, many-to-one, one-to-many or many-to-many collisions
+
+#     In all cases, returns True if any one object from a and b touch
+#     """
+#     # 预处理输入，确保 a、b 和标签的格式一致
+
+#     a, b, a_tags, b_tags = preprocess_collision_query_cases(a, b, a_tags, b_tags)
+#     # 从场景中获取与 a 相关的碰撞检测对象
+#     # import pdb
+#     # pdb.set_trace()
+#     # print(a)
+#     col, geoms_target = iu.col_from_subset(
+#         scene, a, a_tags, bvh_cache, return_geom=True
+#     )
+#     col_expand, geoms_expand_target = iu.col_from_subset(
+#         scene, a, a_tags, bvh_cache, expand=True, export=False, return_geom=True
+#     )
+
+#     # 检查不同的碰撞情况
+
+#     if b is None and len(a) == 1:
+#         # 如果 b 为空且 a 只有一个元素，查询没有意义，返回 None
+#         # query makes no sense, asking for intra-set collision on one element
+#         hit, names, contacts = None, (a, b), []
+#     elif b is None:
+#         # 如果 b 为空且 a 有多个元素，检查内部碰撞
+#         import pdb
+
+#         pdb.set_trace()
+#         hit, names, contacts = col.in_collision_internal(
+#             return_data=True, return_names=True
+#         )
+#     elif isinstance(b, str):
+#         # 如果 b 是单个字符串，处理单个碰撞检测
+#         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
+#         geom = scene.geometry[g]
+#         mesh_expand = expand_mesh(geom, b)
+#         # if "BedFactory" in b:
+#         #     import pdb
+#         #     pdb.set_trace()
+#         hit1, name1, contacts1 = intersection([geom], geoms_expand_target, [b], a)
+#         hit2, name2, contacts2 = intersection([mesh_expand], geoms_target, [b], a)
+
+#         hit = hit1 or hit2
+#         names = name1 + name2
+#         contacts = contacts1 + contacts2
+#         # # expand a
+
+#         #     hit1, names1, contacts1 = col_expand.in_collision_single(
+#         #         geom, transform=T, return_data=True, return_names=True, debug=True
+#         #     )
+#         # else:
+#         #     hit1, names1, contacts1 = col_expand.in_collision_single(
+#         #         geom, transform=T, return_data=True, return_names=True, debug=False
+#         #     )
+#         # geom.export(b+"bbbbb.obj")
+#         # expand b
+#         # import pdb
+#         # pdb.set_trace()
+
+#         # mesh_expand = expand_mesh(geom, b)
+#         # bound_expand_source = (mesh_expand.bounds)
+
+#         # hit2, names2, contacts2 = col.in_collision_single(
+#         #     mesh_expand, transform=T, return_data=True, return_names=True
+#         # )
+#         # mesh_expand.export(b+"bbbbb_expand.obj")
+
+#         # combine
+
+#         # hit = hit1 or hit2
+#         # names = names1 | names2
+#         # contacts = list(set(contacts1 + contacts2))
+
+#     elif isinstance(b, list):
+#         # 如果 b 是一个列表，处理多个物体之间的碰撞检测
+#         # expand a
+#         col2, geoms = iu.col_from_subset(scene, b, b_tags, bvh_cache, return_geom=True)
+#         hit1, name1, contacts1 = bbox_collision(geoms, geoms_expand_target)
+#         # expand b
+#         col2_expand, geoms_expand = iu.col_from_subset(
+#             scene, b, b_tags, bvh_cache, expand=True, return_geom=True
+#         )
+#         hit2, name2, contacts2 = bbox_collision(geoms_expand, geoms_target)
+#         # combine
+#         hit = hit1 or hit2
+#         names = []
+#         contacts = list(set(contacts1 + contacts2))
+
+#     else:
+#         # 如果 b 的类型未处理，抛出错误
+#         raise ValueError(f"Unhandled case {a=} {b=}")
+
+#     names = list(names)  # 将 names 转换为列表
+#     if len(names) == 1:
+#         # 如果只有一个名称，且 b 是字符串，则将 b 添加到 names 中
+#         assert isinstance(b, str)
+#         names.append(b)
+#         logging.debug(f"added name {b} to make {names}")
+
+#     if len(names) == 0:
+#         # 如果没有找到名称，则使用 a 和 b 作为名称
+#         names = [a, b]
+#     # 返回碰撞结果，包括碰撞状态、涉及的物体名称和接触信息
+#     return ContactResult(hit=hit, names=names, contacts=contacts)
 
 def any_touching_expand(
     scene: Scene,
@@ -243,43 +361,18 @@ def any_touching_expand(
         # 如果 b 是单个字符串，处理单个碰撞检测
         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
         geom = scene.geometry[g]
-        mesh_expand = expand_mesh(geom, b)
-        # if "BedFactory" in b:
-        #     import pdb
-        #     pdb.set_trace()
-        hit1, name1, contacts1 = intersection([geom], geoms_expand_target, [b], a)
-        hit2, name2, contacts2 = intersection([mesh_expand], geoms_target, [b], a)
+        geom_expand = expand_mesh(geom, b)
+
+        hit1, names1, contacts1 = col.in_collision_single(
+            geom, transform=T, return_data=True, return_names=True
+        )
+        hit2, names2, contacts2 = col_expand.in_collision_single(
+            geom_expand, transform=T, return_data=True, return_names=True
+        )
 
         hit = hit1 or hit2
-        names = name1 + name2
+        names = list(names1) + list(names2)
         contacts = contacts1 + contacts2
-        # # expand a
-
-        #     hit1, names1, contacts1 = col_expand.in_collision_single(
-        #         geom, transform=T, return_data=True, return_names=True, debug=True
-        #     )
-        # else:
-        #     hit1, names1, contacts1 = col_expand.in_collision_single(
-        #         geom, transform=T, return_data=True, return_names=True, debug=False
-        #     )
-        # geom.export(b+"bbbbb.obj")
-        # expand b
-        # import pdb
-        # pdb.set_trace()
-
-        # mesh_expand = expand_mesh(geom, b)
-        # bound_expand_source = (mesh_expand.bounds)
-
-        # hit2, names2, contacts2 = col.in_collision_single(
-        #     mesh_expand, transform=T, return_data=True, return_names=True
-        # )
-        # mesh_expand.export(b+"bbbbb_expand.obj")
-
-        # combine
-
-        # hit = hit1 or hit2
-        # names = names1 | names2
-        # contacts = list(set(contacts1 + contacts2))
 
     elif isinstance(b, list):
         # 如果 b 是一个列表，处理多个物体之间的碰撞检测

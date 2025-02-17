@@ -6,3 +6,4 @@ python -m infinigen.launch_blender -m infinigen_examples.generate_indoors -- --s
 python -m infinigen.tools.export --input_folder outputs/indoors/coarse_p --output_folder outputs/my_export_coarse_p -f usdc -r 1024 --omniverse
 
 python examples/isaac_sim.py --scene-path /home/yandan/workspace/infinigen/outputs/my_export_coarse_p/export_scene.blend/export_scene.usdc --json-path /home/yandan/workspace/infinigen/outputs/my_export_coarse_p/export_scene.blend/solve_state_acdc.json 
+python examples/isaac_sim.py --scene-path /home/yandan/workspace/infinigen/outputs/debug2/export_scene.blend/export_scene.usdc --json-path /home/yandan/workspace/infinigen/outputs/my_export_debug3/solve_state.json 

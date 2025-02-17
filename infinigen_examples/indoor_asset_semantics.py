@@ -2,9 +2,9 @@
 # This source code is licensed under the BSD 3-Clause license found in the LICENSE file in the root directory of this source tree.
 
 # Authors: Alexander Raistrick
-import infinigen.assets.static_assets as static_assets
 import infinigen.assets.objaverse_assets as objaverse_assets
-
+import infinigen.assets.metascene_assets as metascene_assets
+import infinigen.assets.static_assets as static_assets
 from infinigen.assets.objects import (
     appliances,
     bathroom,
@@ -194,7 +194,8 @@ def home_asset_usage():
             seating.SofaFactory,
             shelves.TVStandFactory,
             static_assets.StaticSofaFactory,
-            objaverse_assets.GeneralObjavFactory
+            objaverse_assets.GeneralObjavFactory,
+            metascene_assets.GeneralMetaFactory
         },
     )
 
@@ -245,7 +246,8 @@ def home_asset_usage():
             appliances.MonitorFactory,
             elements.RugFactory,
             bathroom.HardwareFactory,
-            objaverse_assets.GeneralObjavFactory
+            objaverse_assets.GeneralObjavFactory,
+            metascene_assets.GeneralMetaFactory
         },
     )
 
@@ -296,12 +298,14 @@ def home_asset_usage():
         table_decorations.SinkFactory,
         tables.TableCocktailFactory,
         static_assets.StaticShelfFactory,
-        objaverse_assets.GeneralObjavFactory
+        objaverse_assets.GeneralObjavFactory,
+        # metascene_assets.GeneralMetaFactory
     }
 
     used_as[Semantics.PlaceholderBBox] = {
         seating.SofaFactory,
         appliances.OvenFactory,
+        # metascene_assets.GeneralMetaFactory
     }
 
     used_as[Semantics.SingleGenerator] = (

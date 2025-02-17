@@ -316,15 +316,51 @@ def col_from_subset(scene, names, tags=None, bvh_cache=None, expand=False,export
 
     col = trimesh.collision.CollisionManager()
     geoms = []
+    T = trimesh.transformations.identity_matrix()  # 设置变换矩阵为单位矩阵
+    t = fcl.Transform(T[:3, :3], T[:3, 3])  # 创建 FCL 变换对象
+    
     for name in names:
-        T, g = scene.graph[name]  # 从场景图中获取变换矩阵和几何体索引
+        
+        _, g = scene.graph[name]  # 从场景图中获取变换矩阵和几何体索引
         geom = scene.geometry[g]  # 获取几何体
+        if "SingleCabinetFactory" in name and not geom.is_watertight:
+            a = 1
+        # if geom.is_watertight is False: # fix mesh bug in objaverse
+        #     print(name)
+        #     print(geom.is_watertight)  # Should be False, but check if there are issues in edge connectivity
+        #     success = geom.fill_holes()
+        #     import pdb
+        #     pdb.set_trace()
+        #     print(geom.is_manifold) 
+        #     geom_new = copy.deepcopy(geom)
+        #     geom_new = geom_new.repair()
+
+        #     # broken = trimesh.repair.broken_faces(geom_new, color=[255,0,0,255])    
+        #     # success = geom_new.fill_holes() 
+        #     # if success is False:
+        #     #     import pdb
+        #     #     pdb.set_trace()
+        #     # Step 2: Remove unreferenced vertices (this helps clean the mesh)
+        #     geom_new.remove_unreferenced_vertices()
+
+        #     # Step 3: Remove non-manifold edges (to fix problematic edges)
+        #     # repaired_mesh = geom_new.repair.fill_non_manifold()
+           
+
+        #     geom_new.current_transform = trimesh.transformations.identity_matrix()
+        #     geom_new.fcl_obj = col._get_fcl_obj(geom_new)
+           
+        #     geom_new.col_obj = fcl.CollisionObject(geom_new.fcl_obj, t)
+        #     geom = geom_new
+        
+
+
         if expand:
             # print(name)
             mesh_expand = expand_mesh(geom, name)
             geom = copy.deepcopy(mesh_expand)
-            T = trimesh.transformations.identity_matrix()  # 设置变换矩阵为单位矩阵
-            t = fcl.Transform(T[:3, :3], T[:3, 3])  # 创建 FCL 变换对象
+            
+            
             geom.fcl_obj = col._get_fcl_obj(geom)  # 获取 FCL 对象
             geom.col_obj = fcl.CollisionObject(geom.fcl_obj, t)  # 创建碰撞对象
            
@@ -339,14 +375,25 @@ def col_from_subset(scene, names, tags=None, bvh_cache=None, expand=False,export
                 logger.warning(f"{name=} had {mask.sum()=} for {tags=}")
                 continue
             geom = geom.submesh(np.where(mask), append=True)  # 获取被标记的子网格
-            T = trimesh.transformations.identity_matrix()  # 设置变换矩阵为单位矩阵
-            t = fcl.Transform(T[:3, :3], T[:3, 3])  # 创建 FCL 变换对象
+            
             geom.fcl_obj = col._get_fcl_obj(geom)  # 获取 FCL 对象
             geom.col_obj = fcl.CollisionObject(geom.fcl_obj, t)  # 创建碰撞对象
             assert len(geom.faces) == mask.sum()  # 确保面数匹配
         # col.add_object(name, geom, T)
         add_object_cached(col, name, geom.col_obj, geom.fcl_obj)  # 使用缓存添加对象
+
+        # if geom.is_watertight is False: # fix mesh bug in objaverse
+        #     print(name)
+        #     geom_new = copy.deepcopy(geom)
+        #     success = geom_new.fill_holes()
+        #     geom_new.current_transform = trimesh.transformations.identity_matrix()
+        #     geom_new.fcl_obj = col._get_fcl_obj(geom_new)
+           
+        #     geom_new.col_obj = fcl.CollisionObject(geom_new.fcl_obj, t)
+        #     geom = geom_new
+
         geoms.append(geom)
+        
 
     if len(col._objs) == 0:  # 如果没有对象被添加
         logger.debug(f"{names=} got no objs, returning None")
@@ -355,7 +402,7 @@ def col_from_subset(scene, names, tags=None, bvh_cache=None, expand=False,export
     if (not expand) and (not return_geom) and bvh_cache is not None and bvh_caching_config():  # 如果存在缓存并且缓存配置有效
         bvh_cache[key] = col  # 将结果存入缓存
     if return_geom:
-        return col,geoms
+        return col, geoms
     else:
         return col  # 返回碰撞体集合
 
