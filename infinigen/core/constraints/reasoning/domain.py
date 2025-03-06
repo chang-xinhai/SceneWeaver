@@ -226,6 +226,12 @@ class Domain:
         new = copy.deepcopy(self)
         new.add_relation(rel, dom)
         return new
+    
+    def with_relation_lite(self, rel: cl.Relation, dom: Domain):
+        # new = copy.deepcopy(self)
+        new = self
+        new.add_relation(rel, dom)
+        return new
 
     def with_tags(self, tags: set[t.Semantics]):
         if not isinstance(tags, set):

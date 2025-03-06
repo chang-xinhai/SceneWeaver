@@ -4,7 +4,7 @@ You are an experienced layout designer to design a 3D scene.
 Your goal is to help me choose objects to put in the scene.
 
 You will receive:
-1. The roomtype you need to design.
+1. The user demand you need to follow.
 
 You need to return a dict including:
 1. Room size, including length and width in meters. Make the room a little bit bigger than the regular size.
@@ -34,7 +34,7 @@ Failure case of relation:
 
 Here is the example: 
 {
-    "Roomtype": "Bedroom",
+    "User demand": "Bedroom",
     "Roomsize": [3, 4],
     "Category list of big object": {"bed":"1", "wardrobe":"1", "nightstand":"2", "bench":"1"},
     "Object against the wall": ["bed", "wardrobe", "nightstand"],
@@ -42,8 +42,8 @@ Here is the example:
 }
 """
 step_1_big_object_prompt_user = """
-Here is the roomtype you need to design:
-Roomtype: {roomtype}
+Here is the user demand you need to follow:
+User demand: {demand}
 
 Here is your response:
 """
@@ -56,7 +56,7 @@ You are an experienced layout designer to design a 3D scene.
 Your goal is to help me choose small objects to put in the scene.
 
 You will receive:
-1. The roomtype you need to design.
+1. The user demand you need to follow.
 2. The big furniture that exist in this room.
 
 You need to return a dict including:
@@ -72,7 +72,7 @@ The optional relation is :
 
 Here is the example: 
 {
-    "Roomtype": "Bedroom",
+    "User demand": "Bedroom",
     "List of big furniture": ["bed", "wardrobe", "nightstand", "bench"],
     "List of small furniture": ["book", "plant", "lamp", "clothes"],
     "Relation": ["book", "nightstand", "on", "2"], ["plant", "nightstand", "ontop", "1"], ["lamp", "nightstand", "ontop", "1"], ["clothes", "bench", "ontop", "2"], ["clothes", "wardrobe", "on", "4"]
@@ -82,7 +82,7 @@ Here is the example:
 
 step_2_small_object_prompt_user = """
 Here is the given roominfo:
-Roomtype: {roomtype}
+User demand: {demand}
 List of big furniture: {big_category_list}
 
 Here is your response:
@@ -97,7 +97,7 @@ Your goal is to match the given open-vocabulary category name with the standard 
 
 
 You will receive:
-1. The roomtype you need to design.
+1. The user demand you need to follow.
 2. A list of given open-vocabulary category names.
 
 You need to return a dict including:
@@ -109,14 +109,14 @@ You can only use category name from the standard list. If no standard category i
 
 Here is the example: 
 {
-    "Roomtype": "ROOMTYPE"
+    "User demand": "Bedroom",
     "list of given category names": ["bed", "nightstand", "lamp", "wardrobe"]
     "Mapping results": {"bed": "seating.BedFactory","nightstand": "shelves.SingleCabinetFactory","lamp": "lamp.DeskLampFactory", "wardrobe": null}
 }
 """
 step_3_class_name_prompt_user = """
 Here is the given roominfo:
-Roomtype: Bookstore
+User demand: {demand}
 List of given category names:  {category_list}
 
 Here is your response:
@@ -146,7 +146,7 @@ You are an experienced layout designer to design a 3D scene.
 Your goal is to write a python code to present the given designing rule.
 
 You will receive:
-1. The roomtype you need to design.
+1. The user demand you need to follow.
 2. Rules to place the objects, including the relation between objets.
 3. A partialy writen code with objects defined as variables in the scene.
 
@@ -161,7 +161,7 @@ Do not use functions that are not shown in the example.
 
 * Here is the example: *
 
-Roomtype: Bedroom
+User demand: Bedroom
 
 Big-object count: 
 {"bed":"1", "desks":"1", "floor lamps":"1", "nightstand":"2"}
@@ -222,9 +222,9 @@ constraints["bedroom"] = newroom.all(
 
 """
 step_4_rule_prompt_user = """
-*Here is the roomtype and object info:*
+*Here is the user demand and object info:*
 
-Roomtype: {roomtype}
+User demand: {demand}
 
 Big-object count: 
 {big_category_cnt}
@@ -267,7 +267,7 @@ A 90-degree Z rotation means that the object will face the positive Y axis. The 
 
 
 You will receive:
-1. The roomtype you need to design.
+1. The user demand you need to follow.
 2. The room size in length and width.
 3. Furnitures that exist in this room with counts.
 4. A list of furnitures that stand with back against the wall
@@ -280,7 +280,7 @@ You need to return a dict including:
 
 Here is the example: 
 {
-    "Roomtype": "Bedroom",
+    "User demand": "Bedroom",
     "Roomsize": [3, 4],
     "Category list of big object": {"bed":"1", "wardrobe":"1", "nightstand":"2", "bench":"1"},
     "Object against the wall": ["bed", "wardrobe", "nightstand"],
@@ -295,7 +295,7 @@ Here is the example:
 
 step_5_position_prompt_user = """
 Here is the given room info:
-"Roomtype": {roomtype}
+"User demand": {demand}
 "Roomsize": {roomsize}
 "Category list of big object": {big_category_dict}
 "Object against the wall": {category_against_wall}
@@ -319,7 +319,7 @@ A 90-degree Z rotation means that the object will face the positive Y axis. The 
 
 
 You will receive:
-1. The roomtype you need to design.
+1. The user demand you need to follow.
 2. The room size in length and width.
 3. Big Furnitures that exist in this room with counts.
 4. A list of small-furniture categories that belongs to (on or inside) the big furniture
@@ -334,7 +334,7 @@ You need to return the placement of small furnigure as a dict including:
 
 Here is the example: 
 {
-    "Roomtype": "Bedroom",
+    "User demand": "Bedroom",
     "Roomsize": [3, 4],
     "List of big object": {"bed":"1", "wardrobe":"1", "nightstand":"2", "bench":"1"},
     "List of small furniture": ["book", "plant", "lamp", "clothes"],
@@ -357,7 +357,7 @@ Here is the example:
 
 step_6_small_position_prompt_user = """
 Here is the given room info:
-"Roomtype": {roomtype}
+"User demand": {demand}
 "Roomsize": {roomsize}
 "List of big object": {big_category_dict}
 "List of small furniture": {small_category_lst}

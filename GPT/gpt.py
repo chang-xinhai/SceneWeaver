@@ -20,7 +20,7 @@ class GPT4(GPT4o):
         version="4o",
     ):
         # def __init__(self, '
-        MODEL = "gpt-4-turbo-2024-04-09"
+        MODEL = "gpt-4o-2024-08-06"
         REGION = "eastus2"
         super().__init__(MODEL, REGION)
         self.version = MODEL
@@ -75,7 +75,45 @@ class GPT4(GPT4o):
         content_user = [{"type": "text", "text": prompting_text_user}]
 
         object_caption_payload = {
-            "model": "gpt-4-turbo-2024-04-09",
+            "model": "gpt-4o-2024-08-06",
+            "messages": [
+                {"role": "system", "content": content_system},
+                {"role": "user", "content": content_user},
+            ],
+            "temperature": 0,
+            "max_tokens": 4096,
+        }
+        return object_caption_payload
+
+    def get_payload_scene_image(self, prompting_text_system, prompting_text_user,render_path=None):
+        text_dict_system = {"type": "text", "text": prompting_text_system}
+        content_system = [text_dict_system]
+
+        if render_path is not None:
+            imgs_base64 = self.encode_image(render_path) 
+            img_dict = {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{imgs_base64}"
+                }
+            }
+
+            prompting_user_lst = prompting_text_user.split("SCENE_IMAGE")
+            content_user = [{"type": "text", "text": prompting_user_lst[0]},
+                            img_dict,
+                            {"type": "text", "text": prompting_user_lst[1]}]
+        else:
+            content_user = [
+            {
+                "type": "text",
+                "text": prompting_text_user
+            }
+        ]
+
+    
+        object_caption_payload = {
+            # "model": "gpt-4-turbo-2024-04-09",
+            "model": "gpt-4o-2024-08-06",
             "messages": [
                 {"role": "system", "content": content_system},
                 {"role": "user", "content": content_user},

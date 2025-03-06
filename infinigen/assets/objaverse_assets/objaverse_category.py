@@ -23,96 +23,90 @@ global Retriever
 Retriever = ObjectRetriever()
 
 
-def objaverse_category_factory(
-    tag_support=False,
-) -> ObjaverseFactory:
-    """
-    Create a factory for external asset import.
-    tag_support: tag the planes of the object that are parallel to xy plane as support surfaces (e.g. shelves)
-    """
+class ObjaverseCategoryFactory(ObjaverseFactory):
+    _category = None
+    _asset_file = None
+    _scale = [1,1,1]
+    _rotation = None
+    _position = None
+    _tag_support = True
+    _x_dim = None
+    _y_dim = None
+    _z_dim = None
 
-    class ObjaverseCategoryFactory(ObjaverseFactory):
-        def __init__(self, factory_seed, coarse=False):
-            super().__init__(factory_seed, coarse)
-            self.tag_support = tag_support
+    def __init__(self, factory_seed, coarse=False):
+        super().__init__(factory_seed, coarse)
+        self.tag_support = self._tag_support
+        self.category = self._category
+        self.asset_file = self._asset_file
+        self.scale = self._scale
+        self.rotation_orig = self._rotation
+        self.location_orig = self._position
+        self.x_dim = self._x_dim
+        self.y_dim = self._y_dim
+        self.z_dim = self._z_dim
 
-        # def set_info(self, x_dim, y_dim, z_dim, category):
-        #     self.x_dim = x_dim
-        #     self.y_dim = y_dim
-        #     self.z_dim = z_dim
-        #     self.category = category
 
-        #     return
+    def create_asset(self, **params) -> bpy.types.Object:
+        basedir = OBJATHOR_ASSETS_DIR
 
-        def create_asset(self, **params) -> bpy.types.Object:
+        if self.asset_file is not None:
+            filename = f"{basedir}/{self.asset_file}/{self.asset_file}.pkl.gz"
+            imported_obj = load_pickled_3d_asset(filename)
+        else: 
             object_names = Retriever.retrieve_object_by_cat(self.category)
             object_names = [name for name, score in object_names if score > 30]
             random.shuffle(object_names)
 
             for obj_name in object_names:
-                basedir = OBJATHOR_ASSETS_DIR
-                # indir = f"{basedir}/processed_2023_09_23_combine_scale"
                 filename = f"{basedir}/{obj_name}/{obj_name}.pkl.gz"
                 try:
                     imported_obj = load_pickled_3d_asset(filename)
                     break
                 except:
                     continue
-           
-            # resize
-            if (
-                self.x_dim is not None
-                or self.y_dim is not None
-                or self.z_dim is not None
-            ):
-                # check only one dimension is provided
-                # if (
-                #     sum(
-                #         [
-                #             1
-                #             for dim in [self.x_dim, self.y_dim, self.z_dim]
-                #             if dim is not None
-                #         ]
-                #     )
-                #     != 1
-                # ):
-                #     raise ValueError("Only one dimension can be provided")
+        
+        # update scale
+        if (
+            self.x_dim is not None
+            and self.y_dim is not None
+            and self.z_dim is not None
+        ):
+            if self.x_dim is not None:
+                scale_x = self.x_dim / imported_obj.dimensions[0]
+            if self.y_dim is not None:
+                scale_y = self.y_dim / imported_obj.dimensions[1]
+            if self.z_dim is not None:
+                scale_z = self.z_dim / imported_obj.dimensions[2]
+            self.scale = (scale_x, scale_y, scale_z)
+        
+        imported_obj.scale = self.scale
+        bpy.context.view_layer.objects.active = (
+            imported_obj  # Set as active object
+        )
+        imported_obj.select_set(True)  # Select the object
+        bpy.ops.object.transform_apply(
+            location=False, rotation=False, scale=True
+        )
+         
+        if self.tag_support:
+            tag_support_surfaces(imported_obj)
 
-                if self.x_dim is not None:
-                    scale_x = self.x_dim / imported_obj.dimensions[0]
-                if self.y_dim is not None:
-                    scale_y = self.y_dim / imported_obj.dimensions[1]
-                if self.z_dim is not None:
-                    scale_z = self.z_dim / imported_obj.dimensions[2]
-                imported_obj.scale = (scale_x, scale_y, scale_z)
-                bpy.context.view_layer.objects.active = (
-                    imported_obj  # Set as active object
-                )
-                imported_obj.select_set(True)  # Select the object
-                bpy.ops.object.transform_apply(
-                    location=False, rotation=False, scale=True
-                )
+        if imported_obj:
+            return imported_obj
+        else:
+            raise ValueError(f"Failed to import asset: {self.asset_file}")
 
-            if self.tag_support:
-                tag_support_surfaces(imported_obj)
-
-            if imported_obj:
-                return imported_obj
-            else:
-                raise ValueError(f"Failed to import asset: {self.asset_file}")
-
-        def create_placeholder(self, **kwargs) -> bpy.types.Object:
-            return new_bbox(
-                -self.x_dim / 2,
-                self.x_dim / 2,
-                -self.y_dim / 2,
-                self.y_dim / 2,
-                0,
-                self.z_dim,
-            )
-
-    return ObjaverseCategoryFactory
+    def create_placeholder(self, **kwargs) -> bpy.types.Object:
+        return new_bbox(
+            -self.x_dim / 2,
+            self.x_dim / 2,
+            -self.y_dim / 2,
+            self.y_dim / 2,
+            0,
+            self.z_dim,
+        )
 
 
 # Create factory instances for different categories
-GeneralObjavFactory = objaverse_category_factory(tag_support=True)
+GeneralObjavFactory = ObjaverseCategoryFactory

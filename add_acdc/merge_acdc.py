@@ -48,14 +48,14 @@ basic_object = {
 
 def load_infinigen_scene(scene_name):
     blend_file_path = (
-        f"/home/yandan/workspace/infinigen/outputs/indoors/{scene_name}/scene.blend"
+        f"/home/yandan/workspace/infinigen/outputs/indoors/{scene_name}/obj.blend"
     )
     bpy.ops.wm.open_mainfile(filepath=blend_file_path)
     bpy.context.view_layer.update()
     return
 
 
-# def load_infinigen_scene(blend_file_path="/home/yandan/workspace/infinigen/outputs/indoors/coarse_p/scene.blend"):
+# def load_infinigen_scene(blend_file_path="/home/yandan/workspace/infinigen/outputs/indoors/coarse_p/obj.blend"):
 #     with bpy.data.libraries.load(blend_file_path, link=False) as (data_from, data_to):
 #        data_to.collections = [name for name in data_from.collections]
 

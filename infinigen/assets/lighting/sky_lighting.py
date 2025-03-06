@@ -32,8 +32,10 @@ def nishita_lighting(
     sky_texture = nw.new_node(Nodes.SkyTexture)
     sky_texture.sky_type = "NISHITA"
     sky_texture.sun_size = np.deg2rad(clip_gaussian(0.5, 0.3, 0.25, 5))
-    sky_texture.sun_intensity = rg(sun_intensity)
-    sky_texture.sun_elevation = np.radians(rg(sun_elevation))
+    # sky_texture.sun_intensity = rg(sun_intensity)
+    sky_texture.sun_intensity = 0.05
+    # sky_texture.sun_elevation = np.radians(rg(sun_elevation))
+    sky_texture.sun_elevation = np.pi / 2
     if camera_based_rotation is None:
         sky_texture.sun_rotation = np.random.uniform(0, 2 * math.pi)
     else:
@@ -74,6 +76,8 @@ def nishita_lighting(
     sky_texture.air_density = rg(air_density)
     sky_texture.dust_density = rg(dust_density)
     sky_texture.ozone_density = clip_gaussian(1, 1, 0.1, 10)
+
+    
 
     strength = rg(strength)
     return nw.new_node(

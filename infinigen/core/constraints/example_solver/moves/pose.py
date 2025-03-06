@@ -69,8 +69,7 @@ class TranslateMove(moves.Move):
         os = state.objs[target_name]
 
         obj_state = state.objs[target_name]
-        if target_name == "620454_LargeShelfFactory":
-            a = 1
+
         parent_planes = apply_relations_surfacesample(
             state, target_name, use_initial=True
         )
@@ -80,9 +79,6 @@ class TranslateMove(moves.Move):
         obj_state.dof_rotation_axis = combine_rotation_constraints(
             parent_planes
         )  # 旋转自由度的约束轴或限制信息
-
-        if "LargeShelfFactory" in target_name and "Office" not in target_name:
-            a = 1
             
         # result = validity.check_post_move_validity(
         result = validity.move_for_relation_and_collision(
@@ -97,9 +93,9 @@ class TranslateMove(moves.Move):
         success, touch = result
 
         self._backup_pose = pose_backup(os, dof=False)
-        # invisible_others()
-        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-        # visible_others()
+        invisible_others()
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        visible_others()
         if touch is None:
             # relation invalid, have moved to make it valid
             return False

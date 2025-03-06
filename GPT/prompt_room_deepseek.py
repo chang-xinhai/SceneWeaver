@@ -3,8 +3,8 @@ import re
 from functools import reduce
 
 import prompts as prompts
-from gpt import GPT4 as gpt
-
+# from gpt import GPT4 as gpt
+from deepseek import DeepSeek
 
 def extract_json(input_string):
     # Step 1: Extract the JSON string
@@ -119,15 +119,15 @@ def dict2str(d, indent=0):
 
 
 if __name__ == "__main__":
-    gpt = gpt()
+    ds = DeepSeek()
 
     roomtype = "Classroom"
     results = dict()
 
     ### 1. get big object, count, and relation
     user_prompt = prompts.step_1_big_object_prompt_user.format(roomtype=roomtype)
-    prompt_payload = gpt.get_payload(prompts.step_1_big_object_prompt_system, user_prompt)
-    gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+    prompt_payload = ds.get_payload(prompts.step_1_big_object_prompt_system, user_prompt)
+    gpt_text_response = ds(payload=prompt_payload, verbose=True)
     print(gpt_text_response)
 
     # gpt_text_response ='{\n    "Roomtype": "Living Room",\n    "Category list of big object": {\n        "sofa": 2,\n        "armchair": 2,\n        "coffee table": 1,\n        "TV stand": 1,\n        "large shelf": 1,\n        "side table": 2,\n        "floor lamp": 2\n    },\n    "Object against the wall": ["TV stand", "large shelf"],\n    "Relation between big objects": [\n        ["armchair", "coffee table", "front_against"],\n        ["sofa", "coffee table", "front_against"],\n        ["side table", "sofa", "side_by_side"],\n        ["floor lamp", "armchair", "side_by_side"]\n    ]\n}'
@@ -159,12 +159,12 @@ if __name__ == "__main__":
         roomtype=roomtype,
         roomsize=roomsize_str,
     )
-    prompt_payload = gpt.get_payload(prompts.step_5_position_prompt_system, user_prompt)
+    prompt_payload = ds.get_payload(prompts.step_5_position_prompt_system, user_prompt)
     success = False
     iter = 0
     while not success and iter < 5:
         iter += 1
-        gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+        gpt_text_response = ds(payload=prompt_payload, verbose=True)
         print(gpt_text_response)
 
         # gpt_text_response = '{\n    "Roomtype": "Bookstore",\n    "list of given category names": ["sofa", "armchair", "coffee table", "TV stand", "large shelf", "side table", "floor lamp", "remote control", "book", "magazine", "decorative bowl", "photo frame", "vase", "candle", "coaster", "plant"],\n    "Mapping results": {\n        "sofa": "seating.SofaFactory",\n        "armchair": "seating.ArmChairFactory",\n        "coffee table": "tables.CoffeeTableFactory",\n        "TV stand": "shelves.TVStandFactory",\n        "large shelf": "shelves.LargeShelfFactory",\n        "side table": "tables.SideTableFactory",\n        "floor lamp": "lamp.FloorLampFactory",\n        "remote control": null,\n        "book": "table_decorations.BookStackFactory",\n        "magazine": null,\n        "decorative bowl": "tableware.BowlFactory",\n        "photo frame": null,\n        "vase": "table_decorations.VaseFactory",\n        "candle": null,\n        "coaster": null,\n        "plant": "tableware.PlantContainerFactory"\n    }\n}'
@@ -184,8 +184,8 @@ if __name__ == "__main__":
     user_prompt = prompts.step_2_small_object_prompt_user.format(
         big_category_list=s, roomtype=roomtype
     )
-    prompt_payload = gpt.get_payload(prompts.step_2_small_object_prompt_system, user_prompt)
-    gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+    prompt_payload = ds.get_payload(prompts.step_2_small_object_prompt_system, user_prompt)
+    gpt_text_response = ds(payload=prompt_payload, verbose=True)
     print(gpt_text_response)
     # gpt_text_response = '{\n    "Roomtype": "Living Room",\n    "List of big furniture": ["sofa", "armchair", "coffee table", "TV stand", "large shelf", "side table", "floor lamp"],\n    "List of small furniture": ["remote control", "book", "magazine", "decorative bowl", "photo frame", "vase", "candle", "coaster", "plant"],\n    "Relation": [\n        ["remote control", "coffee table", "ontop", 2],\n        ["book", "large shelf", "on", 5],\n        ["magazine", "coffee table", "ontop", 3],\n        ["decorative bowl", "coffee table", "ontop", 1],\n        ["photo frame", "side table", "ontop", 2],\n        ["vase", "side table", "ontop", 1],\n        ["candle", "large shelf", "on", 3],\n        ["coaster", "coffee table", "ontop", 4],\n        ["plant", "side table", "ontop", 1]\n    ]\n}'
 
@@ -266,8 +266,8 @@ if __name__ == "__main__":
     )
     system_prompt = prompts.step_3_class_name_prompt_system.replace("ROOMTYPE",roomtype)
 
-    prompt_payload = gpt.get_payload(system_prompt, user_prompt)
-    gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+    prompt_payload = ds.get_payload(system_prompt, user_prompt)
+    gpt_text_response = ds(payload=prompt_payload, verbose=True)
     print(gpt_text_response)
 
     # gpt_text_response = '{\n    "Roomtype": "Bookstore",\n    "list of given category names": ["sofa", "armchair", "coffee table", "TV stand", "large shelf", "side table", "floor lamp", "remote control", "book", "magazine", "decorative bowl", "photo frame", "vase", "candle", "coaster", "plant"],\n    "Mapping results": {\n        "sofa": "seating.SofaFactory",\n        "armchair": "seating.ArmChairFactory",\n        "coffee table": "tables.CoffeeTableFactory",\n        "TV stand": "shelves.TVStandFactory",\n        "large shelf": "shelves.LargeShelfFactory",\n        "side table": "tables.SideTableFactory",\n        "floor lamp": "lamp.FloorLampFactory",\n        "remote control": null,\n        "book": "table_decorations.BookStackFactory",\n        "magazine": null,\n        "decorative bowl": "tableware.BowlFactory",\n        "photo frame": null,\n        "vase": "table_decorations.VaseFactory",\n        "candle": null,\n        "coaster": null,\n        "plant": "tableware.PlantContainerFactory"\n    }\n}'

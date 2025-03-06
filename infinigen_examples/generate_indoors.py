@@ -59,6 +59,7 @@ from infinigen_examples.util.generate_indoors_util import (
     restrict_solving,
 )
 from infinigen_examples.util.visible import invisible_others, visible_others
+import pickle
 
 # from . import generate_nature  # noqa F401 # needed for nature gin configs to load
 
@@ -120,12 +121,129 @@ def default_greedy_stages():
 
 all_vars = [cu.variable_room, cu.variable_obj]
 
+def export_layout(state,solver,save_dir):
+    import json
+    results = dict()
+    results["objects"] = dict()
+    results["roomsize"] = [solver.dimensions[0],solver.dimensions[1]]
+    for objkey,objinfo in state.objs.items():
+        if objkey.startswith("window") or objkey.startswith("entrance") or objkey.startswith("newroom_0-0"):
+            continue
+        results["objects"][objkey] = dict()
+        results["objects"][objkey]["location"] = [round(a, 2) for a in list(objinfo.obj.location)]
+        results["objects"][objkey]["rotation"] = [round(a, 2) for a in list(objinfo.obj.rotation_euler)]
+        results["objects"][objkey]["size"] = [round(a, 2) for a in list(objinfo.obj.dimensions)]
+
+    with open(save_dir,"w") as f:
+        json.dump(results,f,indent=4)
+        
+def render_scene(p,solved_bbox,camera_rigs,state,filename="debug.jpg"):
+    import os
+    rooms_meshed = butil.get_collection("placeholders:room_meshes")
+    rooms_split = room_dec.split_rooms(list(rooms_meshed.objects))
+
+    def invisible_room_ceilings():
+        rooms_split["exterior"].hide_viewport = True
+        rooms_split["exterior"].hide_render = True
+        rooms_split["ceiling"].hide_render = True
+        invisible_to_camera.apply(list(rooms_split["ceiling"].objects))
+        invisible_to_camera.apply(
+            [o for o in bpy.data.objects if "CeilingLight" in o.name]
+        )
+
+    p.run_stage("invisible_room_ceilings", invisible_room_ceilings, use_chance=False)
+
+    
+    p.run_stage(
+        "overhead_cam",
+        place_cam_overhead,
+        cam=camera_rigs[0],
+        bbox=solved_bbox,
+        use_chance=False,
+    )
+
+    # camera_rigs[0].rotation_euler = [0,0,1.57]
+    bpy.context.scene.camera = camera_rigs[0]
+
+    invisible_others(hide_placeholder=True)
+    bpy.context.scene.render.resolution_x = 1920
+    bpy.context.scene.render.resolution_y = 1080
+    bpy.context.scene.render.filepath = os.path.join(filename)
+    bpy.context.scene.render.image_settings.file_format='JPEG'
+    bpy.ops.render.render(write_still=True)
+    visible_others()
+
+    modified_output_path = bpy.path.abspath("render_8_coord.jpg")
+    world_to_image(filename, modified_output_path)
+
+    bpy.context.scene.camera = None
+    return
+
+def world_to_image(image_path, output_path):
+    
+    import bpy_extras
+    from PIL import Image, ImageDraw, ImageFont
+    import os
+    from mathutils import Vector
+
+    def calc_point(x,y,z=0):
+        world_coords = Vector([x,y,z])
+        # Convert world coordinates to camera view space (normalized)
+        co_2d = bpy_extras.object_utils.world_to_camera_view(scene, cam, world_coords)
+        
+        # Convert normalized coordinates to image pixel coordinates
+        pixel_x = int(co_2d.x * res_x)
+        pixel_y = int((1 - co_2d.y) * res_y)  # Flip Y-axis (Blender's origin is bottom-left)
+        print(f"3D World Coords (0,0,0) : {world_coords}")
+        print(f"Projected 2D Image Coords: ({pixel_x}, {pixel_y})")
+
+        draw.ellipse(
+            [(pixel_x - dot_size, pixel_y - dot_size), (pixel_x + dot_size, pixel_y + dot_size)],
+            fill="red", outline="red"
+        )
+
+        # Draw the text label next to the point
+        draw.text((pixel_x + 10, pixel_y - 10), f"({x}, {y})", fill="red", font=font)
+        
+        return
+
+    # Get the scene and camera
+    scene = bpy.context.scene
+    cam = scene.camera.children[1]
+
+    # Get render resolution and aspect ratio
+    render = scene.render
+    res_x = render.resolution_x * render.pixel_aspect_x
+    res_y = render.resolution_y * render.pixel_aspect_y
+
+    # Load the rendered image using PIL
+    image = Image.open(image_path)
+    draw = ImageDraw.Draw(image)
+
+    # Try to load a font, otherwise use default
+    try:
+        font = ImageFont.truetype("arial.ttf", 24)
+    except IOError:
+        font = ImageFont.load_default(30)
+
+    # Draw a red dot at the calculated 2D coordinate
+    dot_size = 5
+
+    # for point in [(0,0),(10,12)]:
+    #     calc_point(point[0],point[1])
+    for x in range(0,11,2):
+        for y in range(0,13,2):
+            calc_point(x,y)
+   
+    # Save the modified image
+    image.save(output_path)
+    print(f"Image with marked point saved at {output_path}")
 
 @gin.configurable
 def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
     import os
 
-    os.environ["GPT_RESULTS"] = "/home/yandan/workspace/infinigen/GPT/results.json"
+    os.environ["GPT_RESULTS"] = "/home/yandan/workspace/infinigen/GPT/results_classroom_gpt_turbo.json"
     p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
 
     logger.debug(overrides)
@@ -154,21 +272,8 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
     stages, consgraph, limits = restrict_solving(stages, consgraph)
 
     if overrides.get("restrict_single_supported_roomtype", False):
-        restrict_parent_rooms = {
-            np.random.choice(
-                [
-                    # Only these roomtypes have constraints written in home_constraints.
-                    # Others will be empty-ish besides maybe storage and plants
-                    # TODO: add constraints to home_constraints for garages, offices, balconies, etc
-                    t.Semantics.NewRoom,
-                    # t.Semantics.Bedroom,
-                    # t.Semantics.LivingRoom,
-                    # t.Semantics.Kitchen,
-                    # t.Semantics.Bathroom,
-                    # t.Semantics.DiningRoom,
-                ]
-            )
-        }
+        restrict_parent_rooms = t.Semantics.NewRoom
+               
         logger.info(f"Restricting to {restrict_parent_rooms}")
         apply_greedy_restriction(stages, restrict_parent_rooms, cu.variable_room)
 
@@ -178,7 +283,43 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return solver.solve_rooms(scene_seed, consgraph, stages["rooms"])
 
     state: state_def.State = p.run_stage("solve_rooms", solve_rooms, use_chance=False)
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+
+
+    for obj_name in state.objs.keys():
+        state.objs[obj_name].obj = state.objs[obj_name].obj.name
+    state.trimesh_scene = None
+    tagging.tag_system.save_tag()
+    with open("record_files/state.pkl", "wb") as file:
+        pickle.dump(state, file)
+    with open("record_files/solver.pkl", "wb") as file:
+        pickle.dump(solver, file)
+    save_path = "record_files/scene.blend"
+    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    env_file = "record_files/env.pkl"
+    with open(env_file, "wb") as f:
+        pickle.dump(dict(os.environ), f)
+
+
+    with open("record_files/solver.pkl", "rb") as file:
+        solver = pickle.load(file)
+    tagging.tag_system.load_tag()
+    save_path = "record_files/scene.blend"
+    bpy.ops.wm.open_mainfile(filepath=save_path)
+    with open("record_files/state.pkl", "rb") as file:
+        state = pickle.load(file)
+    for obj_name in state.objs.keys():
+        state.objs[obj_name].obj = bpy.data.objects.get(state.objs[obj_name].obj)
+    state.__post_init__()
+    solver.state = state
+
+    with open("record_files/env.pkl", "rb") as f:
+        env_vars = pickle.load(f)
+    # Update os.environ with loaded variables
+    os.environ.update(env_vars)
+
+
+
 
     for area in bpy.context.screen.areas:
         if area.type == "VIEW_3D":
@@ -200,6 +341,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         )
         for i, vars in enumerate(assignments):
             solver.init_graph_physcene(
+            # solver.init_graph_gpt(
                 # stages["on_floor"],
                 var_assignments=vars,
                 stage=this_stage,
@@ -210,6 +352,9 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
     state = p.run_stage(
         "init_graph", init_graph, this_stage="large", use_chance=False, default=state
     )
+    # state = p.run_stage(
+    #     "init_graph", init_graph, this_stage="medium", use_chance=False, default=state
+    # )
 
     def solve_large():
         assignments = greedy.iterate_assignments(
@@ -228,8 +373,13 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
             # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         return solver.state
 
-    state = p.run_stage("solve_large", solve_large, use_chance=False, default=state)
+    # state = p.run_stage("solve_large", solve_large, use_chance=False, default=state)
 
+    
+    # invisible_others()
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # visible_others()
+    
     solved_rooms = [
         state.objs[assignment[cu.variable_room]].obj
         for assignment in greedy.iterate_assignments(
@@ -278,6 +428,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         return scene_preprocessed
 
     scene_preprocessed = p.run_stage("pose_cameras", pose_cameras, use_chance=False)
+    
 
     # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
     def animate_cameras():
@@ -287,19 +438,56 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         "animate_cameras", animate_cameras, use_chance=False, prereq="pose_cameras"
     )
 
-    p.run_stage(
-        "populate_intermediate_pholders",
-        populate.populate_state_placeholders,
-        solver.state,
-        filter=t.Semantics.AssetPlaceholderForChildren,
-        final=False,
-        use_chance=False,
-    )
+    # p.run_stage(
+    #     "populate_intermediate_pholders",
+    #     populate.populate_state_placeholders,
+    #     solver.state,
+    #     filter=t.Semantics.AssetPlaceholderForChildren,
+    #     final=False,
+    #     use_chance=False,
+    # )
+    
+    cam = cam_util.get_camera(0, 0)
+
+    # def turn_off_lights():
+    #     for o in bpy.data.objects:
+    #         if o.type == "LIGHT" and not o.data.cycles.is_portal:
+    #             print(f"Deleting {o.name}")
+    #             butil.delete(o)
+
+    # p.run_stage("lights_off", turn_off_lights)
+    
+
+
+    # implement by GPT
+    def add_graph(this_stage,iter):
+        assignments = greedy.iterate_assignments(
+            stages["on_floor"], state, all_vars, limits, nonempty=True
+        )
+        for i, vars in enumerate(assignments):
+            solver.add_graph_gpt(
+                # stages["on_floor"],
+                iter = iter,
+                var_assignments=vars,
+                stage=this_stage,
+            )
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        return solver.state
 
     # state = p.run_stage(
-    #     "init_graph", init_graph, this_stage="medium", use_chance=False, default=state
+    #     "init_graph", add_graph, this_stage="large", iter=1, use_chance=False, default=state
     # )
+    # state = p.run_stage(
+    #     "init_graph", add_graph, this_stage="large", iter=4, use_chance=False, default=state
+    # )
+    # export_layout(state,solver,"layout_1.json")
+    # p.run_stage(
+    #     "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
+    # )
+    # render_scene(p,solved_bbox,camera_rigs,state,filename="render_1.jpg")
 
+
+    
     def solve_medium():
         n_steps = overrides["solve_steps_medium"]
         for i, vars in enumerate(
@@ -329,25 +517,50 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
 
         return solver.state
 
-    # state = p.run_stage("solve_medium", solve_medium, use_chance=False, default=state)
+    # export_layout(state,solver,"layout0.json")
+    # p.run_stage(
+    #     "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
+    # )
+    # render_scene(p,solved_bbox,camera_rigs,state,filename="render0.jpg")
 
+    # def modify_graph(): 
+    #     solver.modify_graph()
+    #     return solver.state
+    # state = p.run_stage(
+    #     "init_graph", modify_graph, use_chance=False, default=state
+    # )
+
+    # def update_graph(): 
+    #     solver.update_graph()
+    #     return solver.state
+    # state = p.run_stage(
+    #     "init_graph", update_graph, use_chance=False, default=state
+    # )
+
+    
+
+    # state = p.run_stage("solve_medium", solve_medium, use_chance=False, default=state)
     def solve_large_and_medium():
         for i in range(3):
             assignments = greedy.iterate_assignments(
                 stages["on_floor"], state, all_vars, limits, nonempty=True
             )
-            for i, vars in enumerate(assignments):
+            for j, vars in enumerate(assignments):
+                
                 solver.solve_objects(
                     consgraph,
                     stages["on_floor"],
                     var_assignments=vars,
                     n_steps=overrides["solve_steps_large"] // 5,
-                    desc=f"on_floor_{i}",
+                    desc=f"on_floor_{j}",
                     abort_unsatisfied=overrides.get("abort_unsatisfied_large", False),
                     expand_collision=True,
                 )
+                # invisible_others()
+                # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                # visible_others()
 
-            for i, vars in enumerate(
+            for k, vars in enumerate(
                 greedy.iterate_assignments(stages["side_obj"], state, all_vars, limits)
             ):
                 n_steps = overrides["solve_steps_medium"] // 5
@@ -356,7 +569,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
                     stages["side_obj"],
                     vars,
                     n_steps,
-                    desc=f"side_obj_{i}",
+                    desc=f"side_obj_{k}",
                     expand_collision=True,
                     use_initial=True,
                 )
@@ -370,6 +583,28 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
     #     default=state,
     # )
 
+
+    # export_layout(state,solver,"layout7.json")
+    # p.run_stage(
+    #     "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
+    # )
+    # render_scene(p,solved_bbox,camera_rigs,state,filename="render7.jpg")
+
+    # state = p.run_stage(
+    #     "solve_large_and_medium",
+    #     solve_large_and_medium,
+    #     use_chance=False,
+    #     default=state,
+    # )
+
+    # export_layout(state,solver,"layout_gptturbo.json")
+    p.run_stage(
+        "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
+    )
+    # render_scene(p,solved_bbox,camera_rigs,state,filename="render_gpt_turbo.jpg")
+    save_path = "debug.blend"
+    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+
     p.run_stage(
         "populate_intermediate_pholders",
         populate.populate_state_placeholders,
@@ -379,6 +614,42 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
         use_chance=False,
     )
 
+    def export_obj_blend(obj_name,export_path):
+        obj = state.objs[obj_name].populate_obj
+        obj.location = [0,0,0]
+        obj.rotation_euler = [0,0,0]
+        obj.scale = [1,1,1]
+        name = obj.name
+
+        if obj:
+            # Deselect all objects
+            bpy.ops.object.select_all(action='DESELECT')
+            # Select only the object you want to export
+            obj.select_set(True)
+            # Save only the selected object to the new .blend file
+            bpy.ops.wm.save_as_mainfile(filepath=export_path, check_existing=False, compress=False, copy=True)
+
+            # Open the new file
+            bpy.ops.wm.open_mainfile(filepath=export_path)
+            # Delete all objects except the selected one
+            for o in bpy.data.objects:
+                if o.name != name:
+                    bpy.data.objects.remove(o, do_unlink=True)
+            # Save only the remaining object
+            bpy.ops.wm.save_as_mainfile(filepath=export_path)
+
+        return
+
+    # export_obj_blend(obj_name="9577433_tv_stand",
+    #                  export_path = "obj.blend")
+
+    def load_acdc(): 
+        solver.load_acdc(parent_obj_name="9577433_tv_stand")
+        return solver.state
+    
+    state = p.run_stage(
+        "load_acdc", load_acdc, use_chance=False, default=state
+    )
 
     # state = p.run_stage(
     #     "init_graph", init_graph, this_stage="small", use_chance=False, default=state
@@ -527,13 +798,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, **overrides):
 
     p.run_stage("invisible_room_ceilings", invisible_room_ceilings, use_chance=False)
 
-    p.run_stage(
-        "overhead_cam",
-        place_cam_overhead,
-        cam=camera_rigs[0],
-        bbox=solved_bbox,
-        use_chance=False,
-    )
+    
 
     p.run_stage(
         "hide_other_rooms",

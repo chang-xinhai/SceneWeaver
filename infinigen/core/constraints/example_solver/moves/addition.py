@@ -193,10 +193,11 @@ class Addition(moves.Move):
             position[0] += int(room_width)/2
             position[1] += int(room_height)/2
 
-        # if gen_class.__name__ == "ThreedFrontCategoryFactory":
-        #     rotation = gen.rotation_orig
-        #     position = gen.location_orig
-            
+        if gen_class.__name__ == "ThreedFrontCategoryFactory":
+            room_width = os.getenv("room_width")
+            room_height = os.getenv("room_height")
+            position[0] += int(room_width)/2
+            position[1] += int(room_height)/2
 
         # invisible_others()
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
