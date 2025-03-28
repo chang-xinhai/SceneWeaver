@@ -28,24 +28,24 @@ Method 2: Scene synthesis by neural network
 
 Method 3: Image generation + 3D reconstruction
   Data Prior: 2D image prior
-  Use Case: Suitable for generating detailed partial scenes or completing specific room sections.
+  Use Case: Suitable for adding small objects on the top of a large furniture, such as a table, cabinet, and desk.
   How It Works: We use Stable Diffusion to generate images, then apply 3D reconstruction techniques to convert the image into a full 3D scene.
-  Strengths: Excellent for adding a group of objects on the top of a furniture.(e.g., enriching a tabletop).
-  Weaknesses: More time-consuming and complex than other methods. Not as effective for generating the entire scene or layout.
+  Strengths: Excellent for adding a group of objects on the top of a large furniture.(e.g., enriching a tabletop).
+  Weaknesses: More time-consuming and complex than other methods. Not as effective for generating the entire scene or layout. Can not add objects on the wall, ground, or ceiling. Can not add objects inside a container, such as shelf, drawer, and cabinet.
 
-Method 4: Generated Scene with GPT
+Method 4: Generate/implement scene with GPT
   Data Prior: LLM prior
   Room Type Diversity: Not limited to any specific room types.
-  Use Case: Recommended for room types that are not supported by methods 1 or 2 (e.g., more niche or custom room types).
-  Strengths: Highly versatile and capable of generating scenes for any room type. Flexible with respect to room design and customization. Also expert in adding a single object (e.g., add a cup on the table or a book on the shelf).
+  Use Case: Recommended for designing room types that are not supported by methods 1 or 2 (e.g., more niche or custom room types). Also recommended for adding objects in the current scene, especially when method 3 does not work.
+  Strengths: Highly versatile and capable of generating scenes for any room type. Flexible with respect to room design and customization. Also expert in adding a single object (e.g., add a cup on the table or a book in the shelf).
   Weaknesses: May not be as real or accurate as data-driven methods.
 
-Method 5: Update Scene with GPT
+Method 5: Modify layout with GPT
   Data Prior: LLM prior
   Room Type Diversity: Works with all room types.
   Use Case: Best for refining layouts by adjusting object placement or removing redundant elements when the existing arrangement is suboptimal.
   Strengths: Highly flexible and adaptable to various room designs. Excels at modifying or removing specific objects (e.g., repositioning a chair or eliminating a table in the corner).
-  Weaknesses: May lack precision and occasionally overlook details.
+  Weaknesses: May lack precision and occasionally overlook details. Can not add objects.
 
 Decision-Making Guide:
 Based on the scene data, available methods, and specific requirements of the user’s prompt, choose the best method for the current iteration. The ideal method should balance speed, realism, controllability, and cost, depending on the specific problem you are aiming to solve.
@@ -53,7 +53,7 @@ Based on the scene data, available methods, and specific requirements of the use
 If you need a foundational layout quickly, Method 1 offers the highest accuracy, while Method 2 provides greater flexibility and speed.
 For unique or complex room types, Method 4 (Generated Scene with GPT) is ideal for creating a custom layout when other approaches fall short.
 For detailed additions or partial scene enhancements, both Method 3 (Image Generation + 3D Reconstruction) and Method 4 (Generated Scene with GPT) are effective. Method 3 produces more realistic results, while Method 4 offers greater precision.
-For object removal and layout modifications, Method 5 (Update Scene with GPT) is the best choice.
+For object removal and layout modifications, Method 5 (Modify layout with GPT) is the best choice.
 To achieve the best results, combine multiple methods over several iterations — start with a foundational layout and refine it progressively with finer details.
 
 """

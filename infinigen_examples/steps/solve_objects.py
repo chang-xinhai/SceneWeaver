@@ -24,6 +24,7 @@ def solve_large_object(stages,limits,solver,state,p,consgraph,overrides):
                 abort_unsatisfied=overrides.get("abort_unsatisfied_large", False),
                 expand_collision=True,
             )
+            break
             # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         return solver.state
 

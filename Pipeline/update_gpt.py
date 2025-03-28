@@ -1,14 +1,10 @@
 
 from gpt import GPT4 
-from utils import extract_json, dict2str
+from utils import extract_json, dict2str, lst2str
 import json
 
 system_prompt = """
 You are an expert in 3D scene evaluation. 
-
-The scene show follow the user's demand and ideas.
-The user's demand for the entire scene: {user_demand}
-The ideas for this step: {ideas}
 
 Your task is to : 
 1) evaluate the current scene, 
@@ -26,48 +22,65 @@ For the image:
 - The y-coordinate usually increases from top to bottom (positive y is downward).
 
 """
+
+
+
+
 user_prompt = """
-This is a {roomtype}. 
-The room size is [{roomsize}] in length and width.
-This is the scene layout: {layout}. 
-This is the image render from the top view, with 2-meter grid: SCENE_IMAGE 
+Here is the information you receive:
+1.This is a {roomtype}. 
+2.The room size is [{roomsize}] in length and width.
+3.User demand for the entire scene: {user_demand}
+4.Ideas for this step: {ideas} 
+5.This is the scene layout: {layout}. 
+6.This is the image render from the top view: SCENE_IMAGE 
 
 Please take a moment to relax and carefully look through each object and their relations.
 What problem do you think it has? 
 Then tell me how to solve these problems.
 
 Fianlly, according to the problem and thoughts, you should modify objects' layout to fix each of the problem.
-Keep the objects inside the room.
+For objects that remain unchanged, you must keep their original layout in the response rather than omit it. 
+For deleted objects, omit their layout in the response.
+Keep the objects inside the room. 
 
 Before returning the final results, you need to carefully confirm that each issue has been resolved. 
 If not, update the layout until each problem is resolved.
 
-Provide me with the new layout in json format.
-
+Provide me with the new layout of each object in json format.
+Do not add any comment in the json. For example:
+False:
+"location": [5.5, 2.5, 0.28],  // Adjusted to avoid overlap
+True:
+"location": [5.5, 2.5, 0.28],
 
 """
 
-def update_scene(user_demand,ideas,iter,roomtype):
+def update_scene_gpt(user_demand,ideas,iter,roomtype):
 
-    render_path = f"/home/yandan/workspace/infinigen/render_{iter-1}.jpg"
-    with open(f"/home/yandan/workspace/infinigen/layout_{iter-1}.json", "r") as f:
+    render_path = f"/home/yandan/workspace/infinigen/record_scene/render_{iter-1}.jpg"
+    with open(f"/home/yandan/workspace/infinigen/record_scene/layout_{iter-1}.json", "r") as f:
         layout = json.load(f)
-    layout = dict2str(layout["objects"])
-    roomsize = layout["roomsize"]
-    roomsize = ",".join(roomsize)
     
-    system_prompt_1 = system_prompt.format(user_demand=user_demand,ideas=ideas) 
-    user_prompt_1 = user_prompt.format(roomtype=roomtype,roomsize=roomsize,layout=layout) 
+    roomsize = layout["roomsize"]
+    roomsize = lst2str(roomsize)
+
+    layout = dict2str(layout["objects"])
+    
+    system_prompt_1 = system_prompt
+    user_prompt_1 = user_prompt.format(roomtype=roomtype,roomsize=roomsize,layout=layout,
+                                       user_demand=user_demand,ideas=ideas) 
         
-    gpt = GPT4()
+    gpt = GPT4(version="4o")
 
     prompt_payload = gpt.get_payload_scene_image(system_prompt_1, user_prompt_1,render_path=render_path)
     gpt_text_response = gpt(payload=prompt_payload, verbose=True)
     print(gpt_text_response)
     new_layout = extract_json(gpt_text_response)
 
-    with open(f"update_gpt_results_{iter}.json", "w") as f:
+    json_name = f"/home/yandan/workspace/infinigen/Pipeline/record/update_gpt_results_{iter}.json"
+    with open(json_name, "w") as f:
         json.dump(new_layout, f, indent=4)
 
-    return
+    return json_name
     

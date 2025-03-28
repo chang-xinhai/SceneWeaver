@@ -18,6 +18,131 @@ import importlib
 import dill
 import trimesh
 import trimesh.parent
+from infinigen.core import tags as t
+
+def change_attr(obj, condition, replace_attr, visited=None, path=""):
+    """
+    递归遍历对象的所有属性，并返回符合条件的属性路径和值。
+    
+    :param obj: 要遍历的对象
+    :param condition: 过滤条件（一个函数，如 lambda attr: isinstance(attr, int)）
+    :param visited: 记录已经访问过的对象，防止循环引用
+    :param path: 记录当前属性路径
+    :return: 符合条件的属性列表 [(路径, 值)]
+    """
+    if visited is None:
+        visited = set()
+
+    # 避免重复访问对象（防止循环引用）
+    obj_id = id(obj)
+    if obj_id in visited:
+        return []
+    visited.add(obj_id)
+
+    results = []
+
+    # 遍历对象的 __dict__ 属性（如果有）
+    if hasattr(obj, "__dict__"):
+        for attr_name, attr_value in vars(obj).items():
+            if attr_name=="material_params":
+                a = 1
+            attr_path = f"{path}.{attr_name}" if path else attr_name  # 记录完整路径
+            if condition(attr_value):
+                new_value = getattr(attr_value,replace_attr)
+                setattr(obj, attr_name, new_value)
+                results.append((attr_path, attr_value))  # 满足条件，加入结果
+            elif isinstance(attr_value, (list, tuple)):  # 递归遍历可迭代对象
+                for idx, item in enumerate(attr_value):
+                    if condition(attr_value[idx]):
+                        new_value = getattr(attr_value[idx],replace_attr)
+                        attr_value[idx] = new_value
+                        results.append(f"{attr_path}[{idx}]", attr_value)  # 
+                        continue
+                    sub_path = f"{attr_path}[{idx}]"
+                    results.extend(change_attr(item, condition, replace_attr, visited, sub_path))
+            elif isinstance(attr_value, dict):  # 递归遍历可迭代对象
+                for k,item in attr_value.items():
+                    if condition(attr_value[k]):
+                        new_value = getattr(attr_value[k],replace_attr)
+                        attr_value[k] = new_value
+                        results.append((f"{attr_path}[{k}]", attr_value))  
+                        continue
+                    sub_path = f"{attr_path}[{k}]"
+                    results.extend(change_attr(item, condition, replace_attr, visited, sub_path))
+            else:
+                results.extend(change_attr(attr_value, condition, replace_attr, visited, attr_path))  # 递归查找
+
+    return results
+
+
+def recover_attr(obj, condition, reconver_func, visited=None, path=""):
+    if visited is None:
+        visited = set()
+    # 避免重复访问对象（防止循环引用）
+    obj_id = id(obj)
+    if obj_id in visited:
+        return []
+    
+    results = []
+    if ".np." in path or ".sys." in path or "logging.Logger" in path or ".importlib." in path \
+        or ".butil." in path or "logging" in path or  "/infinigen/" in path or ".t." in path \
+        or ".gin." in path:
+        return []
+    
+    try:
+        flag = hasattr(obj, "__dict__")
+    except:
+        flag = False
+    # 遍历对象的 __dict__ 属性（如果有）
+    if flag:
+
+        visited.add(obj_id)
+        print(path)
+        d = vars(obj)
+        lst = list(d.keys())
+        # for attr_name, attr_value in vars(obj).items():
+        for attr_name in lst:
+            if attr_name == "__module__": 
+                continue
+            attr_value = d[attr_name]
+
+            if attr_name == "guard_surface":
+                a = 1
+            if attr_name in ["_globals","compat","sctypeDict","typecodes","_pytesttester","common"] or attr_name.startswith("_") or "[" in attr_name:
+                continue
+            attr_path = f"{path}.{attr_name}" if path else attr_name  # 记录完整路径
+            if condition(attr_value):
+                new_value = reconver_func(attr_value)
+                setattr(obj, attr_name, new_value)
+                results.append((attr_path, attr_value))  # 满足条件，加入结果
+            elif isinstance(attr_value, (list, tuple)):  # 递归遍历可迭代对象
+                for idx, item in enumerate(attr_value):
+                    if condition(attr_value[idx]):
+                        new_value = reconver_func(attr_value[idx])
+                        try:
+                            attr_value[idx] = new_value
+                        except:
+                            bpy.app.translations.register(idx, new_value)
+                        results.append((f"{attr_path}[{idx}]", attr_value))
+                        continue
+                    sub_path = f"{attr_path}[{idx}]"
+                    results.extend(recover_attr(item, condition, reconver_func, visited, sub_path))
+            elif isinstance(attr_value, dict):  # 递归遍历可迭代对象
+                lst1 = list(attr_value.keys())
+                # for k,item in attr_value.items():
+                for k in lst1:
+                    item = attr_value[k]
+                    if condition(attr_value[k]):
+                        new_value = reconver_func(attr_value[k])
+                        attr_value[k] = new_value
+                        results.append((f"{attr_path}[{k}]", attr_value))  
+                        continue
+                    sub_path = f"{attr_path}[{k}]"
+                    results.extend(recover_attr(item, condition, reconver_func, visited, sub_path))
+            else:
+                results.extend(recover_attr(attr_value, condition, reconver_func, visited, attr_path))  # 递归查找
+
+    return results
 
 def export_layout(state,solver,save_dir):
     import json
@@ -142,6 +267,9 @@ def world_to_image(image_path, output_path):
 # def save_record(state,solver,stages,consgraph,iter=0):
 def save_record(state,solver,terrain,house_bbox,solved_bbox,iter):
     # state.trimesh_scene = None
+    save_path = f"record_files/scene_{iter}.blend"
+    bpy.ops.wm.save_as_mainfile(filepath=save_path) 
+
     for name in state.trimesh_scene.geometry.keys():
         state.trimesh_scene.geometry[name].fcl_obj = None
         state.trimesh_scene.geometry[name].col_obj = None
@@ -152,25 +280,46 @@ def save_record(state,solver,terrain,house_bbox,solved_bbox,iter):
         #blender obj
         state.objs[obj_name].obj = state.objs[obj_name].obj.name
         #material
-        try:
-            material = generator.material_params
-            params = generator.params
-            for mat in material.keys():
-                material[mat] = material[mat].name
-                params[mat] = material[mat]
-        except:
-            pass
+        # try:
+        #     material = generator.material_params
+        #     params = generator.params
+        #     for mat in material.keys():
+        #         material[mat] = material[mat].name
+        #         params[mat] = material[mat]
+        # except:
+        #     pass
 
-        #generator
-        generator = state.objs[obj_name].generator
-        if generator is not None:
-            for attr in dir(generator):
-                m = getattr(generator,attr)
-                if isinstance(m, types.ModuleType):
-                    setattr(generator, attr, m.__name__)
-    
+        # #generator
+        # generator = state.objs[obj_name].generator
+        # if generator is not None:
+        #     for attr in dir(generator):
+        #         m = getattr(generator,attr)
+        #         if isinstance(m, types.ModuleType):
+        #             setattr(generator, attr, m.__name__)
+        #     if hasattr(generator, "base_factory") and generator.base_factory is not None:
+        #         for attr in dir(generator.base_factory):
+        #             m = getattr(generator.base_factory,attr)
+        #             if isinstance(m, types.ModuleType):
+        #                 setattr(generator.base_factory, attr, m.__name__)
+
+        matches = change_attr(state.objs[obj_name].generator, lambda attr: isinstance(attr, types.ModuleType),"__name__")
+        matches = change_attr(state.objs[obj_name].generator, lambda attr: isinstance(attr, bpy.types.Material),"name")
+        matches = change_attr(state.objs[obj_name].generator, lambda attr: isinstance(attr, bpy.types.Collection),"name")
+       
+
+    # for path, value in matches:
+    # print(f"Found int at {path}: {value}")
     with open(f"record_files/state_{iter}.pkl", "wb") as file:
+        # for obj_name in state.objs.keys():
+        #     #blender obj
+        #     try:
+        #         dill.dump(state.objs[obj_name], file)
+        #     except:
+        #         import pdb
+        #         pdb.set_trace()
         dill.dump(state, file)
+
+    
 
     tagging.tag_system.save_tag()
 
@@ -201,8 +350,7 @@ def save_record(state,solver,terrain,house_bbox,solved_bbox,iter):
     # with open(f"record_files/camera_rigs_{iter}.pkl", "wb") as file:
     #     pickle.dump(camera_rigs, file)
 
-    save_path = f"record_files/scene_{iter}.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)  
+     
 
     env_file = f"record_files/env_{iter}.pkl"
     with open(env_file, "wb") as f:
@@ -212,6 +360,32 @@ def save_record(state,solver,terrain,house_bbox,solved_bbox,iter):
         state.objs[obj_name].obj = bpy.data.objects.get(state.objs[obj_name].obj)
 
     return 
+
+def is_module(attr):
+    isstr = isinstance(attr, str) and attr!="__module__" and attr.startswith("infinigen.")
+    if isstr:
+        try: 
+            importlib.import_module(attr)
+            return True
+        except:
+            return False
+
+def is_material(attr):
+    isstr = isinstance(attr, str) 
+    x = None
+    if isstr:
+        x = bpy.data.materials.get(attr)
+    return x is not None
+
+
+def is_collection(attr):
+    isstr = isinstance(attr, str) 
+    x = None
+    if isstr:
+        x = bpy.data.collections.get(attr)
+    return x is not None
+
+        
 
 def load_record(iter):
     with open(f"record_files/solver_{iter}.pkl", "rb") as file:
@@ -248,40 +422,68 @@ def load_record(iter):
     tagging.tag_system.load_tag()
 
     save_path = f"record_files/scene_{iter}.blend"
-    bpy.ops.wm.open_mainfile(filepath=save_path)
+   
+    if not bpy.data.objects.get("newroom_0-0") and iter!=0:
+        bpy.ops.wm.open_mainfile(filepath=save_path,load_ui=False,use_scripts=False)
+    # invisible_others()
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # visible_others()
+
 
     with open(f"record_files/state_{iter}.pkl", "rb") as file:
         state = dill.load(file)
     for obj_name in state.objs.keys():
         #blender obj
-        state.objs[obj_name].obj = bpy.data.objects.get(state.objs[obj_name].obj)
+        state.objs[obj_name].obj = bpy.data.objects.get(state.objs[obj_name].obj) #TODO YYD
+        # if hasattr(state.objs[obj_name], "populate_obj"):
+        #     state.objs[obj_name].obj = bpy.data.objects.get(state.objs[obj_name].populate_obj)
+        # else:
+        #     state.objs[obj_name].obj = bpy.data.objects.get(state.objs[obj_name].obj)
 
-        #generator
-        generator = state.objs[obj_name].generator
-        if generator is not None:
-            for attr in dir(generator):
-                if attr=="__module__":
-                    continue
-                module_name = getattr(generator,attr)
-                try: 
-                    m = importlib.import_module(module_name)
-                    setattr(generator, attr, m)
-                except:
-                    pass
+        matches = recover_attr(state.objs[obj_name].generator, 
+                               is_module,
+                               lambda attr: importlib.import_module(attr))
+        matches = recover_attr(state.objs[obj_name].generator, 
+                               is_material,
+                               lambda attr: bpy.data.materials.get(attr))
+        matches = recover_attr(state.objs[obj_name].generator, 
+                               is_collection,
+                               lambda attr: bpy.data.collections.get(attr))
+        # #generator
+        # generator = state.objs[obj_name].generator
+        # if generator is not None:
+        #     for attr in dir(generator):
+        #         if attr=="__module__":
+        #             continue
+        #         module_name = getattr(generator,attr)
+        #         try: 
+        #             m = importlib.import_module(module_name)
+        #             setattr(generator, attr, m)
+        #         except:
+        #             pass
+        #     if hasattr(generator, "base_factory") and generator.base_factory is not None:
+        #         for attr in dir(generator.base_factory):
+        #             if attr=="__module__":
+        #                 continue
+        #             module_name = getattr(generator.base_factory,attr)
+        #             try: 
+        #                 m = importlib.import_module(module_name)
+        #                 setattr(generator.base_factory, attr, m)
+        #             except:
+        #                 pass
                 
-        #material
-        try:
-            material = generator.material_params
-            params = generator.params
-            for mat in material.keys():
-                m = bpy.data.materials.get(material[mat])
-                material[mat] = m
-                params[mat] = m
-        except:
-            pass
+        # #material
+        # try:
+        #     material = generator.material_params
+        #     params = generator.params
+        #     for mat in material.keys():
+        #         m = bpy.data.materials.get(material[mat])
+        #         material[mat] = m
+        #         params[mat] = m
+        # except:
+        #     pass
 
     # state.__post_init__()
-
 
     solver.state = state
 

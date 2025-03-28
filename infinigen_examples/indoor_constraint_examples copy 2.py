@@ -198,7 +198,6 @@ def home_constraints():
 
     # endregion
 
-
     # region furniture
     # 衡量家具的美学评分或家具与环境的协调程度。考虑了家具与墙壁的距离、家具对可达性的影响等因素。
     score_terms["furniture_aesthetics"] = wallfurn.mean(
@@ -361,8 +360,6 @@ def home_constraints():
     )
     # endregion
 
-    
-    
     # region ALL LIGHTING RULES
 
     lights = obj[Semantics.Lighting]
@@ -404,7 +401,9 @@ def home_constraints():
             # allow 0-2 lamps per room, placed on any sensible object
             lamps.related_to(storage.related_to(r)).count().in_range(0, 2)
             # * lamps.related_to(sidetable.related_to(r)).count().in_range(0, 2)
-            * lamps.related_to(desks.related_to(r, cu.on), cu.ontop).count().in_range(0, 1)
+            * lamps.related_to(desks.related_to(r, cu.on), cu.ontop)
+            .count()
+            .in_range(0, 1)
             * (  # pull-string lamps look extremely unnatural when too far off the ground
                 lamps.related_to(storage.related_to(r)).all(
                     lambda l: l.distance(r, cu.floortags).in_range(0.5, 1.5)
@@ -421,8 +420,6 @@ def home_constraints():
     )
     # endregion
 
-
-
     # region OFFICES
     offices = rooms[Semantics.Office].excludes(cu.room_types)
     desks_office = furniture[shelves.SimpleDeskFactory]
@@ -432,23 +429,24 @@ def home_constraints():
     )
     # deskchairs_office = furniture[seating.OfficeChairFactory]
     monitors_office = obj[appliances.MonitorFactory].related_to(desks_office, cu.ontop)
-    
-    
-        
+
     constraints["office"] = offices.all(
         lambda r: (
             desks_office.related_to(r).count().in_range(6, 10)
-            
             # * table_decorations.related_to(r, cu.ontop).count().in_range(0, 3)
             * desks_office.related_to(r).all(
                 lambda t: (
-                    (deskchairs_office.related_to(r).related_to(t).count()==1)
-                    * (monitors_office.related_to(t).count()<=2)
+                    (deskchairs_office.related_to(r).related_to(t).count() == 1)
+                    * (monitors_office.related_to(t).count() <= 2)
                     # * (obj[Semantics.OfficeShelfItem].related_to(t, cu.on).count() >= 0)
                     # * (deskchairs_office.related_to(r).related_to(t).count() == 1)
                 )
             )
-            * (deskchairs_office.related_to(r).count().equals(desks_office.related_to(r).count()))
+            * (
+                deskchairs_office.related_to(r)
+                .count()
+                .equals(desks_office.related_to(r).count())
+            )
             * storage.related_to(r).count().in_range(1, 4)
             * rugs.related_to(r).count().in_range(0, 1)
         )
@@ -456,18 +454,20 @@ def home_constraints():
     constraints["chair"] = offices.all(
         lambda r: (
             # allow 0-2 lamps per room, placed on any sensible object
-            deskchairs_office.related_to(r).count().equals(desks_office.related_to(r).count())
+            deskchairs_office.related_to(r)
+            .count()
+            .equals(desks_office.related_to(r).count())
         )
     )
-
 
     score_terms["office"] = offices.mean(
         lambda r: (
             desks_office.mean(
                 lambda d: (
                     d.distance(doors.related_to(r)).maximize(weight=1)
-                    + 
-                    cl.accessibility_cost(d, furniture.related_to(r)).minimize(weight=3)
+                    + cl.accessibility_cost(d, furniture.related_to(r)).minimize(
+                        weight=3
+                    )
                 )
             )
             + storage.related_to(r).mean(
@@ -481,7 +481,6 @@ def home_constraints():
             )
         )
     )
-
 
     # endregion
 
@@ -777,8 +776,6 @@ def home_constraints():
     # score_terms['kitchen_table'] # todo diningtable or hightop
 
     # endregion
-
-
 
     # region LIVINGROOMS
 

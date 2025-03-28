@@ -66,7 +66,11 @@ def reset_bvh_cache(state, filter_name=None):
                 return False
 
         return True
-
+    
+    if state.bvh_cache is None:
+        logger.debug("bvh_cache is None")
+        return
+    
     prev_keys = list(state.bvh_cache.keys())
     for k in prev_keys:
         res = keep_key(k)

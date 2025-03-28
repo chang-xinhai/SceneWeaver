@@ -18,12 +18,14 @@ You should return the info for updating each large object:
 3. obj_id: You need to recognize which large objects should be used to add small objects.
 4. obj_size: You also need to return the size of these large objects. 
 
-The prompt for SD should:
+The prompt for SD should in this format:
+"An entire {size} {large object} with {small objects} on it."
 1.Clearly specify the furniture type.
 2.Include its size in the format 'L*W*H cm'.
 3.Incorporate the small objects mentioned in the Ideas. 
 4.If multiple large furniture pieces are present, distribute small objects naturally, ensuring slight variations to enhance realism.
 5.Ensure natural and concise wording.
+6.You must use "entire" at the beginning.
 
 Expected Output is in json format:
 {

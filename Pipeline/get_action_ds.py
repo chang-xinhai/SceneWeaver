@@ -1,5 +1,5 @@
-import get_action_prompt as prompts
-from gpt import GPT4 
+import get_action_ds_prompt as prompts
+from deepseek import DeepSeek
 from utils import extract_json, dict2str, lst2str
 import json
 
@@ -25,7 +25,7 @@ def load_previous_guide(iter):
     return previous_guide, roomtype
 
 
-def get_action0(user_demand = "Classroom",iter = 0):
+def get_action0_ds(user_demand = "Classroom",iter = 0):
 
     previous_guide = "None"
 
@@ -42,10 +42,10 @@ def get_action0(user_demand = "Classroom",iter = 0):
                                                                                         sceneinfo_prompt=sceneinfo_prompt,
                                                                                         idea_example=idea_example
                                                                                         )
-    gpt = GPT4()
+    ds = DeepSeek()
 
-    prompt_payload = gpt.get_payload_scene_image(feedback_reflections_system_payload, feedback_reflections_user_payload,render_path=None )
-    gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+    prompt_payload = ds.get_payload(feedback_reflections_system_payload, feedback_reflections_user_payload)
+    gpt_text_response = ds(payload=prompt_payload, verbose=True)
     print(gpt_text_response)
     gpt_dict_response = extract_json(gpt_text_response)
 
@@ -70,30 +70,29 @@ def get_action0(user_demand = "Classroom",iter = 0):
     return action,ideas,roomtype
 
 
-def get_action1(user_demand = "",iter = 1):
+def get_action1_ds(user_demand = "",iter = 1):
 
     previous_guide,roomtype = load_previous_guide(iter)
     previous_guide = lst2str(previous_guide)
 
-    render_path = f"/home/yandan/workspace/infinigen/record_scene/render_{iter-1}.jpg"
     with open(f"/home/yandan/workspace/infinigen/record_scene/layout_{iter-1}.json", "r") as f:
         layout = json.load(f)
     sceneinfo_prompt =  prompts.sceneinfo_prompt.format(scene_layout=dict2str(layout["objects"]))
 
     idea_example = prompts.idea_example
-    feedback_reflections_system_payload = prompts.feedback_reflections_prompt_system.format(system_prompt=system_prompt,
+    system_payload = prompts.feedback_reflections_prompt_system.format(system_prompt=system_prompt,
                                                                                                     methods_prompt=methods_prompt)
-    feedback_reflections_user_payload = prompts.feedback_reflections_prompt_user.format(iter=iter,
+    user_payload = prompts.feedback_reflections_prompt_user.format(iter=iter,
                                                                                         user_demand=user_demand,
                                                                                         roomtype=roomtype,
                                                                                         previous_guide=previous_guide,
                                                                                         sceneinfo_prompt=sceneinfo_prompt,
                                                                                         idea_example=idea_example
                                                                                         )
-    gpt = GPT4(version='4o')
+    ds = DeepSeek()
 
-    prompt_payload = gpt.get_payload_scene_image(feedback_reflections_system_payload, feedback_reflections_user_payload,render_path=render_path)
-    gpt_text_response = gpt(payload=prompt_payload, verbose=True)
+    prompt_payload = ds.get_payload(system_payload, user_payload)
+    gpt_text_response = ds(payload=prompt_payload, verbose=True)
     print(gpt_text_response)
     gpt_dict_response = extract_json(gpt_text_response)
 
@@ -113,6 +112,6 @@ def get_action1(user_demand = "",iter = 1):
 
     action = init_methods[method_number]
     ideas = gpt_dict_response["Ideas"]
-    roomtype = gpt_dict_response["RoomType"]
+    # roomtype = gpt_dict_response["RoomType"]
 
     return action,ideas,roomtype

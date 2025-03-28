@@ -379,6 +379,9 @@ def col_from_subset(scene, names, tags=None, bvh_cache=None, expand=False,export
             geom.fcl_obj = col._get_fcl_obj(geom)  # 获取 FCL 对象
             geom.col_obj = fcl.CollisionObject(geom.fcl_obj, t)  # 创建碰撞对象
             assert len(geom.faces) == mask.sum()  # 确保面数匹配
+        if geom.col_obj is None:
+            geom.fcl_obj = col._get_fcl_obj(geom)  # 获取 FCL 对象
+            geom.col_obj = fcl.CollisionObject(geom.fcl_obj, t)  # 创建碰撞对象
         # col.add_object(name, geom, T)
         add_object_cached(col, name, geom.col_obj, geom.fcl_obj)  # 使用缓存添加对象
 
@@ -433,9 +436,13 @@ def sync_trimesh(scene: trimesh.Scene, obj_name: str):  # MARK trimesh
     mesh.current_transform = np.array(
         blender_obj.matrix_world
     )  # 更新网格的当前变换为Blender对象的世界变换
-    t = fcl.Transform(T[:3, :3], T[:3, 3])  # 创建一个Transform对象，包含旋转和位移
-    mesh.col_obj.setTransform(t)  # 将变换应用到网格的碰撞对象上
-
+    t = fcl.Transform(T[:3, :3], T[:3, 3])  
+    if mesh.col_obj is not None:# 创建一个Transform对象，包含旋转和位移
+        mesh.col_obj.setTransform(t)  # 将变换应用到网格的碰撞对象上
+    else:
+        col = trimesh.collision.CollisionManager()
+        mesh.fcl_obj = col._get_fcl_obj(mesh)  # 获取 FCL 对象
+        mesh.col_obj = fcl.CollisionObject(mesh.fcl_obj, t) 
 
 def translate(scene: trimesh.Scene, a: str, translation):
     blender_obj = bpy.data.objects[a]

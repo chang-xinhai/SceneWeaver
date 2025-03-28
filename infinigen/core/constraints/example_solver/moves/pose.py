@@ -22,6 +22,7 @@ from infinigen_examples.util.visible import invisible_others, visible_others
 
 from . import moves
 from .reassignment import pose_backup, restore_pose_backup
+from infinigen.core.tags import Subpart
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,8 @@ class TranslateMove(moves.Move):
 
     def apply_gradient(self, state: State, temperature=None, expand_collision=False):
         (target_name,) = self.names
-
+       
+       
         os = state.objs[target_name]
 
         obj_state = state.objs[target_name]
@@ -93,9 +95,10 @@ class TranslateMove(moves.Move):
         success, touch = result
 
         self._backup_pose = pose_backup(os, dof=False)
-        # invisible_others()
-        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-        # visible_others()
+
+        invisible_others()
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        visible_others()
         if touch is None:
             # relation invalid, have moved to make it valid
             return False
@@ -121,7 +124,7 @@ class TranslateMove(moves.Move):
             state.trimesh_scene, state, target_name, touch
         )
         iu.translate(state.trimesh_scene, os.obj.name, self.translation)
-
+        # print(target_name,self.translation)
         self._backup_pose = pose_backup(os, dof=False)
         # invisible_others()
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -130,6 +133,14 @@ class TranslateMove(moves.Move):
 
     def calc_gradient(self, scene, state, name, touch):
         obj_state = state.objs[name]
+       
+        # record top children
+        childnames = set()
+        for k,os in state.objs.items():
+            for rel in os.relations:
+                if rel.target_name==name and \
+                    (Subpart.SupportSurface in rel.relation.parent_tags or Subpart.Top in rel.relation.parent_tags):
+                    childnames.add(os.obj.name)
 
         a = obj_state.obj.name
         T, g = scene.graph[a]  # 获取 b 的变换和几何信息
@@ -140,12 +151,18 @@ class TranslateMove(moves.Move):
         b_names = []
         # for _, b in touch.names:
         for b in touch.names:
+            if b in childnames or b==state.objs[name].obj.name: # remove top children's collision
+                continue
             T, g = scene.graph[b]  # 获取 b 的变换和几何信息
             geom_b = scene.geometry[g]
             centroid_b = geom_b.centroid
             if b not in b_names:
                 b_names.append(b)
                 centroid_b_lst.append(centroid_b)
+
+        if centroid_b_lst==[]:
+            return [0,0,0]
+        
         centroid_b_mean = np.mean(centroid_b_lst, axis=0)
         if "FloorLampFactory" in name:
             a = 1
@@ -153,7 +170,7 @@ class TranslateMove(moves.Move):
         gradient = centroid_a - centroid_b_mean
         gradient_norm = np.linalg.norm(gradient)
         gradient = gradient / gradient_norm
-        TRANS_MULT = 0.1
+        TRANS_MULT = 0.05
         translation = TRANS_MULT * obj_state.dof_matrix_translation @ gradient
 
         return translation

@@ -82,6 +82,7 @@ all_vars = [cu.variable_room, cu.variable_obj]
 def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_name, description, **overrides):
     height = 1
 
+
     consgraph = home_constraints()
     stages = basic_scene.default_greedy_stages()
     checks.check_all(consgraph, stages, all_vars)
@@ -100,8 +101,9 @@ def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_nam
         camera_rigs,solved_rooms,house_bbox,solved_bbox = camera.animate_camera(state,stages,limits,solver,p)
 
         match action:
-            case "init_physcene":
+            case "init_physcene": 
                 state,solver = init_graph.init_physcene(stages,limits,solver,state,p)
+                
             case "init_metascene":
                 state,solver = init_graph.init_metascene(stages,limits,solver,state,p)
             case "init_gpt":
@@ -110,7 +112,11 @@ def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_nam
             case _ :
                 raise ValueError(f"Action is wrong: {action}") 
     else:
-        state,solver,terrain,house_bbox,solved_bbox = record.load_scene(iter-1)
+        if action=="add_acdc" and os.path.exists(f"record_files/state_{iter}.pkl"):
+            load_iter = iter
+        else:
+            load_iter = iter - 1
+        state,solver,terrain,house_bbox,solved_bbox = record.load_scene(load_iter)
         camera_rigs = [bpy.data.objects.get('CameraRigs/0')]
         match action:
             case "solve_large":
@@ -125,8 +131,10 @@ def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_nam
                 state,solver = update_graph.add_gpt(stages,limits,solver,state,p)
             case "add_acdc":
                 state,solver = update_graph.add_acdc(solver,state,p,description)
+            case "add_rule":
+                state,solver = update_graph.add_rule(stages,limits,solver,state,p)
             case "export_supporter":
-                record.export_supporter(state, obj_name=description, export_path = "obj.blend")
+                record.export_supporter(state, obj_name=description, export_path = "record_files/obj.blend")
                 sys.exit()
             case "update":
                 state,solver = update_graph.update(solver,state,p)
@@ -138,7 +146,14 @@ def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_nam
             case _:
                 raise ValueError(f"Action is wrong: {action}") 
         
-
+    solver.del_no_relation_objects()
+    save_path = "debug.blend"
+    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    state,solver = solve_objects.solve_large_object(stages,limits,solver,state,p,consgraph,overrides)
+    save_path = "debug2.blend"
+    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
+    # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
     record.record_scene(state,solver,terrain,house_bbox,solved_bbox,camera_rigs,iter,p)
 
     # populate_placeholder.populate_intermediate_pholders(p,state)
@@ -150,6 +165,7 @@ def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_nam
 
 
 def main(args):
+
     scene_seed = init.apply_scene_seed(args.seed)
     init.apply_gin_configs(
         configs=["base_indoors.gin"] + args.configs,
@@ -221,6 +237,10 @@ if __name__ == "__main__":
     parser.add_argument("--task_uniqname", type=str, default=None)
     parser.add_argument("-d", "--debug", type=str, nargs="*", default=None)
 
+    # invisible_others()
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # visible_others()
+
     args = init.parse_args_blender(parser)
     logging.getLogger("infinigen").setLevel(logging.INFO)
     logging.getLogger("infinigen.core.nodes.node_wrangler").setLevel(logging.CRITICAL)
@@ -239,6 +259,10 @@ if __name__ == "__main__":
         args.action = j["action"]
         args.description = j["description"]
         args.json_name = j["json_name"]
+
+    os.system(f"cp args.json args_{args.iter}.json")
+
+    
 
 
     main(args)

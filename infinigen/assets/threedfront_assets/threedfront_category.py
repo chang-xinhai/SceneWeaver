@@ -41,6 +41,11 @@ class ThreedFrontCategoryFactory(ThreedFrontFactory):
         bpy.ops.import_scene.obj(filepath=self.asset_file)
         imported_obj = bpy.context.selected_objects[0]
 
+        # bpy.ops.object.mode_set(mode='EDIT')  # Switch to Edit Mode
+        # bpy.ops.mesh.select_all(action='SELECT')
+        # bpy.ops.mesh.remove_doubles(threshold=1e-6)  # Merge very close vertices
+        # bpy.ops.object.mode_set(mode='OBJECT')  # Sw
+
         #resize
         imported_obj.scale = self.scale
         bpy.context.view_layer.objects.active = (
@@ -64,6 +69,9 @@ class ThreedFrontCategoryFactory(ThreedFrontFactory):
         bpy.ops.object.transform_apply(
             location=False, rotation=True, scale=False
         )
+
+        # imported_obj,pos_bias = self.set_origin(imported_obj)
+        # self.location_orig =  [self.location_orig[i]+pos_bias[i] for i in range(3)]
 
         if self.tag_support:
             tag_support_surfaces(imported_obj)

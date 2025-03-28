@@ -25,6 +25,7 @@ from infinigen.core.constraints.example_solver.room.constants import (
     WALL_THICKNESS,
 )
 from infinigen_examples.util.visible import invisible_others, visible_others
+from infinigen.core.tags import Subpart
 
 logger = logging.getLogger(__name__)
 
@@ -335,13 +336,15 @@ def apply_relations_surfacesample(
                 f"Got {relation_state.relation} for {name=} {relation_state.target_name=}"
             )
         # 获取父对象
-        if relation_state.target_name != "newroom_0-0":
-            a = 1
-        parent_obj = state.objs[relation_state.target_name].obj
-        # print(parent_obj)
+        if  Subpart.SupportSurface in relation_state.relation.parent_tags and \
+            relation_state.target_name!='newroom_0-0':  #TODO YYD
+            parent_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+        else:
+            parent_obj = state.objs[relation_state.target_name].obj
         # 获取对象和平面关系状态
-        if name == "620454_LargeShelfFactory":
-            a = 1
+        # invisible_others(hide_placeholder=True)
+        # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        # visible_others()
         obj_plane, parent_plane = state.planes.get_rel_state_planes(
             state, name, relation_state, closest_surface=closest_surface
         )
@@ -497,7 +500,11 @@ def apply_relations_surfacesample(
         assert len(parent_planes) == 1, (name, len(parent_planes))  # 确保父平面数量为1
         # 遍历对象的关系
         for i, relation_state in enumerate(obj_state.relations):
-            parent_obj = state.objs[relation_state.target_name].obj
+            if  Subpart.SupportSurface in relation_state.relation.parent_tags and \
+                relation_state.target_name!='newroom_0-0':  #TODO YYD
+                parent_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+            else:
+                parent_obj = state.objs[relation_state.target_name].obj
             obj_plane, parent_plane = state.planes.get_rel_state_planes(
                 state, name, relation_state
             )

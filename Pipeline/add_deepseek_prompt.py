@@ -45,7 +45,6 @@ Failure case of relation:
 2.[chair, table, side_by_side]: Chair must be in front of the table, using 'front_against' instead of 'side_by_side'.
 3.[wardrobe, bed, front_against]: Wardrobe has no subordinate relationship with bed. And they need to keep a long distance to make wardrobe accessable
 4.[chair, table, side_by_side],[chair, bed, front_against]: Each category, such as chair can only have one relationship. 2 relations will cause failure.
-5.[book, shelf, ontop]: Small objects can not be placed on the top of shelf. They can only be placed inside the shelf (which is "on" in the relation), so [book, shelf, on] is okay.
 
 Here is the example: 
 {
@@ -72,7 +71,6 @@ Here is the information you receive:
 2.Room size: {roomsize}
 3.Layout: 
 {scene_layout}
-4.Rendered Image from the top view: SCENE_IMAGE.
 
 Here is your response, return a json format like the given example:
 """

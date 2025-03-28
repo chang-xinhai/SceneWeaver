@@ -29,6 +29,7 @@ from infinigen.core.util import blender as butil
 
 # import fcl
 from infinigen_examples.util.visible import invisible_others, visible_others
+from infinigen.core.tags import Subpart
 
 
 logger = logging.getLogger(__name__)
@@ -126,7 +127,14 @@ def  stable_against(
 
     logger.debug(f"stable against {obj_name=} {relation_state=}")
     a_blender_obj = state.objs[obj_name].obj
-    b_blender_obj = state.objs[relation_state.target_name].obj
+
+    if  Subpart.SupportSurface in relation_state.relation.parent_tags and \
+        relation_state.target_name!='newroom_0-0':  #TODO YYD
+        b_blender_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+    else:
+        b_blender_obj = state.objs[relation_state.target_name].obj
+
+    # b_blender_obj = state.objs[relation_state.target_name].obj
     sa = state.objs[obj_name]
     sb = state.objs[relation_state.target_name]
 
@@ -148,12 +156,16 @@ def  stable_against(
 
     scene = state.trimesh_scene
     
+    if Subpart.SupportSurface in relation_state.relation.parent_tags and relation_state.target_name!='newroom_0-0': #TODO YYD
+        sb_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+    else:
+        sb_obj = state.objs[relation_state.target_name].obj
 
     a_trimesh = iu.meshes_from_names(scene, sa.obj.name)[0]
-    b_trimesh = iu.meshes_from_names(scene, sb.obj.name)[0]
+    b_trimesh = iu.meshes_from_names(scene, sb_obj.name)[0]
 
-    mask = tagging.tagged_face_mask(sb.obj, relation.parent_tags)
-    mask = state.planes.tagged_plane_mask(sb.obj, mask, pb)
+    mask = tagging.tagged_face_mask(sb_obj, relation.parent_tags)
+    mask = state.planes.tagged_plane_mask(sb_obj, mask, pb)
     assert mask.any()
     b_trimesh_mask = b_trimesh.submesh([np.where(mask)[0]], append=True)
 
@@ -177,9 +189,23 @@ def  stable_against(
             vertices = list(np.array(projected_a.exterior.coords))
             for point in vertices:
                 p = Point(point)
-                if projected_b.contains(p):
+
+                if projected_b.geom_type == 'MultiPolygon':
+                    flag_contains = False
+                    for poly in projected_b.geoms:
+                        if poly.contains(p):
+                            flag_contains = True
+                            break
+                    if flag_contains:
+                        continue
+                elif projected_b.contains(p):
                     continue
-                closest_point = projected_b.exterior.interpolate(projected_b.exterior.project(p))
+                
+                if projected_b.geom_type == 'MultiPolygon':
+                    closest_points = [poly.exterior.interpolate(poly.exterior.project(p)) for poly in projected_b.geoms]
+                    closest_point = min(closest_points, key=lambda pt: pt.distance(p))  # Find the nearest one
+                else:
+                    closest_point = projected_b.exterior.interpolate(projected_b.exterior.project(p))
                 move_vector = [closest_point.x - p.x, closest_point.y - p.y]
                 move_vectors.append(np.array(move_vector)[None,:]/np.linalg.norm(np.array(move_vector)))
                 

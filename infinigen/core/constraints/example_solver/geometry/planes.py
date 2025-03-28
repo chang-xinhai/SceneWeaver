@@ -19,6 +19,7 @@ from infinigen.core.constraints.constraint_language.util import (
     blender_objs_from_names,
     meshes_from_names,
 )
+from infinigen.core.tags import Subpart
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,17 @@ def global_vertex_coordinates(obj, local_vertex):
 
 
 def global_polygon_normal(obj, polygon):
+
     loc, rot, scale = obj.matrix_world.decompose()
     rot = rot.to_matrix()
     normal = rot @ polygon.normal
+    if polygon.normal[0] == 0 and polygon.normal[1] == 0 and polygon.normal[2] == 0 :
+        bpy.data.meshes['raw_model.006'].calc_normals() 
+        mesh = bpy.data.meshes['raw_model.006']
+        coords = [mesh.vertices[i].co for i in polygon.vertices]
+
+        import pdb
+        pdb.set_trace()
     try:
         return normal / np.linalg.norm(normal)
     except ZeroDivisionError:
@@ -179,8 +188,9 @@ class Planes:
         """
 
         tags = t.to_tag_set(tags)
-
+        
         mask = tagging.tagged_face_mask(obj, tags)
+        
         if not mask.any():
             obj_tags = tagging.union_object_tags(obj)
             logger.warning(
@@ -195,14 +205,18 @@ class Planes:
         return planes
 
     def get_rel_state_planes(
-        self, state, name: str, relation_state: tuple, closest_surface=False
+        self, state, name: str, relation_state: tuple, closest_surface=False  #TODO YYD closest_surface=FALSE
     ):
         obj = state.objs[name].obj
         relation = relation_state.relation
 
-        parent_obj = state.objs[relation_state.target_name].obj
         obj_tags = relation.child_tags
         parent_tags = relation.parent_tags
+
+        if Subpart.SupportSurface in parent_tags and relation_state.target_name!='newroom_0-0': #TODO YYD
+            parent_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+        else:
+            parent_obj = state.objs[relation_state.target_name].obj
 
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
         obj_all_planes = self.get_tagged_planes(
@@ -282,6 +296,7 @@ class Planes:
             parent_plane_trimesh = state.planes.get_tagged_submesh(
                 state.trimesh_scene, parent_obj.name, parent_tags, parent_plane
             )
+            print(parent_obj.name,idx,len(parent_all_planes))
             distance = trimesh.proximity.signed_distance(parent_plane_trimesh, center)
             if min_d > abs(distance):
                 min_d = abs(distance)

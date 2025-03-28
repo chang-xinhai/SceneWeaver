@@ -14,7 +14,8 @@ import numpy as np
 from infinigen.core.constraints import constraint_language as cl
 from infinigen.core.constraints import reasoning as r
 from infinigen.core.constraints.evaluator.domain_contains import objkeys_in_dom
-
+from infinigen.core.tags import Subpart
+import bpy
 from . import state_def
 
 logger = logging.getLogger(__name__)
@@ -173,6 +174,8 @@ def find_given_assignments(
     assignments: list[state_def.RelationState] = None,
     parent_obj_name=None,
 ) -> typing.Iterator[list[state_def.RelationState]]:
+    if parent_obj_name=="830203_desk":
+        a = 1
     if assignments is None:
         assignments = []
         # print('FIND ASSIGNMENTS TOPLEVEL')
@@ -197,12 +200,12 @@ def find_given_assignments(
         )
         return
 
-    if isinstance(rel, cl.AnyRelation):  # 检查是否有未指定的关系
-        pprint(relations)
-        pprint([(rel, dom)] + remaining_relations)
-        raise ValueError(
-            f"Got {rel} as first relation. Invalid! Maybe the program is underspecified?"
-        )
+    # if isinstance(rel, cl.AnyRelation):  # 检查是否有未指定的关系
+    #     pprint(relations)
+    #     pprint([(rel, dom)] + remaining_relations)
+    #     raise ValueError(
+    #         f"Got {rel} as first relation. Invalid! Maybe the program is underspecified?"
+    #     )
     # 获取符合约束域的对象候选列表
     candidates = objkeys_in_dom(dom, curr)
     random.shuffle(candidates)
@@ -218,9 +221,15 @@ def find_given_assignments(
         # 获取当前候选对象的状态
         parent_state = curr.objs[parent_candidate_name]
         # 获取符合关系父标签的平面数量
-        n_parent_planes = len(
-            curr.planes.get_tagged_planes(parent_state.obj, rel.parent_tags)
-        )
+        if Subpart.SupportSurface in rel.parent_tags and parent_candidate_name!='newroom_0-0': #TODO YYD
+            populate_obj = bpy.data.objects.get(parent_state.populate_obj)
+            n_parent_planes = len(
+                curr.planes.get_tagged_planes(populate_obj, rel.parent_tags)
+            )
+        else:
+            n_parent_planes = len(
+                curr.planes.get_tagged_planes(parent_state.obj, rel.parent_tags)
+            )
         # 随机排列父对象的平面顺序
         parent_order = np.arange(n_parent_planes)
         np.random.shuffle(parent_order)

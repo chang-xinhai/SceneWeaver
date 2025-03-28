@@ -497,6 +497,7 @@ def tag_support_surfaces(obj, angle_threshold=0.1):
 
         tag_object(mesh_obj, name=t.Subpart.SupportSurface.value, mask=support_mask)
 
+        
         print(
             f"Tagged {support_mask.sum()} faces as 'support' in object {mesh_obj.name}"
         )

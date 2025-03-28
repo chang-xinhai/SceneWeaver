@@ -10,7 +10,7 @@ obj_cnt = 0
 candidates_fpaths = []
 out_dict = dict()
 for scene_name in os.listdir(inbasedir):
-    scene_name = "scene0470_00"
+    scene_name = "scene0653_00"
     metadata = f"{inbasedir}/{scene_name}/metadata.json"
     scene_cnt += 1
     with open(metadata,"r") as f:
@@ -31,6 +31,10 @@ for scene_name in os.listdir(inbasedir):
         prompt_payload = gpt.payload_front_pose(value,candidates_fpaths)
         gpt_text_response = gpt(payload=prompt_payload, verbose=True)
         print(gpt_text_response)
+        try:
+            print(candidates_fpaths[int(gpt_text_response)])
+        except:
+            a = 1
 
         out_dict[key]["front_view"] = candidates_fpaths[int(gpt_text_response)]
     

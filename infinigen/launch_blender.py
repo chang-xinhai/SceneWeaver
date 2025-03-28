@@ -42,10 +42,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--module", type=str, default=None)
     parser.add_argument("-s", "--script", type=str, default=None)
+    parser.add_argument("-i", "--iter", type=int, default=None)
     args, unknown_args = parser.parse_known_args()
 
-    cmd_args = [str(get_standalone_blender_path())]
+    import json
+    with open("args.json","r") as f:
+        j = json.load(f)
+        args.iter = j["iter"]
 
+    cmd_args = [str(get_standalone_blender_path())]
+    cmd_args += [f"record_files/scene_{args.iter-1}.blend"]
     if args.module is not None:
         # cmd_args += HEADLESS_ARGS
 
@@ -71,6 +77,7 @@ if __name__ == "__main__":
     print(" ".join(cmd_args))
 
     # 使用subprocess.run()运行命令
+
     subprocess.run(cmd_args, cwd=root)  # 在root目录下执行Blender
 
 

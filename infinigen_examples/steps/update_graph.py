@@ -62,3 +62,16 @@ def add_acdc(solver,state,p,description):
     )
     # endregion 
     return state,solver
+
+
+def add_rule(solver,state,p): 
+    # region load acdc
+    def add_rule(): 
+        solver.add_rule()
+        return solver.state
+    
+    state = p.run_stage(
+        "load_acdc", add_rule, use_chance=False, default=state
+    )
+    # endregion 
+    return state,solver

@@ -8,13 +8,13 @@ from utils import extract_json, lst2str
 
 
 
-def generate_scene_iter1(user_demand,ideas,iter):
+def generate_scene_iter1_gpt(user_demand,ideas,iter):
 
-    gpt = GPT4()
+    gpt = GPT4(version="4o")
 
     results = dict()
-    render_path = f"/home/yandan/workspace/infinigen/render_{iter-1}.jpg"
-    with open(f"/home/yandan/workspace/infinigen/layout_{iter-1}.json", "r") as f:
+    render_path = f"/home/yandan/workspace/infinigen/record_scene/render_{iter-1}.jpg"
+    with open(f"/home/yandan/workspace/infinigen/record_scene/layout_{iter-1}.json", "r") as f:
         layout = json.load(f)
 
     roomsize = layout["roomsize"]

@@ -159,6 +159,7 @@ class Addition(moves.Move):
         asset_file=None,
         expand_collision=False,
     ):  # mark
+        
         assert target_name not in state.objs
         import copy
 
@@ -190,14 +191,15 @@ class Addition(moves.Move):
             position = gen.location_orig
             room_width = os.getenv("room_width")
             room_height = os.getenv("room_height")
-            position[0] += int(room_width)/2
-            position[1] += int(room_height)/2
+            position[0] += float(room_width)/2
+            position[1] += float(room_height)/2
 
         if gen_class.__name__ == "ThreedFrontCategoryFactory":
             room_width = os.getenv("room_width")
             room_height = os.getenv("room_height")
-            position[0] += int(room_width)/2
-            position[1] += int(room_height)/2
+            # position = gen.location_orig
+            position[0] += float(room_width)/2
+            position[1] += float(room_height)/2
 
         # invisible_others()
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -215,7 +217,7 @@ class Addition(moves.Move):
             expand_collision=expand_collision,
             n_try_resolve=1,
             use_initial=True,
-            closest_surface=True,
+            closest_surface=False,  #TODO YYD
         )  # check
         logger.debug(f"{self} {success=}")
         return success

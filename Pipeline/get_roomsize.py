@@ -26,7 +26,7 @@ Example Input:
 3.Ideas: Add basic bedroom
 4.Current room size: 3.94,4.68
 
-Expected Output:
+Expected Output: (do not explain, just return value)
 4,5
 
 """
@@ -44,7 +44,7 @@ def get_roomsize(user_demand,ideas,roomsize,roomtype):
     
     user_prompt_1 = user_prompt.format(user_demand=user_demand,roomtype=roomtype,ideas=ideas,roomsize=roomsize) 
         
-    gpt = GPT4()
+    gpt = GPT4(version='4o')
 
     prompt_payload = gpt.get_payload(system_prompt, user_prompt_1)
     gpt_text_response = gpt(payload=prompt_payload, verbose=True)

@@ -6,15 +6,18 @@ from infinigen.core.constraints.example_solver import (
     state_def,
 )
 import bpy
+from infinigen.core import tagging
+from infinigen.core import tags as t
 
 def record_scene(state,solver,terrain,house_bbox,solved_bbox,camera_rigs,iter,p):
     export_layout(state,solver,f"record_scene/layout_{iter}.json")
     p.run_stage(
         "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
     )
-    # render_scene(p,solved_bbox,camera_rigs,state,filename=f"record_scene/render_{iter}.jpg")
-
+    
     save_record(state,solver,terrain,house_bbox,solved_bbox,iter)
+
+    render_scene(p,solved_bbox,camera_rigs,state,filename=f"record_scene/render_{iter}.jpg")
 
     return
 

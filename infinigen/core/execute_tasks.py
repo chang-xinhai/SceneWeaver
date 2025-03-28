@@ -148,6 +148,12 @@ def execute_tasks(
     dryrun=False,
     optimize_terrain_diskusage=False,
 ):
+    from infinigen_examples.util.visible import invisible_others, visible_others
+
+    # invisible_others()
+    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    # visible_others()
+
     if input_folder != output_folder:
         if reset_assets:
             if os.path.islink(output_folder / "assets"):
@@ -193,8 +199,9 @@ def execute_tasks(
     init.configure_blender()
 
     if Task.Coarse in task:
-        butil.clear_scene(targets=[bpy.data.objects])
-        butil.spawn_empty(f"{infinigen.__version__=}")
+        if iter==0:
+            butil.clear_scene(targets=[bpy.data.objects])
+            butil.spawn_empty(f"{infinigen.__version__=}")
         info = compose_scene_func(output_folder, scene_seed, iter, action, json_name, description)
         outpath = output_folder / "assets"
         outpath.mkdir(exist_ok=True)

@@ -213,6 +213,43 @@ def preproc_bounds(
     ]  # filter out those has more than needed
 
 
+# def propose_addition(
+#     cons: cl.Node,
+#     curr: state_def.State,
+#     filter_domain: r.Domain,
+#     temperature: float,
+# ):
+#     bounds = r.constraint_bounds(cons)
+#     # filter bounds, and reorder bounds with cnt requirments
+#     bounds = preproc_bounds(bounds, curr, filter_domain)
+
+#     if len(bounds) == 0:
+#         logger.debug(f"Found no bounds for {filter_domain=}")
+#         return
+
+#     for i, bound in enumerate(bounds):
+#         # bound=Bound(domain=Domain({Semantics.Furniture, FromGenerator(BedFactory), Semantics.Bed, Semantics.Object, -Semantics.Room}, [...
+#         if bound.low is None:
+#             # bounds with low=None are supposed to cap other bounds, not introduce new objects
+#             continue
+
+#         fac_options = lookup_generator(preds=bound.domain.tags)
+#         # [<class 'infinigen.assets.objects.seating.bed.BedFactory'>]
+
+#         if len(fac_options) == 0:
+#             if bound.low is None or bound.low == 0:
+#                 continue
+#             raise ValueError(f"Found no generators for {bound}")
+
+#         for gen_class in fac_options:
+#             # gen_class=<class 'infinigen.assets.objects.seating.bed.BedFactory'>
+#             yield from propose_addition_bound_gen(
+#                 cons, curr, bounds, i, gen_class, filter_domain
+#             )
+
+#     logger.debug(f"propose_addition found no candidate moves for {bound}")
+
+
 def propose_addition(
     cons: cl.Node,
     curr: state_def.State,
@@ -248,6 +285,8 @@ def propose_addition(
             )
 
     logger.debug(f"propose_addition found no candidate moves for {bound}")
+
+
 
 
 def propose_deletion(

@@ -363,10 +363,10 @@ def any_touching_expand(
         geom = scene.geometry[g]
         geom_expand = expand_mesh(geom, b)
 
-        hit1, names1, contacts1 = col.in_collision_single(
+        hit1, names1, contacts1 = col_expand.in_collision_single(
             geom, transform=T, return_data=True, return_names=True
         )
-        hit2, names2, contacts2 = col_expand.in_collision_single(
+        hit2, names2, contacts2 = col.in_collision_single(
             geom_expand, transform=T, return_data=True, return_names=True
         )
 
