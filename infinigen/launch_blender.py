@@ -43,15 +43,20 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--module", type=str, default=None)
     parser.add_argument("-s", "--script", type=str, default=None)
     parser.add_argument("-i", "--iter", type=int, default=None)
+    parser.add_argument("--inplace", type=bool, default=False)
     args, unknown_args = parser.parse_known_args()
 
     import json
     with open("args.json","r") as f:
         j = json.load(f)
         args.iter = j["iter"]
+        args.inplace = j["inplace"]
 
     cmd_args = [str(get_standalone_blender_path())]
-    cmd_args += [f"record_files/scene_{args.iter-1}.blend"]
+    if args.inplace:
+        cmd_args += [f"record_files/scene_{args.iter}.blend"]
+    else:
+        cmd_args += [f"record_files/scene_{args.iter-1}.blend"]
     if args.module is not None:
         # cmd_args += HEADLESS_ARGS
 

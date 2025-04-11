@@ -136,6 +136,7 @@ def execute_tasks(
     action: str,
     json_name: str,
     description: str,
+    inplace: bool,
     task: str,
     scene_seed: int,
     frame_range: tuple[int],
@@ -202,7 +203,7 @@ def execute_tasks(
         if iter==0:
             butil.clear_scene(targets=[bpy.data.objects])
             butil.spawn_empty(f"{infinigen.__version__=}")
-        info = compose_scene_func(output_folder, scene_seed, iter, action, json_name, description)
+        info = compose_scene_func(output_folder, scene_seed, iter, action, json_name, description,inplace)
         outpath = output_folder / "assets"
         outpath.mkdir(exist_ok=True)
         with open(outpath / "info.pickle", "wb") as f:

@@ -42,7 +42,7 @@ Here is the information you receive:
 - Asset front faces point along the positive X axis. The Z axis points up. The local origin is centered in X-Y and at the bottom in Z. 
 A 90-degree Z rotation means that the object will face the positive Y axis. The bounding box aligns with the assets local frame.
 
-Please take a moment to relax and carefully look through each object and their relations.
+Please take a moment to relax and carefully look through each object.
 You can consider the following factors:
 
 1. Room Structure: Be aware of the door and windows. Make sure objects do not overlap with the door and windows.
@@ -50,27 +50,12 @@ You can consider the following factors:
 3. User Prompt Satisfaction: Does the current scene meet the user's prompt requirements? What needs to be changed to align with the prompt more closely?
 4. Realism Enhancement: What adjustments can be made to make the scene feel more realistic? Consider removing or repositioning objects to enhance visual harmony and authenticity.
 5. Check Object: Check for any redundant or unnecessary objects that could be removed to streamline the scene.
-6. Relation: Add relations to some objects (saved in "parent") when the layout is similar to the relation. This can make the room tidy.
-
-The optional relation is: 
-1.front_against: child_obj's front faces to parent_obj, and stand very close.
-2.front_to_front: child_obj's  front faces to parent_obj's front, and stand very close.
-3.leftright_leftright: child_obj's left or right faces to parent_obj's left or right, and stand very close. 
-4.side_by_side: child_obj's side(left, right , or front) faces to parent_obj's side(left, right , or front), and stand very close. 
-5.back_to_back: child_obj's back faces to parent_obj's back, and stand very close. 
-6.ontop: child_obj is placed on the top of parent_obj.
-7.on: child_obj is placed on the top of or inside parent_obj.
-8.against_wall: child_obj's back faces to the wall of the room, and stand very close.
-9.side_against_wall: child_obj's side(left, right , or front) faces to the wall of the room, and stand very close.
-9.on_floor: child_obj stand on the parent_obj, which is the floor of the room.
-Note child_obj is usually smaller than parent_obj, or obj1 belongs to parent_obj.
 
 What problem do you think it has? 
 Then tell me how to solve these problems.
 
 Fianlly, according to the problem and thoughts, you should modify objects' layout to fix each of the problem.
 You can change the location, rotation, and size of the objects.
-You can also add,delete, or modify the parent relations for each object.
 For objects that remain unchanged, you must keep their original layout in the response rather than omit it. 
 For deleted objects, omit their layout in the response.
 Keep the objects inside the room. 

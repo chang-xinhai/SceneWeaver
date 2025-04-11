@@ -63,6 +63,9 @@ And the child_obj can have no more than one relation with other objects.
 Before returning the final results, you need to carefully confirm that each obvious relation has been added. 
 
 Provide me with the newly added relation of each object in json format.
+"""
+
+example="""
 For example:
 {
     "3454242_VaseFactory": {
@@ -80,8 +83,8 @@ For example:
 
 def add_relation(user_demand,ideas,iter,roomtype):
 
-    render_path = f"/home/yandan/workspace/infinigen/record_scene/render_{iter-1}.jpg"
-    with open(f"/home/yandan/workspace/infinigen/record_scene/layout_{iter-1}.json", "r") as f:
+    render_path = f"/home/yandan/workspace/infinigen/record_scene/render_{iter}.jpg"
+    with open(f"/home/yandan/workspace/infinigen/record_scene/layout_{iter}.json", "r") as f:
         layout = json.load(f)
     
     roomsize = layout["roomsize"]
@@ -94,7 +97,7 @@ def add_relation(user_demand,ideas,iter,roomtype):
     system_prompt_1 = system_prompt
     user_prompt_1 = user_prompt.format(roomtype=roomtype,roomsize=roomsize,
                                        layout=layout,structure=structure,
-                                       user_demand=user_demand,ideas=ideas) 
+                                       user_demand=user_demand,ideas=ideas) + example
         
     gpt = GPT4(version="4o")
 

@@ -58,6 +58,7 @@ from infinigen.core import tags as t
 from infinigen_examples.util import constraint_util as cu
 from infinigen_examples.util.visible import invisible_others, visible_others
 from infinigen.core.constraints.constraint_language import util as iu
+# 
 
 
 logger = logging.getLogger(__name__)
@@ -543,6 +544,112 @@ class Solver:
 
         return 
     
+    def add_relation(self):
+        layouts = dict()
+        import os
+        json_name = os.getenv("JSON_RESULTS")
+        with open(json_name,"r") as f:
+            j = json.load(f)
+        for key,value in j.items():
+            layouts[key] = value       
+        
+        for name,info in layouts.items():
+            print("adding relation for ",name)
+            os = self.state.objs[name]
+            self.add_relation_obj(name,info["parent"])
+                
+
+        return 
+
+    def add_relation_obj(self,child_name,new_relations):
+        from infinigen_examples.steps.tools import export_relation
+        objinfo = self.state.objs[child_name]
+        for new_rel in new_relations:
+            
+            obj_relations = [[rel.target_name,export_relation(rel.relation)] for rel in objinfo.relations if rel.target_name!="newroom_0-0"]
+            room_relations = [[rel.target_name,export_relation(rel.relation)] for rel in objinfo.relations if rel.target_name=="newroom_0-0"]
+            old_relations = [[rel.target_name,export_relation(rel.relation)] for rel in objinfo.relations]
+            
+            if new_rel in old_relations:
+                continue
+
+            parent_name, rel_name = new_rel
+            #relation number is limited
+            if parent_name!="newroom_0-0" and len(obj_relations)>=1:
+                continue
+            elif parent_name=="newroom_0-0" and len(room_relations)>=2:
+                continue
+            else:
+                print("adding relation: ",child_name,parent_name,rel_name)
+                self.add_new_relation(child_name, parent_name, rel_name)
+
+        return
+
+    def add_new_relation(self,child_name, parent_name, relation):
+        all_room = r.Domain({t.Semantics.Room, -t.Semantics.Object})
+        all_obj = r.Domain({t.Semantics.Object, -t.Semantics.Room})
+        
+        if relation=="against_wall":
+            base_domain = all_obj.with_relation(cu.against_wall, all_room)
+        elif relation=="side_against_wall":
+            base_domain = all_obj.with_relation(cu.side_against_wall, all_room)
+        elif relation=="on_floor":
+            base_domain = all_obj.with_relation(cu.on_floor, all_room)
+        else:
+            module_name = self.state.objs[parent_name].generator.__module__
+            attribute_name = self.state.objs[parent_name].generator.__class__.__name__
+            module = importlib.import_module(module_name)
+            parent_Factory = getattr(module, attribute_name)        
+            parent_domain = r.Domain(usage_lookup.usages_of_factory(parent_Factory) )
+            relation_module = getattr(cu, relation)
+            base_domain = all_obj.with_relation(relation_module, parent_domain)
+
+        rel = base_domain.relations[-1][0]
+        assignment = state_def.RelationState(
+                relation=rel,  # 当前关系
+                target_name=parent_name,  # 目标对象
+                child_plane_idx=0,  # TODO fill in at apply()-time
+                parent_plane_idx=0,  # 当前父对象的平面索引
+            )
+        #check if relation has already been added
+        for rel in self.state.objs[child_name].relations:
+            if rel.target_name == assignment.target_name \
+                and rel.relation.child_tags == assignment.relation.child_tags \
+                and rel.relation.parent_tags == assignment.relation.parent_tags:
+                return
+
+        self.state.objs[child_name].relations.append(assignment)
+        return 
+                
+
+    # def add_against_wall(self,target_name):
+    #     all_room = r.Domain({t.Semantics.Room, -t.Semantics.Object})
+    #     all_obj = r.Domain({t.Semantics.Object, -t.Semantics.Room})
+    #     base_domain = all_obj.with_relation(cu.against_wall, all_room)
+    #     rel = base_domain.relations[-1][0]
+    #     # parent_obj = obj = self.state.objs['newroom_0-0'].obj
+    #     # n_parent_planes = len(
+    #     #         self.state.planes.get_tagged_planes(parent_obj, rel.parent_tags)
+    #     #     )
+    #     # parent_order = np.arange(n_parent_planes)
+    #     # np.random.shuffle(parent_order)
+        
+    #     assignment = state_def.RelationState(
+    #             relation=rel,  # 当前关系
+    #             target_name='newroom_0-0',  # 目标对象
+    #             child_plane_idx=0,  # TODO fill in at apply()-time
+    #             parent_plane_idx=0,  # 当前父对象的平面索引
+    #         )
+        
+    #     for rel in self.state.objs[target_name].relations:
+    #         if rel.target_name == assignment.target_name \
+    #             and rel.relation.child_tags == assignment.relation.child_tags \
+    #             and rel.relation.parent_tags == assignment.relation.parent_tags:
+    #             return
+
+    #     self.state.objs[target_name].relations.append(assignment)
+    #     return 
+                
     def update_graph(self):
         layouts = dict()
         import os
@@ -569,9 +676,7 @@ class Solver:
             os = self.state.objs[name]
             obj = os.obj
 
-            self.add_againt_wall(name)
-            # import pdb
-            # pdb.set_trace()
+
             iu.set_location(self.state.trimesh_scene, os.obj.name, info["location"])
             iu.set_rotation(self.state.trimesh_scene, os.obj.name, info["rotation"])
 
@@ -781,7 +886,7 @@ class Solver:
                     if name not in rel_small2big: #deal with large object first
                         parent_obj_name = None
                         against_wall = False
-                        on_floor = True
+                        on_floor = False #TODO
                         relation = None
                     else:
                         continue
@@ -850,6 +955,9 @@ class Solver:
                     rd for rd in search_rels if not isinstance(rd[0], cl.NegatedRelation)
                 ]
 
+                # import pdb
+                # pdb.set_trace()
+                # if search_rels[0][0].__class__.__name__ == "AnyRelation":
                 assign = propose_relations.find_given_assignments(self.state, search_rels, parent_obj_name=parent_obj_name)
                 for i, assignments in enumerate(assign):
                     found_tags = usage_lookup.usages_of_factory( gen_class )  
@@ -1152,33 +1260,7 @@ class Solver:
         return filter_domain
          
 
-    def add_againt_wall(self,target_name):
-        all_room = r.Domain({t.Semantics.Room, -t.Semantics.Object})
-        all_obj = r.Domain({t.Semantics.Object, -t.Semantics.Room})
-        base_domain = all_obj.with_relation(cu.against_wall, all_room)
-        rel = base_domain.relations[-1][0]
-        # parent_obj = obj = self.state.objs['newroom_0-0'].obj
-        # n_parent_planes = len(
-        #         self.state.planes.get_tagged_planes(parent_obj, rel.parent_tags)
-        #     )
-        # parent_order = np.arange(n_parent_planes)
-        # np.random.shuffle(parent_order)
-        
-        assignment = state_def.RelationState(
-                relation=rel,  # 当前关系
-                target_name='newroom_0-0',  # 目标对象
-                child_plane_idx=0,  # TODO fill in at apply()-time
-                parent_plane_idx=0,  # 当前父对象的平面索引
-            )
-        
-        for rel in self.state.objs[target_name].relations:
-            if rel.target_name == assignment.target_name \
-                and rel.relation.child_tags == assignment.relation.child_tags \
-                and rel.relation.parent_tags == assignment.relation.parent_tags:
-                return
-
-        self.state.objs[target_name].relations.append(assignment)
-        return 
+    
 
     def get_stage(self, is_on_floor, against_wall, parent_obj_name=None, relation=None):
 
@@ -1194,7 +1276,7 @@ class Solver:
             cl.AnyRelation(), primary.with_tags(cu.variable_obj)
         )
 
-        if parent_obj_name is not None:
+        if parent_obj_name is not None and parent_obj_name!='newroom_0-0':
             module_name = self.state.objs[parent_obj_name].generator.__module__ #'infinigen.assets.threedfront_assets.threedfront_category'
             attribute_name = self.state.objs[parent_obj_name].generator.__class__.__name__
             # Split into module name and attribute name

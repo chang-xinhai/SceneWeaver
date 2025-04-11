@@ -221,18 +221,18 @@ def update_ds(user_demand,ideas,iter,roomtype):
     return json_name
 
 
-iter = 10
+iter = 15
 # user_demand = "An office room for 8 people."
 user_demand = "Design me a bedroom."  #"A classic Chinese dining room."
 
-while(iter<20):
+while(iter<15):
     if iter == 0:
         action, ideas, roomtype = get_action(user_demand,iter)
         # action = "init_metascene"
         # ideas = "Create a basic bedroom layout including essential furniture like a bed, wardrobe, and nightstands.",
         # action='init_gpt'
         # ideas='Create a foundational layout for an office room designed for 8 people, including desks, chairs, and basic office equipment.'
-        roomtype = 'bedroom'
+        # roomtype = 'bedroom'
         if action == "init_physcene":
             json_name,roomsize = find_physcene(user_demand,ideas,roomtype)
             roomsize = get_roomsize(user_demand,ideas,roomsize,roomtype)
@@ -264,10 +264,6 @@ while(iter<20):
         # action = "add_acdc"
         # ideas = 'Add a lamp on the nightstand, books on the shelf, and a plant on the desk.'
         # roomtype = 'bedroom'
-        
-        # action = "add_acdc"
-        # ideas = "Add computers on each desk, small plants, and personal items like notepads and pens.",
-        # roomtype="office"
 
         if action == "add_gpt":
             json_name = add_gpt(user_demand,ideas,iter)
@@ -332,4 +328,4 @@ while(iter<20):
 
 
 action = "finalize_scene"
-update_infinigen(action,iter)
+update_infinigen(action,iter,json_name="empty")

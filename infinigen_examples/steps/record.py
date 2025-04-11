@@ -15,7 +15,7 @@ def record_scene(state,solver,terrain,house_bbox,solved_bbox,camera_rigs,iter,p)
         "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
     )
     
-    save_record(state,solver,terrain,house_bbox,solved_bbox,iter)
+    save_record(state,solver,terrain,house_bbox,solved_bbox,iter,p)
 
     render_scene(p,solved_bbox,camera_rigs,state,filename=f"record_scene/render_{iter}.jpg")
 

@@ -57,7 +57,7 @@ def change_attr(obj, condition, replace_attr, visited=None, path=""):
                     if condition(attr_value[idx]):
                         new_value = getattr(attr_value[idx],replace_attr)
                         attr_value[idx] = new_value
-                        results.append(f"{attr_path}[{idx}]", attr_value)  # 
+                        results.append((f"{attr_path}[{idx}]", attr_value)) # 
                         continue
                     sub_path = f"{attr_path}[{idx}]"
                     results.extend(change_attr(item, condition, replace_attr, visited, sub_path))
@@ -320,7 +320,7 @@ def world_to_image(image_path, output_path):
 
 
 # def save_record(state,solver,stages,consgraph,iter=0):
-def save_record(state,solver,terrain,house_bbox,solved_bbox,iter):
+def save_record(state,solver,terrain,house_bbox,solved_bbox,iter,p):
     # state.trimesh_scene = None
     save_path = f"record_files/scene_{iter}.blend"
     bpy.ops.wm.save_as_mainfile(filepath=save_path) 
@@ -380,6 +380,9 @@ def save_record(state,solver,terrain,house_bbox,solved_bbox,iter):
 
     with open(f"record_files/solver_{iter}.pkl", "wb") as file:
         dill.dump(solver, file)
+
+    with open(f"record_files/p_{iter}.pkl", "wb") as file:
+        dill.dump(p, file)
 
     # with open(f"record_files/stages_{iter}.pkl", "wb") as file:
     #     pickle.dump(stages, file)
@@ -455,8 +458,6 @@ def load_record(iter):
     # with open(f"record_files/limits_{iter}.pkl", "wb") as file:
     #     limits = pickle.load(file)
 
-    # with open(f"record_files/p_{iter}.pkl", "wb") as file:
-    #     p = pickle.load(file)
     
     with open(f"record_files/terrain_{iter}.pkl", "rb") as file:
         terrain = pickle.load(file)
@@ -476,14 +477,14 @@ def load_record(iter):
 
     tagging.tag_system.load_tag()
 
+    with open(f"record_files/p_{iter}.pkl", "rb") as file:
+        p = pickle.load(file)  
+    p = None
+
     save_path = f"record_files/scene_{iter}.blend"
    
     if not bpy.data.objects.get("newroom_0-0"):
         bpy.ops.wm.open_mainfile(filepath=save_path,load_ui=False,use_scripts=False)
-    # invisible_others()
-    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-    # visible_others()
-
 
     with open(f"record_files/state_{iter}.pkl", "rb") as file:
         state = dill.load(file)
@@ -548,4 +549,4 @@ def load_record(iter):
     os.environ.update(env_vars)
     os.environ["JSON_RESULTS"] = json_name
 
-    return state,solver,terrain,house_bbox,solved_bbox
+    return state,solver,terrain,house_bbox,solved_bbox,p
