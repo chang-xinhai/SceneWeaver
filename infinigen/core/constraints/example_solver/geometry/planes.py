@@ -221,6 +221,8 @@ class Planes:
         if name == "1603808_dumbbell":
             a = 1
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
+        if obj.name=="CountertopFactory(378489).bbox_placeholder(6660430)":
+            a = 1
         obj_all_planes = self.get_tagged_planes(
             obj, obj_tags
         )  # (obj.name, polygon.index)

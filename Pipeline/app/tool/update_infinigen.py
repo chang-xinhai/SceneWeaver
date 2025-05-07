@@ -23,7 +23,6 @@ def update_infinigen(
 
     # if invisible:
     if True:
-        
         cmd = """
         source ~/anaconda3/etc/profile.d/conda.sh
         conda activate infinigen_python

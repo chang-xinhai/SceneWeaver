@@ -353,6 +353,8 @@ def apply_relations_surfacesample(
         # invisible_others(hide_placeholder=True)
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         # visible_others()
+        if name=="1980528_CountertopFactory":
+            a = 1
         obj_plane, parent_plane = state.planes.get_rel_state_planes(
             state, name, relation_state, closest_surface=closest_surface
         )
@@ -398,6 +400,7 @@ def apply_relations_surfacesample(
     # print(obj_planes)
     # print([i.parent_plane_idx for i in obj_state.relations])
     # print(parent_planes)
+    
 
     valid, dof, T = check_init_valid(
         state, name, obj_planes, parent_planes, margins, rev_normals

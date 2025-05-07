@@ -71,6 +71,14 @@ def update(solver, state, p):
     state = p.run_stage("update_graph", update_graph, use_chance=False, default=state)
     return state, solver
 
+def update_size(solver, state, p):
+    def update_graph_size():
+        solver.update_graph_size()
+        return solver.state
+
+    state = p.run_stage("update_graph", update_graph_size, use_chance=False, default=state)
+    return state, solver
+
 
 def add_acdc(solver, state, p, description):
     # region load acdc

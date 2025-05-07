@@ -22,7 +22,7 @@ from infinigen.core.nodes.node_wrangler import Nodes, NodeWrangler
 from infinigen.core.placement.factory import AssetFactory
 from infinigen.core.util import blender as butil
 from infinigen.core.util.math import FixedSeed
-
+import numpy as np
 
 def nodegroup_tag_cube(nw: NodeWrangler):
     # Code generated using version 2.6.4 of the node_transpiler
@@ -203,20 +203,22 @@ class KitchenSpaceFactory(AssetFactory):
         with FixedSeed(factory_seed):
             if dimensions is None:
                 dimensions = Vector(
+                # dimensions = np.array(
                     (
                         uniform(0.7, 1),
                         uniform(1.7, 5),
                         uniform(2.3, WALL_HEIGHT - WALL_THICKNESS),
                     )
                 )
+                
 
             self.island = island
             if self.island:
                 dimensions.x *= uniform(1.5, 2)
 
-            self.dimensions = dimensions
-
             self.params = self.sample_parameters(dimensions)
+
+            self.dimensions = tuple(dimensions)
 
     def sample_parameters(self, dimensions):
         self.cabinet_bottom_height = uniform(0.8, 1.0)

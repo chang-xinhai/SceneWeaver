@@ -11,7 +11,7 @@ import logging
 import math
 import os
 from pathlib import Path
-
+import re
 import bpy
 import gin
 import numpy as np
@@ -451,13 +451,14 @@ class Solver:
         #retrieve objaverse
         self.LoadObjavCnts = dict()
         for name in category_cnt.keys():
-            name = name.lower()
-            if name_mapping is None or name_mapping[name.lower()] is None:
+            if name_mapping is not None and name not in name_mapping:
+                name = name.lower()
+            if name_mapping is None or name_mapping[name] is None:
                 self.LoadObjavCnts[name] = get_case_insensitive(category_cnt,name)
         with open(f"/home/yandan/workspace/infinigen/objav_cnts.json","w") as f:
             json.dump(self.LoadObjavCnts,f,indent=4)
 
-        cmd = """
+        cmd = f"""
         source ~/anaconda3/etc/profile.d/conda.sh
         conda activate idesign
         python /home/yandan/workspace/infinigen/infinigen/assets/objaverse_assets/retrieve_idesign.py > run.log 2>&1
@@ -489,16 +490,24 @@ class Solver:
 
         self.Placement = info["Placement"]
         self.category_against_wall = info["category_against_wall"]
+        if "category_on_the_floor" in info:
+            self.category_on_the_floor = info["category_on_the_floor"]
+        else:
+            self.category_on_the_floor = None
         self.name_mapping = dict()
         for k,v in info["name_mapping"].items():
             self.name_mapping[k.lower()] = v
         #after loading name mapping, retrieve objects.
         self.retrieve_objav_assets(info["Number of new furniture"],self.name_mapping)
 
-
         for step in ["large", "medium", "small"]:
             for key, value in self.Placement.items():
                 for num in value.keys():
+                    if not num.isdigit():
+                        print(f"🎯 Error adding object {key}")
+                        continue
+
+
                     #remove relation with room,focus on relation with objects
                     if "parent" in value[num] and value[num]["parent"]!=[] and isinstance(value[num]["parent"][0], list):
                         value[num]["parent"] = [i for i in value[num]["parent"] if i[0]!="newroom_0-0"]
@@ -559,7 +568,10 @@ class Solver:
                             against_wall = (
                                 True if key in self.category_against_wall else False
                             )
-                            on_floor = True
+                            if self.category_on_the_floor is not None :
+                                on_floor = True if key in self.category_on_the_floor else False
+                            else:
+                                on_floor = True
 
                     else:
                         stage = "large"
@@ -570,7 +582,12 @@ class Solver:
                         against_wall = (
                             True if key in self.category_against_wall else False
                         )
-                        on_floor = True
+                        if self.category_on_the_floor is not None :
+                            on_floor = True if key in self.category_on_the_floor else False
+                        else:
+                            on_floor = True
+                        if not on_floor and not against_wall: #floating object
+                            continue
 
                     filter_domain = self.calc_filter_domain(
                         value, num, on_floor=on_floor, against_wall=against_wall
@@ -835,9 +852,9 @@ class Solver:
 
             size = info["size"]
 
-            scale_x = size[0] / obj.dimensions[0]
-            scale_y = size[1] / obj.dimensions[1]
-            scale_z = size[2] / obj.dimensions[2]
+            scale_x = size[0] / obj.dimensions[0] if obj.dimensions[0]!=0 else 1
+            scale_y = size[1] / obj.dimensions[1] if obj.dimensions[1]!=0 else 1
+            scale_z = size[2] / obj.dimensions[2] if obj.dimensions[2]!=0 else 1
             obj.scale = (scale_x, scale_y, scale_z)
             bpy.context.view_layer.objects.active = obj  # Set as active object
             obj.select_set(True)  # Select the object
@@ -867,6 +884,56 @@ class Solver:
             # self.state.objs.pop(name)
 
         self.del_no_relation_objects()
+
+        return
+
+
+    def update_graph_size(self):
+        from infinigen_examples.steps.tools import calc_position_bias
+        layouts = dict()
+        import os
+
+        json_name = os.getenv("JSON_RESULTS")
+        with open(json_name, "r") as f:
+            j = json.load(f)
+        for key, value in j.items():
+            layouts[key] = value
+
+        for name, info in layouts.items():
+            if name not in self.state.objs:
+                print(
+                    f"Error: object {name} is not in the current scene, obmit this object !!"
+                )
+                continue
+            os = self.state.objs[name]
+            obj = os.obj
+
+            obj.rotation_mode = 'XYZ' 
+            iu.set_rotation(self.state.trimesh_scene, os.obj.name, info["rotation"])
+            # Force update
+            bpy.context.view_layer.update()
+            offset_vector = np.array(calc_position_bias(obj))
+            new_loc = np.array(info["location"])-offset_vector
+            iu.set_location(self.state.trimesh_scene, os.obj.name, new_loc)
+            
+
+            spawn_asset = bpy.data.objects[os.populate_obj]
+            spawn_asset.location = new_loc
+            spawn_asset.rotation_euler = info["rotation"]
+
+            size = info["size"]
+
+            scale_x = size[0] / obj.dimensions[0] if obj.dimensions[0]!=0 else 1
+            scale_y = size[1] / obj.dimensions[1] if obj.dimensions[1]!=0 else 1
+            scale_z = size[2] / obj.dimensions[2] if obj.dimensions[2]!=0 else 1
+            obj.scale = (scale_x, scale_y, scale_z)
+            bpy.context.view_layer.objects.active = obj  # Set as active object
+            obj.select_set(True)  # Select the object
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+            parent_planes = apply_relations_surfacesample(
+                self.state, name, use_initial=True, closest_surface=True
+            )
 
         return
 
@@ -935,7 +1002,9 @@ class Solver:
                 rotation = value[num]["rotation"] * math.pi / 180
                 size = value[num]["size"]
                 name = key
-                module_and_class = self.name_mapping[name.lower()]
+                if name not in self.name_mapping:
+                    name = name.lower()
+                module_and_class = self.name_mapping[name]
                 if stage == "small":
                     this_stage = "small"
                     parent_key, parent_num, relation = value[num]["parent"]
@@ -944,7 +1013,7 @@ class Solver:
                     on_floor = False
                     size = [-1, -1, -1]
                 else:
-                    if "parent" in value[num]:
+                    if "parent" in value[num] and value[num]["parent"] is not None and value[num]["parent"] != []:
                         this_stage = "medium"
                         if this_stage != stage:
                             continue
@@ -1229,7 +1298,7 @@ class Solver:
         var_assignments: dict[str, str],
         stage="large",  # large, medium, small
     ):
-        basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean"
+        # basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean"
         json_name = os.getenv("JSON_RESULTS")
         # json_name = f"{basedir}/LivingDiningRoom-2954_livingroom.json"
 
@@ -1291,7 +1360,7 @@ class Solver:
                     while target_name in self.state.objs:
                         target_name = f"{np.random.randint(1e7)}_{class_name}"
 
-                    if target_name == "1351066_bookshelf":
+                    if "lounge_chair" in target_name:
                         a = 1
                     # target_name = np.random.randint(1e7)+"_SofaFactory"
 
@@ -1504,7 +1573,7 @@ class Solver:
         parent_obj_name=None,
         relation=None,
     ):
-        if num is not None and "parent" in value[num] and value[num]["parent"] != []:
+        if num is not None and "parent" in value[num] and value[num]["parent"] != [] and value[num]["parent"] is not None:
             try:
                 parent_key, parent_num, relation = value[num]["parent"]
                 try:
@@ -1525,6 +1594,12 @@ class Solver:
             }
 
         else:
+            parent_obj_name = None
+            parent_key = None
+            relation = None
+            var_assignments = {cu.variable_room: "newroom_0-0"}
+
+        if parent_obj_name is not None and parent_obj_name not in self.state.objs.keys():
             parent_obj_name = None
             parent_key = None
             relation = None
@@ -1594,6 +1669,7 @@ class Solver:
        
         metadata = os.getenv("JSON_RESULTS")
         scene_idx = metadata.split("_")[-1].split(".")[0]
+        
         with open(metadata, "r") as f:
             data = json.load(f)
             Placement = {}
@@ -1624,8 +1700,8 @@ class Solver:
 
             
             size = value["size_in_meters"]
-            x_dim = size["length"]
-            y_dim = size["width"]
+            x_dim = size["width"]
+            y_dim = size["length"]
             z_dim = size["height"]
             size = [x_dim,y_dim,z_dim]
             if "position" not in value:
@@ -1633,7 +1709,7 @@ class Solver:
             position = value["position"] 
             position = [position["x"]+ 0.14,position["y"]+ 0.14,position["z"]] 
             position[2] = position[2] - z_dim/2 + 0.14
-            rotation = math.radians(value["rotation"]["z_angle"]) + math.pi 
+            rotation = -(math.radians(value["rotation"]["z_angle"])  + math.pi ) -math.pi/2
             asset_file = f"{asset_dir}/{key}.glb"
 
             gen_class = GeneralObjavFactory
@@ -1737,16 +1813,16 @@ class Solver:
             )
 
             size = value["size_in_meters"]
-            x_dim = size["length"]
-            y_dim = size["width"]
+            x_dim = size["width"]
+            y_dim = size["length"]
             z_dim = size["height"]
             size = [x_dim,y_dim,z_dim]
             # if "position" not in value:
             #     continue
             position = value["position"] 
-            position = [position["x"]+ 0.14,position["y"]+ 0.14,position["z"]] 
+            position = [position["y"]+ 0.14,position["x"]+ 0.14,position["z"]] 
             position[2] = position[2] - z_dim/2 + 0.14
-            rotation = math.radians(value["rotation"]["z_angle"]) + math.pi 
+            rotation = math.radians(value["rotation"]["z_angle"]) # + math.pi 
             asset_file = self.LoadObjavFiles[category][0]
 
             gen_class = GeneralObjavFactory
@@ -1805,111 +1881,322 @@ class Solver:
 
         return self.state
     
-    # @gin.configurable
-    # def init_graph_anyhome(
-    #     self,
-    # ):
+    @gin.configurable
+    def init_graph_atiss(
+        self,
+    ):
+        json_name = os.getenv("JSON_RESULTS")
         
-       
-    #     metadata = os.getenv("JSON_RESULTS")
-    #     scene_idx = metadata.split("_")[-1].split(".")[0]
-    #     with open(metadata, "r") as f:
-    #         data = json.load(f)
-    #     Placement = dict()
-    #     roomtype = list(data["furniture_graphs"].keys())[0]
-    #     furniture_list_big = data["furniture_graphs"][roomtype]["furniture_list"]
-    #     furniture_list_small = data["ornament_graphs"][roomtype]["ornament_list"]
-    #     sizes_big = data["furniture_graphs"][roomtype]["furniture_sizes"]
-    #     sizes_small = data["ornament_graphs"][roomtype]["ornament_sizes"]
-    #     for name in furniture_list:
-    #         Placement[name] = dict()
+        with open(json_name, "r") as f:
+            Placement = json.load(f)
+        for objname, obj_lst in Placement["ThreedFront"].items():
+            for obj_info in obj_lst:
+                category = obj_info["label"]
+                if "lamp" in category:
+                    continue
 
-    #     for key, value in Placement.items():
+                position = obj_info["position"]
+                position = [position[0], position[2], position[1]]
+                radians = math.radians(90)
+                rotation = radians - obj_info["theta"]
+                scale = obj_info["scale"]
+
+                name = category
+                module_and_class = "ThreeDFuture"
+                parent_obj_name = None
+                against_wall = False
+                on_floor = False
+
+                filter_domain = self.calc_filter_domain(
+                    category, num=None, on_floor=on_floor, against_wall=against_wall
+                )
+
+                gen_class = copy.deepcopy(GeneralThreedFrontFactory)
+                gen_class._category = category
+                gen_class._asset_file = obj_info["path"]
+                gen_class._scale = scale
+                gen_class._rotation = rotation
+                gen_class._position = position
+                class_name = category
+
+                search_rels = filter_domain.relations
+                # 筛选出有效的关系，只选择非否定关系
+                search_rels = [
+                    rd
+                    for rd in search_rels
+                    if not isinstance(rd[0], cl.NegatedRelation)
+                ]
+                found_tags = usage_lookup.usages_of_factory(gen_class)
+                if search_rels[0][0].__class__.__name__ == "AnyRelation":
+                    assignments = [] #TODO YYD None
+                else:
+                    assign = propose_relations.find_given_assignments(
+                        self.state, search_rels, parent_obj_name=parent_obj_name
+                    )
+                    for i, assignments in enumerate(assign):
+                        break
+
+                
+                move = moves.Addition(
+                    names=[
+                        f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
+                    ],  # decided later # 随机生成一个名称，基于生成器类的名称
+                    gen_class=gen_class,  # 使用传入的生成器类
+                    relation_assignments=assignments,  # 传入分配的关系
+                    temp_force_tags=found_tags,  # 临时强制标签
+                )
+
+                target_name = f"{np.random.randint(1e7)}_{class_name}"
+                while target_name in self.state.objs:
+                    target_name = f"{np.random.randint(1e7)}_{class_name}"
+
+
+                asset_file = obj_info["path"]
+
+                move.apply_init(
+                    self.state,
+                    target_name,
+                    None,
+                    position,
+                    rotation,
+                    gen_class,
+                    asset_file,
+                )
+
+                # Placement[key][num]["name"] = target_name
+                break
+                # invisible_others()
+                # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                # visible_others()
+
+        return self.state
+        
+    @gin.configurable
+    def init_graph_anyhome(
+        self,
+    ):
+        
+        def get_obj_cnt(data):
+            # Count types
+            big_category_dict = {}
+
+            for obj in data["objects"]:
+                name = obj["new_object_id"]
+                obj_type = re.sub(r'\d+$', '',name).lower()
+                
+                if obj_type not in big_category_dict:
+                    big_category_dict[obj_type] = 0
+                big_category_dict[obj_type] += 1
+            return big_category_dict
+        metadata = os.getenv("JSON_RESULTS")
+        with open(metadata, "r") as f:
+            data = json.load(f)
+            category_dict = get_obj_cnt(data)
+            self.retrieve_objav_assets(category_dict)
+
+            Placement = {}
+            for item in data["objects"]:
+                Placement[item["new_object_id"]] = item
+
+        
+
+        for key, value in Placement.items():
+            parent_obj_name = None
+            against_wall = False
+            on_floor = False
+            relation = None
             
-    #         # name = key
-           
-    #         parent_obj_name = None
-    #         against_wall = False
-    #         on_floor = False
-    #         relation = None
             
-    #         category = "_".join(value["new_object_id"].split("_")[:-1])
-            
-    #         filter_domain = self.calc_filter_domain(
-    #             category,
-    #             num=None,
-    #             on_floor=on_floor,
-    #             against_wall=against_wall,
-    #             parent_obj_name=parent_obj_name,
-    #             relation=relation,
-    #         )
+            category = re.sub(r'\d+$', '',value["new_object_id"]).lower()
+            filter_domain = self.calc_filter_domain(
+                category,
+                num=None,
+                on_floor=on_floor,
+                against_wall=against_wall,
+                parent_obj_name=parent_obj_name,
+                relation=relation,
+            )
 
             
-    #         size = value["size_in_meters"]
-    #         x_dim = size["length"]
-    #         y_dim = size["width"]
-    #         z_dim = size["height"]
-    #         size = [x_dim,y_dim,z_dim]
-    #         if "position" not in value:
-    #             continue
-    #         position = value["position"] 
-    #         position = [position["x"]+ 0.14,position["y"]+ 0.14,position["z"]] 
-    #         position[2] = position[2] - z_dim/2 + 0.14
-    #         rotation = math.radians(value["rotation"]["z_angle"]) + math.pi 
-    #         asset_file = f"{asset_dir}/{key}.glb"
+            size = value["size_in_meters"]
+            x_dim = size["width"]
+            y_dim = size["length"]
+            z_dim = size["height"]
+            size = [x_dim,y_dim,z_dim]
+            # if "position" not in value:
+            #     continue
+            position = value["position"] 
+            position = [position["x"]+ 0.14,position["y"]+ 0.14,position["z"]] 
+            position[2] = position[2] - z_dim/2 + 0.14
+            rotation = math.radians(value["rotation"]["z_angle"])  # + math.pi 
+            asset_file = self.LoadObjavFiles[category][0]
 
-    #         gen_class = GeneralObjavFactory
-    #         gen_class._x_dim = x_dim
-    #         gen_class._y_dim = y_dim
-    #         gen_class._z_dim = z_dim
-    #         gen_class._category = category
-    #         gen_class._asset_file = asset_file            
+            gen_class = GeneralObjavFactory
+            gen_class._x_dim = x_dim
+            gen_class._y_dim = y_dim
+            gen_class._z_dim = z_dim
+            gen_class._category = category
+            gen_class._asset_file = asset_file            
 
-    #         search_rels = filter_domain.relations
-    #         # 筛选出有效的关系，只选择非否定关系
-    #         search_rels = [
-    #             rd
-    #             for rd in search_rels
-    #             if not isinstance(rd[0], cl.NegatedRelation)
-    #         ]
+            search_rels = filter_domain.relations
+            # 筛选出有效的关系，只选择非否定关系
+            search_rels = [
+                rd
+                for rd in search_rels
+                if not isinstance(rd[0], cl.NegatedRelation)
+            ]
 
-    #         found_tags = usage_lookup.usages_of_factory(gen_class)
-    #         if search_rels[0][0].__class__.__name__ == "AnyRelation":
-    #             assignments = [] #TODO YYD None
-    #         else:
-    #             assign = propose_relations.find_given_assignments(
-    #                 self.state, search_rels, parent_obj_name=parent_obj_name
-    #             )
-    #             for i, assignments in enumerate(assign):
-    #                 break
+            found_tags = usage_lookup.usages_of_factory(gen_class)
+            if search_rels[0][0].__class__.__name__ == "AnyRelation":
+                assignments = [] #TODO YYD None
+            else:
+                assign = propose_relations.find_given_assignments(
+                    self.state, search_rels, parent_obj_name=parent_obj_name
+                )
+                for i, assignments in enumerate(assign):
+                    break
 
-    #         move = moves.Addition(
-    #             names=[
-    #                 f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
-    #             ],  # decided later # 随机生成一个名称，基于生成器类的名称
-    #             gen_class=gen_class,  # 使用传入的生成器类
-    #             relation_assignments=assignments,  # 传入分配的关系
-    #             temp_force_tags=found_tags,  # 临时强制标签
-    #         )
+            move = moves.Addition(
+                names=[
+                    f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
+                ],  # decided later # 随机生成一个名称，基于生成器类的名称
+                gen_class=gen_class,  # 使用传入的生成器类
+                relation_assignments=assignments,  # 传入分配的关系
+                temp_force_tags=found_tags,  # 临时强制标签
+            )
 
-    #         target_name = f"{np.random.randint(1e7)}_{category}"
-    #         try:
-    #             move.apply_init(
-    #                 self.state,
-    #                 target_name,
-    #                 size,
-    #                 position,
-    #                 rotation,
-    #                 gen_class,
-    #                 asset_file,
-    #             )
-    #         except:
-    #             continue
+            target_name = f"{np.random.randint(1e7)}_{category}"
+            try:
+                move.apply_init(
+                    self.state,
+                    target_name,
+                    size,
+                    position,
+                    rotation,
+                    gen_class,
+                    asset_file,
+                )
+            except:
+                continue
 
-    #         Placement[key]["target_name"] = target_name
+            Placement[key]["target_name"] = target_name
 
-    #         # invisible_others()
-    #         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-    #         # visible_others()
+            # invisible_others()
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            # visible_others()
 
-    #     return self.state
+        return self.state
+
+    @gin.configurable
+    def init_graph_holodeck(
+        self,
+    ):
+        def get_obj_cnt(data):
+            # Count types
+            big_category_dict = {}
+
+            for obj in data["objects"]:
+                obj_type = obj["new_object_id"].split("-")[0]
+                if obj_type not in big_category_dict:
+                    big_category_dict[obj_type] = 0
+                big_category_dict[obj_type] += 1
+            return big_category_dict
+
+        metadata = os.getenv("JSON_RESULTS")
+        
+        with open(metadata, "r") as f:
+            data = json.load(f)
+            category_dict = get_obj_cnt(data)
+            self.retrieve_objav_assets(category_dict)
+
+            Placement = {}
+            for item in data["objects"]:
+                Placement[item["new_object_id"]] = item
+        
+        for key, value in Placement.items():
+            parent_obj_name = None
+            against_wall = False
+            on_floor = False
+            relation = None
+            
+            category = value["new_object_id"].split("-")[0].split("|")[0]
+            if category in ["window","door"]:
+                continue
+            filter_domain = self.calc_filter_domain(
+                category,
+                num=None,
+                on_floor=on_floor,
+                against_wall=against_wall,
+                parent_obj_name=parent_obj_name,
+                relation=relation,
+            )
+
+            size = value["size_in_meters"]
+            x_dim = size["width"]
+            y_dim = size["length"]
+            z_dim = size["height"]
+            size = [x_dim,y_dim,z_dim]
+            # if "position" not in value:
+            #     continue
+            position = value["position"] 
+            position = [position["x"]+ 0.14,position["z"]+ 0.14,position["y"]] 
+            position[2] = position[2] - z_dim/2 + 0.14
+            rotation = math.radians(90-value["rotation"]["z_angle"]) # + math.pi 
+            asset_file = self.LoadObjavFiles[category][0]
+
+            gen_class = GeneralObjavFactory
+            gen_class._x_dim = x_dim
+            gen_class._y_dim = y_dim
+            gen_class._z_dim = z_dim
+            gen_class._category = category
+            gen_class._asset_file = asset_file            
+
+            search_rels = filter_domain.relations
+            # 筛选出有效的关系，只选择非否定关系
+            search_rels = [
+                rd
+                for rd in search_rels
+                if not isinstance(rd[0], cl.NegatedRelation)
+            ]
+
+            found_tags = usage_lookup.usages_of_factory(gen_class)
+            if search_rels[0][0].__class__.__name__ == "AnyRelation":
+                assignments = [] #TODO YYD None
+            else:
+                assign = propose_relations.find_given_assignments(
+                    self.state, search_rels, parent_obj_name=parent_obj_name
+                )
+                for i, assignments in enumerate(assign):
+                    break
+
+            move = moves.Addition(
+                names=[
+                    f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
+                ],  # decided later # 随机生成一个名称，基于生成器类的名称
+                gen_class=gen_class,  # 使用传入的生成器类
+                relation_assignments=assignments,  # 传入分配的关系
+                temp_force_tags=found_tags,  # 临时强制标签
+            )
+
+            target_name = f"{np.random.randint(1e7)}_{category}"
+            try:
+                move.apply_init(
+                    self.state,
+                    target_name,
+                    size,
+                    position,
+                    rotation,
+                    gen_class,
+                    asset_file,
+                )
+            except:
+                continue
+
+            Placement[key]["target_name"] = target_name
+
+            # invisible_others()
+            # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            # visible_others()
+
+        return self.state
+    

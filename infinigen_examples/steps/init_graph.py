@@ -31,13 +31,22 @@ def init_physcene(stages,limits,solver,state,p):
 
 def init_idesign(stages,limits,solver,state,p):
     solver.init_graph_idesign()
-        
     return solver.state,solver
 
+def init_atiss(stages,limits,solver,state,p):
+    solver.init_graph_atiss()
+    return solver.state,solver
 
 def init_layoutgpt(stages,limits,solver,state,p):
     solver.init_graph_layoutgpt()
-        
+    return solver.state,solver
+
+def init_anyhome(stages,limits,solver,state,p):
+    solver.init_graph_anyhome()
+    return solver.state,solver
+
+def init_holodeck(stages,limits,solver,state,p):
+    solver.init_graph_holodeck()
     return solver.state,solver
 
 

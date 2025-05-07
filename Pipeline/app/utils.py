@@ -35,16 +35,13 @@ def extract_json(input_string):
             brace_count += 1
         elif char == "}":
             brace_count -= 1
-
         if start_idx is not None:
             json_string += char
-
         if brace_count == 0 and start_idx is not None:
             # Found the complete JSON structure
             break
     if not json_string:
         raise ValueError("No valid JSON found in the input string.")
-
     # Step 2: Convert the JSON string to a dictionary
     try:
         json_dict = json.loads(json_string)

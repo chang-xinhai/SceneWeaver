@@ -161,15 +161,15 @@ class GPT4(GPT4o):
         cand_imgs_base64 = [self.encode_image(img) for img in candidates_fpaths]
 
         prompt_text_system = (
-            f"You have been given four images of an {category}, each taken from a different angle. Your task is to identify the image that shows the 'front view' of the object. The front view refers to the perspective where the object's main face or most important features are most clearly visible, typically from the viewer’s point of view.\n\n"
+            f"You have been given some images of an {category}, each taken from a different angle. Your task is to identify the image that shows the 'front view' of the object. The front view refers to the perspective where the object's main face or most important features are most clearly visible, typically from the viewer’s point of view.\n\n"
             + "Please keep the following in mind:\n"
             + "1. The front view is often characterized by the most significant or most visible face of the object.\n"
             + "2. For objects like cabinets, the front view is typically where the doors and drawers are visible. For chairs, the front view may show the seat and backrest. For other objects, consider the main or most notable side visible from the viewer's point of view.\n"
             + "3. The front view is usually the view where the object faces the camera directly or is oriented in such a way that the most prominent features (such as a face, label, or handle) are visible.\n"
-            + "4. If the images are taken at different angles (front, right, left, back), choose the image where the object faces you (from the viewer’s perspective).\n"
+            + "4. If the images are taken at different angles (front, right, left, or back), choose the image where the object faces you (from the viewer’s perspective).\n"
             + "5. Given these considerations, please only return the index number of the image that represents the 'front view'. The indices of the images start from 0.\n"
             + "6. Retun only the index number without any other words.\n"
-            + "Example output:2"
+            + "Example output:1"
         )
         content_system = [{"type": "text", "text": prompt_text_system}]
 

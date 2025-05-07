@@ -148,7 +148,7 @@ Scoring must be strict. If any critical issue is found (such as missing key obje
 **Evaluation Criteria**:
 
 1. **Realism**: How realistic the room appears. *Ignore texture, lighting, and doors.*
-    - **Good (8-10)**: The layout is believable, and common daily objects make the room feel lived-in.
+    - **Good (8-10)**: The layout (position, rotation, and size) is believable, and common daily objects make the room feel lived-in. Rich of daily furniture and objects.
     - **Bad (0-3)**: Unusual objects or strange placements make the room unrealistic.
     - **Note**: If object types or combinations defy real-world logic (e.g., bathtubs in bedrooms), score should be below 5.
 
@@ -157,13 +157,13 @@ Scoring must be strict. If any critical issue is found (such as missing key obje
     - **Bad (0-3)**: Missing key objects or contains mismatched furniture (e.g., no bed in a bedroom).
     - **Note**: Even one missing critical item should lower the score below 6.
 
-3. **Layout**: Whether the furniture is arranged logically and aligns with the user’s preferences.
-    - **Good (8-10)**: Objects are neatly placed, relationships are reasonable (e.g., chairs face desks), sufficient space exists for walking, and orientations are correct, no collision between objects.
-    - **Bad (0-3)**: Floating objects, crowded space, objects with collision, incorrect orientation, or large items placed oddly (e.g., sofa not against the wall).
+3. **Layout**: Whether the furniture is arranged logically in good pose and aligns with the user’s preferences.
+    - **Good (8-10)**: Each objects is in **reasonable size**, neatly placed, well aglined, relationships are reasonable (e.g., chairs face desks), sufficient space exists for walking, and **orientations must** be correct, no collision between objects. 
+    - **Bad (0-3)**: Floating objects, crowded floor, **abnormal size**, objects with collision, incorrect **orientation**, or large items placed oddly (e.g., sofa not against the wall). Large empty space. Blocker in front of furniture.
     - **Note**: If the room has layout issues that affect use, it should not score above 5.
 
 4. **Completion**: How complete and finished the room feels.
-    - **Good (8-10)**: All necessary large and small items are present. Has rich details. Each supporter (e.g. table, desk, and shelf) has small objects on it. The room feels done.
+    - **Good (8-10)**: All necessary large and small items are present. Has rich details. Each shelf has several objects inside. Each supporter (e.g. table, desk, and shelf) has small objects on it. Empty area is less than 50%. The room feels done.
     - **Bad (0-3)**: Room is sparse or empty, lacks decor or key elements.
     - **Note**: If more than 30% of the room is blank or lacks detail, score under 5.
 
@@ -175,11 +175,12 @@ User Preference:
 Room layout:
 {layout}
 
-The Layout include each object's X-Y-Z Position, Z rotation, size (x_dim, y_dim, z_dim), as well as relation info with parents.
+The Layout include each object's X-Y-Z Position, rotation, size (length, width, height) in meter, as well as relation info with parents.
 Each key in layout is the name for each object, consisting of a random number and the category name, such as "3142143_table". 
 Note different category name can represent the same category, such as ChairFactory, armchair and chair can represent chair simultaneously.
 Count objects carefully! Do not miss any details. 
 Pay more attention to the orientation of each objects.
+Pay more attention to the size of each "ontop" objects.
 
 Return the results in the following JSON format, the "comment" should be short:
 {example_json}

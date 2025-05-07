@@ -19,9 +19,9 @@ DESCRIPTION="""
 Using GPT to generate the foundamental scene.
 
 Supported Room Types: any room type.
-Use Case 1: Create a foundational layout.
+Use Case 1: Create a accurate and foundational layout.
 
-Strengths: Align well with user demand. Highly versatile and capable of generating scenes for any room type and complex user requirement. Flexible with respect to room design and customization.
+Strengths: Align well with user demand. More details. Highly versatile and capable of generating scenes for any room type and complex user requirement. Flexible with respect to room design and customization.
 Weaknesses: May not be as real as data-driven methods. 
 
 """

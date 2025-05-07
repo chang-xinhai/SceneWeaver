@@ -11,7 +11,7 @@ You will receive:
 You need to return a dict including:
 1. Room size, including length and width in meters. Make the room a little bit bigger than the regular size.
 2. A list of large-furniture categories that stand on the floor, marked with count. 
-    You can refer but not limited to this category list: ['BeverageFridge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink', 'StandingSink', 'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack',  'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'Countertop', 'KitchenCabinet', 'KitchenIsland', 'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase', 'TableCocktail', 'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror']
+    You can refer but not limited to this category list: ['BeverageFridge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink', 'StandingSink', 'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack',  'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'KitchenCabinet', 'KitchenIsland', 'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase',  'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror']
     Do not use quota in name, such as baby's or teacher's.
     Enhance the immersion of the scene by incorporating more categories.
     Do not add too few or too many objects to make the scene empty or crowded.
@@ -49,7 +49,7 @@ User demand: {demand}
 Designing ideas: {ideas}
 Roomtype: {roomtype}
 
-Here is your response:
+Here is your response (do not use "//" for comment):
 """
 
 
@@ -89,7 +89,7 @@ Here is the given roominfo:
 User demand: {demand}
 List of big furniture: {big_category_list}
 
-Here is your response:
+Here is your response (do not use "//" for comment):
 """
 
 
@@ -107,9 +107,11 @@ You will receive:
 You need to return a dict including:
 1. The mapping of given category name with the most similar standard category name. 
 
+
 *** Important ***
-The standard category list: ['appliances.BeverageFridgeFactory', 'appliances.DishwasherFactory', 'appliances.MicrowaveFactory', 'appliances.OvenFactory', 'appliances.MonitorFactory', 'appliances.TVFactory', 'bathroom.BathroomSinkFactory', 'bathroom.StandingSinkFactory', 'bathroom.BathtubFactory', 'bathroom.HardwareFactory', 'bathroom.ToiletFactory', 'decor.AquariumTankFactory', 'elements.DoorCasingFactory', 'elements.GlassPanelDoorFactory', 'elements.LiteDoorFactory', 'elements.LouverDoorFactory', 'elements.PanelDoorFactory', 'elements.NatureShelfTrinketsFactory', 'elements.PillarFactory', 'elements.RugFactory', 'elements.CantileverStaircaseFactory', 'elements.CurvedStaircaseFactory', 'elements.LShapedStaircaseFactory', 'elements.SpiralStaircaseFactory', 'elements.StraightStaircaseFactory', 'elements.UShapedStaircaseFactory', 'elements.PalletFactory', 'elements.RackFactory', 'lamp.DeskLampFactory', 'lamp.FloorLampFactory', 'lamp.LampFactory', 'seating.BedFactory', 'seating.BedFrameFactory', 'seating.BarChairFactory', 'seating.ChairFactory', 'seating.OfficeChairFactory', 'seating.MattressFactory', 'seating.PillowFactory', 'seating.ArmChairFactory', 'seating.SofaFactory', 'shelves.CellShelfFactory', 'shelves.TVStandFactory', 'shelves.CountertopFactory', 'shelves.KitchenCabinetFactory', 'shelves.KitchenIslandFactory', 'shelves.KitchenSpaceFactory', 'shelves.LargeShelfFactory', 'shelves.SimpleBookcaseFactory', 'shelves.SidetableDeskFactory', 'shelves.SimpleDeskFactory', 'shelves.SingleCabinetFactory', 'shelves.TriangleShelfFactory', 'table_decorations.BookColumnFactory', 'table_decorations.BookStackFactory', 'table_decorations.SinkFactory', 'table_decorations.TapFactory', 'table_decorations.VaseFactory', 'tables.TableCocktailFactory', 'tables.CoffeeTableFactory', 'tables.SideTableFactory', 'tables.TableDiningFactory', 'tables.TableTopFactory', 'tableware.BottleFactory', 'tableware.BowlFactory', 'tableware.CanFactory', 'tableware.ChopsticksFactory', 'tableware.CupFactory', 'tableware.FoodBagFactory', 'tableware.FoodBoxFactory', 'tableware.ForkFactory', 'tableware.SpatulaFactory', 'tableware.FruitContainerFactory', 'tableware.JarFactory', 'tableware.KnifeFactory', 'tableware.LidFactory', 'tableware.PanFactory', 'tableware.LargePlantContainerFactory', 'tableware.PlantContainerFactory', 'tableware.PlateFactory', 'tableware.PotFactory', 'tableware.SpoonFactory', 'tableware.WineglassFactory', 'wall_decorations.BalloonFactory', 'wall_decorations.RangeHoodFactory', 'wall_decorations.MirrorFactory', 'wall_decorations.WallArtFactory', 'wall_decorations.WallShelfFactory']
+The standard category list: ['appliances.BeverageFridgeFactory', 'appliances.DishwasherFactory', 'appliances.MicrowaveFactory', 'appliances.OvenFactory', 'appliances.MonitorFactory', 'appliances.TVFactory', 'bathroom.BathroomSinkFactory', 'bathroom.StandingSinkFactory', 'bathroom.BathtubFactory', 'bathroom.HardwareFactory', 'bathroom.ToiletFactory', 'decor.AquariumTankFactory', 'elements.DoorCasingFactory',  'elements.LiteDoorFactory', 'elements.LouverDoorFactory', 'elements.PanelDoorFactory', 'elements.NatureShelfTrinketsFactory', 'elements.PillarFactory', 'elements.RugFactory', 'elements.CantileverStaircaseFactory', 'elements.CurvedStaircaseFactory', 'elements.LShapedStaircaseFactory', 'elements.SpiralStaircaseFactory', 'elements.StraightStaircaseFactory', 'elements.UShapedStaircaseFactory', 'elements.PalletFactory', 'lamp.DeskLampFactory', 'lamp.FloorLampFactory', 'lamp.LampFactory', 'seating.BedFactory', 'seating.BedFrameFactory', 'seating.BarChairFactory', 'seating.ChairFactory', 'seating.OfficeChairFactory', 'seating.MattressFactory', 'seating.PillowFactory', 'seating.ArmChairFactory', 'seating.SofaFactory', 'shelves.CellShelfFactory', 'shelves.TVStandFactory', 'shelves.KitchenCabinetFactory', 'shelves.KitchenIslandFactory', 'shelves.KitchenSpaceFactory', 'shelves.LargeShelfFactory', 'shelves.SimpleBookcaseFactory', 'shelves.SidetableDeskFactory', 'shelves.SimpleDeskFactory', 'shelves.SingleCabinetFactory', 'shelves.TriangleShelfFactory', 'table_decorations.BookColumnFactory', 'table_decorations.BookStackFactory', 'table_decorations.TapFactory', 'table_decorations.VaseFactory', 'tables.CoffeeTableFactory', 'tables.SideTableFactory', 'tables.TableDiningFactory', 'tableware.BottleFactory', 'tableware.BowlFactory', 'tableware.CanFactory', 'tableware.ChopsticksFactory', 'tableware.CupFactory', 'tableware.FoodBagFactory', 'tableware.FoodBoxFactory', 'tableware.ForkFactory', 'tableware.SpatulaFactory', 'tableware.FruitContainerFactory', 'tableware.JarFactory', 'tableware.KnifeFactory', 'tableware.LidFactory', 'tableware.PanFactory', 'tableware.LargePlantContainerFactory', 'tableware.PlantContainerFactory', 'tableware.PlateFactory', 'tableware.PotFactory', 'tableware.SpoonFactory', 'tableware.WineglassFactory', 'wall_decorations.BalloonFactory', 'wall_decorations.RangeHoodFactory', 'wall_decorations.MirrorFactory', 'wall_decorations.WallArtFactory', 'wall_decorations.WallShelfFactory']
 You can only use category name from the standard list. If no standard category is matched, return null.
+The name must be strictly matched. SIgnificant mismatches are not allowed. For example, do not match bench with "seating.SofaFactory".
 
 Here is the example: 
 {
@@ -123,7 +125,7 @@ Here is the given roominfo:
 User demand: {demand}
 List of given category names:  {category_list}
 
-Here is your response:
+Here is your response (do not use "//" for comment):
 """
 
 # ['BeverageFridgeFactory', 'DishwasherFactory', 'MicrowaveFactory', 'OvenFactory', 'MonitorFactory', 'TVFactory',
@@ -131,14 +133,14 @@ Here is your response:
 #  'AquariumTankFactory', 'DoorCasingFactory', 'GlassPanelDoorFactory', 'LiteDoorFactory', 'LouverDoorFactory',
 #  'PanelDoorFactory', 'NatureShelfTrinketsFactory', 'PillarFactory', 'RugFactory', 'CantileverStaircaseFactory',
 #  'CurvedStaircaseFactory', 'LShapedStaircaseFactory', 'SpiralStaircaseFactory', 'StraightStaircaseFactory',
-#  'UShapedStaircaseFactory', 'PalletFactory', 'RackFactory', 'CeilingClassicLampFactory', 'CeilingLightFactory',
+#  'UShapedStaircaseFactory', 'PalletFactory', 'CeilingClassicLampFactory', 'CeilingLightFactory',
 #  'DeskLampFactory', 'FloorLampFactory', 'LampFactory', 'BedFactory', 'BedFrameFactory', 'BarChairFactory',
 #  'ChairFactory', 'OfficeChairFactory', 'MattressFactory', 'PillowFactory', 'ArmChairFactory', 'SofaFactory',
-#  'CellShelfFactory', 'TVStandFactory', 'CountertopFactory', 'CabinetDoorBaseFactory', 'KitchenCabinetFactory',
+#  'CellShelfFactory', 'TVStandFactory',  'CabinetDoorBaseFactory', 'KitchenCabinetFactory',
 #  'KitchenIslandFactory', 'KitchenSpaceFactory', 'LargeShelfFactory', 'SimpleBookcaseFactory', 'SidetableDeskFactory',
 #  'SimpleDeskFactory', 'SingleCabinetFactory', 'TriangleShelfFactory', 'BookColumnFactory', 'BookFactory',
-#  'BookStackFactory', 'SinkFactory', 'TapFactory', 'VaseFactory', 'TableCocktailFactory',
-#  'CoffeeTableFactory', 'SideTableFactory', 'TableDiningFactory', 'TableTopFactory', 'BottleFactory', 'BowlFactory',
+#  'BookStackFactory',  'TapFactory', 'VaseFactory',
+#  'CoffeeTableFactory', 'SideTableFactory', 'TableDiningFactory',  'BottleFactory', 'BowlFactory',
 #  'CanFactory', 'ChopsticksFactory', 'CupFactory', 'FoodBagFactory', 'FoodBoxFactory', 'ForkFactory',
 #  'SpatulaFactory', 'FruitContainerFactory', 'JarFactory', 'KnifeFactory', 'LidFactory', 'PanFactory',
 #  'LargePlantContainerFactory', 'PlantContainerFactory', 'PlateFactory', 'PotFactory', 'SpoonFactory', 'WineglassFactory']
@@ -286,6 +288,7 @@ You will receive:
 
 You need to return a dict including:
 1. X-Y Position and Z rotation of each furniture. Make the layout more sparse and comfortable for people to move around.
+**Note**: If there are multiple objects in the same category, you must consider making them aligned, such as desks aligned in rows and columns, shelves aligned against wall.
 2. The initial size of furniture in (x_dim, y_dim, z_dim) when they face to the positive X axis, which means (depth, width, height). For example, size for cabinet can be (0.5,0.5,1) and size for sofa can be (0.8,2,1).
 3. Related object that each object belongs to or has relation with. Note if A's parent is B, then B's parent must not be A. Only one object can be parent (usually the bigger one, such as table, desk, bed, shelf) in the relation.
 

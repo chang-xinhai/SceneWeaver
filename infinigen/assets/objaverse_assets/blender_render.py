@@ -398,7 +398,7 @@ def load_glb(mesh_path):
     
     bpy.ops.object.select_all(action='DESELECT')
     obj = select_meshes_under_empty(parent_obj.name)
-    
+
     bpy.ops.object.join()
     bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
     

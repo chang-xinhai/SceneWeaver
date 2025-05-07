@@ -9,15 +9,17 @@ from infinigen.core.constraints.constraint_language import util as iu
 from infinigen.core.constraints.evaluator.node_impl.trimesh_geometry import any_touching
 import os
 from infinigen.core.constraints.constraint_language.util import delete_obj_with_children
+from shapely.geometry import Polygon
 
-def eval_metric(state, iter,remove_bad=False):
+def eval_metric(state, iter,remove_bad=False,save=True):
     results,map_names = eval_physics_score(state,remove_bad=remove_bad)
-    save_dir = os.getenv("save_dir")
-    with open(f"{save_dir}/record_files/metric_{iter}.json", "w") as file:
-        json.dump(results, file, indent=4)
+    if save:
+        save_dir = os.getenv("save_dir")
+        with open(f"{save_dir}/record_files/metric_{iter}.json", "w") as file:
+            json.dump(results, file, indent=4)
 
-    with open(f"{save_dir}/record_files/name_map_{iter}.json", "w") as file:
-        json.dump(map_names, file, indent=4)
+        with open(f"{save_dir}/record_files/name_map_{iter}.json", "w") as file:
+            json.dump(map_names, file, indent=4)
     return results
 
 
@@ -100,6 +102,11 @@ def eval_physics_score(state,remove_bad=False):
         projected_a = trimesh.path.polygons.projected(
             a_trimesh.convex_hull, normal_b, origin_b
         )
+        if projected_a is None:
+           
+            verts_2d = a_trimesh.vertices[:, :2]  # if the plane is in XY
+            projected_a = Polygon(verts_2d)
+
         res = projected_a.within(projected_b.buffer(1e-2))
         if not res:
             OOB_objs.append(map_names[name])
@@ -125,14 +132,16 @@ def eval_physics_score(state,remove_bad=False):
     collision_objs_norug = [i for i in collision_objs if "rug" not in map_names[i]]
     collide_volume = []
     for name in collision_objs_norug:
+        col_objs = collision_objs_norug.copy()
+        col_objs.remove(name)
         touch = any_touching(
-            scene, name, collision_objs_norug, bvh_cache=state.bvh_cache
+            scene, name, col_objs, bvh_cache=state.bvh_cache
         )
         if name =='ObjaverseCategoryFactory(1083614).spawn_asset(8785162)':
             a = 1
         if isinstance(touch.names[0], str):
             touch_names = [touch.names[0]]
-        elif len(touch.names[0])==len(collision_objs_norug)-1:
+        elif len(touch.names[0])==len(col_objs):
             continue
         else:
             touch_names = touch.names[0]
@@ -153,11 +162,16 @@ def eval_physics_score(state,remove_bad=False):
                         # Example usage:
                         obj1 = state.trimesh_scene.geometry[state.objs[collide_pair[0]].obj.name+"_mesh"]
                         obj2 = state.trimesh_scene.geometry[state.objs[collide_pair[1]].obj.name+"_mesh"]
-                        vol = trimesh.boolean.boolean_manifold([obj1,obj2],"intersection").volume
-                        # print(f"Intersection volume: {vol:.6f}")
-                        if vol > 0.0001:
-                            print(collide_pair,vol)
-                            collide_volume.append(vol)
+
+                        if obj1.is_watertight and obj2.is_watertight:
+                            vol = trimesh.boolean.boolean_manifold([obj1,obj2],"intersection").volume
+                            # print(f"Intersection volume: {vol:.6f}")
+                            if vol > 0.0001:
+                                print(collide_pair,vol)
+                                collide_volume.append(vol)
+                                collide_pairs.append(collide_pair)
+                        else:
+                            collide_volume.append(-1)
                             collide_pairs.append(collide_pair)
                         # scene = state.trimesh_scene
                         # # print(scene.geometry.keys())  # prints the names like ['Cube', 'Plane', 'Mesh_01', ...]
@@ -347,15 +361,39 @@ def eval_general_score(image_path_1, layout, image_path_2=None):
         json.dump(grades, f)
 
     return grades
+def get_relation_mapping(state):
+    map_cp = dict()
+    for k, os in state.objs.items():
+        map_cp[k] = {"child":[],"parent":[]}
+        for rel in os.relations:
+            parent_name = rel.target_name
+            if parent_name!="newroom_0-0":
+                if k not in map_cp:
+                    map_cp[k] = {"child":[],"parent":[]}
+                map_cp[k]["parent"].append(parent_name)
+                if parent_name not in map_cp:
+                    map_cp[parent_name] = {"child":[],"parent":[]}
+                map_cp[parent_name]["child"].append(k)
+    return map_cp
 
 def del_top_collide_obj(state,iter):
-    results = eval_metric(state,iter)
+    #got children-parent pair
+    map_cp = get_relation_mapping(state)
+            
+    stop = True
+                
+    results = eval_metric(state,iter,save=False)
     collide_pairs = results["BBL objects"]
     if len(collide_pairs)==0:
-        return None
+        return stop
     vol = results["collide volume"]
     record = dict()
     for pair,v in zip(collide_pairs,vol):
+        obj1,obj2 = pair
+        if obj2 in map_cp[obj1]["child"]:
+            pair.remove(obj1)
+        elif obj2 in map_cp[obj1]["parent"]:
+            pair.remove(obj2)
         for objname in pair:
             if objname not in record:
                 record[objname] = 0
@@ -375,4 +413,9 @@ def del_top_collide_obj(state,iter):
     delete_obj_with_children(state.trimesh_scene,objname,delete_blender=True, delete_asset=True)
     state.objs.pop(max_key)
 
-    return max_key
+    
+    # for pair in collide_pairs:
+    #     if max_key not in pair:
+    #         stop = False
+    stop = False
+    return stop

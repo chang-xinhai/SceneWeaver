@@ -36,10 +36,34 @@ class ThreedFrontCategoryFactory(ThreedFrontFactory):
         
     def create_asset(self, **params) -> bpy.types.Object:
         print(self.asset_file)
-        if self.asset_file == "/home/yandan/dataset/3D-scene/3D-FUTURE-model/2250c149-cae7-47b1-b2f6-061f171b3198/raw_model.obj":
+        if self.asset_file == '/home/yandan/dataset/3D-scene/3D-FUTURE-model/a3d017a0-f180-45c9-b402-4abf214e0b4f/raw_model.obj':
             a = 1
+        # Step 1: Keep track of existing objects
+        before = set(bpy.context.scene.objects)
+
+        # Step 2: Import the OBJ file
         bpy.ops.import_scene.obj(filepath=self.asset_file)
-        imported_obj = bpy.context.selected_objects[0]
+
+        # Step 3: Identify new objects added by the import
+        after = set(bpy.context.scene.objects)
+        new_objects = list(after - before)
+
+        # Step 4: Filter mesh objects
+        mesh_objects = [obj for obj in new_objects if obj.type == 'MESH']
+
+        # Step 5: Join meshes if more than one was imported
+        if mesh_objects:
+            bpy.ops.object.select_all(action='DESELECT')
+            for obj in mesh_objects:
+                obj.select_set(True)
+            bpy.context.view_layer.objects.active = mesh_objects[0]
+            bpy.ops.object.join()
+            print("Meshes joined successfully.")
+        else:
+            print("No mesh objects found to join.")
+        
+        imported_obj = bpy.context.view_layer.objects.active
+        # imported_obj = bpy.context.selected_objects[0]
 
         # bpy.ops.object.mode_set(mode='EDIT')  # Switch to Edit Mode
         # bpy.ops.mesh.select_all(action='SELECT')

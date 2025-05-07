@@ -19,6 +19,7 @@ def record_scene(state, solver, terrain, house_bbox, solved_bbox, camera_rigs, i
         "populate_assets",
         populate.populate_state_placeholders_mid,
         state,
+        # final=True,
         use_chance=False,
     )
 

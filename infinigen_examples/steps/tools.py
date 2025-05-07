@@ -102,6 +102,8 @@ def recover_attr(obj, condition, reconver_func, visited=None, path=""):
         ".np." in path
         or ".sys." in path
         or "logging.Logger" in path
+        or "Logger" in path
+        or "logger" in path
         or ".importlib." in path
         or ".butil." in path
         or "logging" in path
@@ -118,7 +120,7 @@ def recover_attr(obj, condition, reconver_func, visited=None, path=""):
     # 遍历对象的 __dict__ 属性（如果有）
     if flag:
         visited.add(obj_id)
-        print(path)
+        # print(path)
         if "sofa_fabric" in path:
             a = 1
         d = vars(obj)
@@ -127,7 +129,12 @@ def recover_attr(obj, condition, reconver_func, visited=None, path=""):
         for attr_name in lst:
             if attr_name == "__module__":
                 continue
-            attr_value = d[attr_name]
+            try:
+                attr_value = d[attr_name]
+                isinstance(attr_value, str)
+            except:
+                print(f"error loading attr {obj} {attr_name}")
+                continue
 
             if attr_name == "guard_surface":
                 a = 1
@@ -476,6 +483,7 @@ def save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p):
     # state.trimesh_scene = None
     save_dir = os.getenv("save_dir")
     save_path = f"{save_dir}/record_files/scene_{iter}.blend"
+    bpy.ops.file.make_paths_absolute()
     bpy.ops.wm.save_as_mainfile(filepath=save_path)
 
     # COMBINED_ATTR_NAME = "MaskTag"
@@ -587,7 +595,7 @@ def save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p):
 
 def is_module(attr):
     isstr = (
-        isinstance(attr, str) and attr != "__module__" and attr.startswith("infinigen.")
+        isinstance(attr, str) and attr not in ["__module__", "__name__","name"] and attr.startswith("infinigen.")
     )
     if isstr:
         try:

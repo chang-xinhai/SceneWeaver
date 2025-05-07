@@ -11,7 +11,7 @@ You will receive:
 Your response will be sent to generate some images of the partial scene, and then a reconstruction method to reconstruct the image into the partial 3D scene.
 You should return the info for updating each large object:
 1. prompt for SD: A descriptive prompt suitable for the Stable Diffusion model. 
-2. obj category: The category of the large object, ensuring alignment with the SD prompt.
+2. obj category: The category of the large object, ensuring alignment with the SD prompt. Use words for category as less as possible, such as "desk" instead of "teacher's desk".
 3. obj_id: You need to recognize which large objects should be used to add small objects.
 4. obj_size: You also need to return the size of these large objects. 
 

@@ -267,9 +267,9 @@ def resize_obj(obj, size, apply_transform=True):
     x_dim, y_dim, z_dim = size
     if x_dim==-1:
         return obj
-    x_scale = x_dim / obj.dimensions[0]
-    y_scale = y_dim / obj.dimensions[1]
-    z_scale = z_dim / obj.dimensions[2]
+    x_scale = x_dim / obj.dimensions[0] if obj.dimensions[0]!=0 else 1 
+    y_scale = y_dim / obj.dimensions[1] if obj.dimensions[1]!=0 else 1 
+    z_scale = z_dim / obj.dimensions[2] if obj.dimensions[2]!=0 else 1 
 
     obj.scale = (x_scale, y_scale, z_scale)
 

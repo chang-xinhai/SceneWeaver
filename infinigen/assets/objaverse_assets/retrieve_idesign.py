@@ -98,22 +98,24 @@ torch.set_grad_enabled(False)
 
 
 if __name__ == "__main__":
-    with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
-        j = json.load(f)
-        roomtype = j["roomtype"]
+    # with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
+    #     j = json.load(f)
+    #     roomtype = j["roomtype"]
+
     with open(f"/home/yandan/workspace/infinigen/objav_cnts.json","r") as f:
         LoadObjavCnts = json.load(f)
     
     LoadObjavFiles = dict()
     for category,cnt in LoadObjavCnts.items():
-        text = preprocess(f"A high-poly {roomtype} {category} in high quality")
+        # text = preprocess(f"A high-poly {roomtype} {category} in high quality")
+        text = preprocess(f"A high-poly {category} in high quality")
         device = clip_model.device
         tn = clip_prep(
             text=[text], return_tensors='pt', truncation=True, max_length=76
         ).to(device)
         LoadObjavFiles[category] = []
         enc = clip_model.get_text_features(**tn).float().cpu()
-        retrieved_objs = retrieve(enc, top=1, sim_th=0.1, filter_fn=get_filter_fn())
+        retrieved_objs = retrieve(enc, top=3, sim_th=0.1, filter_fn=get_filter_fn())
         # import pdb
         # pdb.set_trace()
         for i in range(len(retrieved_objs)):
@@ -126,8 +128,11 @@ if __name__ == "__main__":
                 download_processes=processes
             )
             file_path = list(objaverse_objects.values())[0]
-            LoadObjavFiles[category].append(file_path)
-            
+            render_folder = file_path.replace(".glb","")
+            if os.path.exists(f"{render_folder}/metadata.json"):
+                LoadObjavFiles[category].append(file_path)
+                break
+
             #render
             cmd = f"""
             source ~/anaconda3/etc/profile.d/conda.sh
@@ -137,14 +142,18 @@ if __name__ == "__main__":
             subprocess.run(["bash", "-c", cmd])
 
             #front view
-            render_folder = file_path.replace(".glb","")
+            
             cmd = f"""
             source ~/anaconda3/etc/profile.d/conda.sh
             conda activate layoutgpt
             python /home/yandan/workspace/infinigen/Pipeline/app/tool/objaverse_frontview.py {render_folder} {category} > run1.log 2>&1
             """
             subprocess.run(["bash", "-c", cmd])
-
+            if os.path.exists(f"{render_folder}/metadata.json"):
+                LoadObjavFiles[category].append(file_path)
+                break
+            else:
+                print(f"failed in processing {file_path}")
             
     
     with open(f"/home/yandan/workspace/infinigen/objav_files.json","w") as f:

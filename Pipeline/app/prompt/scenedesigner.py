@@ -8,7 +8,7 @@ You should list all the effective optimization strategy for the next step based 
 You must not focus on style, texture, or aesthetic appearance. 
 Your reasoning should prioritize structural plausibility, physical feasibility, and semantic coherence.
 To achieve the best results, combine multiple methods over several iterations — start with a foundational layout and refine it progressively with finer details.
-Do not make the scene crowded.
+Do not make the scene crowded. Do not make the scene empty.
 """
 )
 NEXT_STEP_PROMPT = """
@@ -19,15 +19,14 @@ Based on user needs and current status:
 4. Find the most serious problem to solve.
 
 To solve the problem, list all the appropriate tools that can match the requirement for next step with 0-1 confidence score:
-1. You should consider the suggestion from previous conversation to score each tool. If there is no previous step, init the scene.
+1. You should consider the suggestion from previous conversation to score each tool. 
 2. If the same problem has not been solved by last step, you should consider degrade the score of the tool in the last step.  
-3. You should carefully check current scene, and you **MUST** obey the relation of each object.
+3. You should carefully check current scene, and you **MUST** obey the relation of each object. If there is no previous step, init the scene.
 3. For complex tasks, you can break down the problem and use different tools step by step to solve it, but you only choose and execute the suitable tool for this step. 
 4. When multiple tools are applicable to solve the user’s request, list them with confidence score. 
-5. Choose **only one** appropriate tool in high score (>=0.7) randomly. 
 
+You must choose one tool for this step.
 Clearly explain the expectation and suggest the next steps.
-
 If there is no big problem to address, or if only slight improvements can be made, or if further changes could worsen the scene, stop making modifications.
 
 """

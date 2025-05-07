@@ -70,7 +70,9 @@ If an object is "against_wall", then it can not have other relations with object
 Before returning the final results, you need to carefully confirm that each obvious relation has been added. 
 
 **Important: Proximity Rule Reminder**
-For against_wall, you should first look through each object to check if it should be against wall. You can take regular usage habits into account. If the object is usually placed against wall or on the wall, you **MUST** add against_wall relation regardless of the layout to make the scene reasonable.
+For against_wall, itay include objects placed on the ground (sofa) as well as hanging on the wall (picture).
+You should first look through each object to check if it should be against wall. You can take regular usage habits into account. If the object is always placed against wall or on the wall, you **MUST** add against_wall relation regardless of the layout to make the scene reasonable.
+But if the object is not always against wall, you must check the distance.
 For other relations, you **must** strictly enforce spatial proximity when assigning relations. If two objects's edges are far away (>1.0 meter) from each other, DO NOT assign any relation between them, regardless of their category or orientation.
 Do NOT assume a relation exists just because it is typical (e.g., 8 chairs facing a table) unless the layout confirms they are physically close enough.
 You are not allowed to infer relations purely from “usual placement” — **use the layout only**.

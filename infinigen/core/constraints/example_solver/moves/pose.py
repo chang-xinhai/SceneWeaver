@@ -92,7 +92,8 @@ class TranslateMove(moves.Move):
             import pdb
         # print("111",state.objs["5865980_BookStackFactory"].obj.location)
         # print(target_name,s "1 ",obj_state.obj.location)
-
+        if "3164690_Bench" in target_name:
+            import pdb
         parent_planes = apply_relations_surfacesample(
             state, target_name, use_initial=True, closest_surface=True ##TODO YYD closest_surface
         )
@@ -147,20 +148,24 @@ class TranslateMove(moves.Move):
 
         #     self.translation = obj_state.dof_matrix_translation @ random_vector
         # else:
-        if "Book" in target_name:
-            import pdb
-        self.translation = self.calc_gradient(
+        
+        translation1,TRANS_MULT = self.calc_gradient_depth(
             state.trimesh_scene, state, target_name, touch
         )
+        translation2 = self.calc_gradient_bbox(
+            state.trimesh_scene, state, target_name, touch, TRANS_MULT/2
+        )
+        translation = translation1 + translation2
         # if target_name=='4061705_TVFactory':
         #     print(state.objs[target_name].obj.location)
         #     print("aaa",self.translation )
         #     a =1
 
-        iu.translate(state.trimesh_scene, os.obj.name, self.translation)
+        iu.translate(state.trimesh_scene, os.obj.name, translation)
         # print("555",state.objs["5865980_BookStackFactory"].obj.location)
         # print(target_name, "4 ",obj_state.obj.location)
         # print(target_name,self.translation)
+        
         self._backup_pose = pose_backup(os, dof=False)
         # invisible_others()
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -168,7 +173,7 @@ class TranslateMove(moves.Move):
         # pdb.set_trace()
         return success
 
-    def calc_gradient(self, scene, state, name, touch):
+    def calc_gradient_depth(self, scene, state, name, touch):
         # # usd collision normal as gradient direction
         obj_state = state.objs[name]
         if name=="5603344_nightstand":
@@ -212,6 +217,7 @@ class TranslateMove(moves.Move):
         # gradient[2] = 0
         gradient_norm = np.linalg.norm(gradient)
         if len(b_names) == 0 or gradient_norm == 0:
+            TRANS_MULT = 0.05
             translation = np.zeros(3)
         else:
             TRANS_MULT = min(0.05,gradient_norm)
@@ -220,70 +226,70 @@ class TranslateMove(moves.Move):
         
         # translation = TRANS_MULT * obj_state.dof_matrix_translation @ gradient
 
-        return translation
+        return translation,TRANS_MULT
 
-    # def calc_gradient(self, scene, state, name, touch):
-    # # usd object centroid as gradient direction
+    def calc_gradient_bbox(self, scene, state, name, touch, TRANS_MULT):
+    # usd object centroid as gradient direction
         
-    #     #     pdb.set_trace()
-    #     obj_state = state.objs[name]
+        #     pdb.set_trace()
+        obj_state = state.objs[name]
 
-    #     # record top children
-    #     childnames = set()
-    #     for k,os in state.objs.items():
-    #         for rel in os.relations:
-    #             if rel.target_name==name and \
-    #                 (Subpart.SupportSurface in rel.relation.parent_tags or Subpart.Top in rel.relation.parent_tags):
-    #                 childnames.add(os.obj.name)
+        # record top children
+        childnames = set()
+        for k,os in state.objs.items():
+            for rel in os.relations:
+                if rel.target_name==name and \
+                    (Subpart.SupportSurface in rel.relation.parent_tags or Subpart.Top in rel.relation.parent_tags):
+                    childnames.add(os.obj.name)
 
-    #     a = obj_state.obj.name
-    #     T, g = scene.graph[a]  # 获取 b 的变换和几何信息
-    #     geom_a = scene.geometry[g]
-    #     centroid_a = geom_a.centroid
+        a = obj_state.obj.name
+        T, g = scene.graph[a]  # 获取 b 的变换和几何信息
+        geom_a = scene.geometry[g]
+        centroid_a = geom_a.centroid
 
-    #     centroid_b_lst = []
-    #     b_names = []
-    #     gradient = np.zeros(3)
-    #     if "SingleCabinet" in name:
-    #         import pdb
-    #     # for _, b in touch.names:
-    #     for i in range(len(touch.names)):
-    #         b = touch.names[i]
-    #         if b in childnames or b==state.objs[name].obj.name: # remove top children's collision
-    #             continue
-    #         if b.startswith("window"):
-    #             continue
-    #         T, g = scene.graph[b]  # 获取 b 的变换和几何信息
-    #         geom_b = scene.geometry[g]
-    #         centroid_b = geom_b.centroid
-    #         depth = touch.contacts[i].depth
-    #         if b not in b_names:
-    #             b_names.append(b)
-    #             grad = centroid_a - centroid_b
-    #             grad_norm = np.linalg.norm(grad)
-    #             gradient += grad / grad_norm * depth
-    #             # centroid_b_lst.append(centroid_b)
+        centroid_b_lst = []
+        b_names = []
+        gradient = np.zeros(3)
+        if "SingleCabinet" in name:
+            import pdb
+        # for _, b in touch.names:
+        for i in range(len(touch.names)):
+            b = touch.names[i]
+            if b in childnames or b==state.objs[name].obj.name: # remove top children's collision
+                continue
+            if b.startswith("window"):
+                continue
+            T, g = scene.graph[b]  # 获取 b 的变换和几何信息
+            geom_b = scene.geometry[g]
+            centroid_b = geom_b.centroid
+            depth = touch.contacts[i].depth
+            if b not in b_names:
+                b_names.append(b)
+                grad = centroid_a - centroid_b
+                grad_norm = np.linalg.norm(grad)
+                gradient += grad / grad_norm * depth
+                # centroid_b_lst.append(centroid_b)
 
-    #     # if centroid_b_lst==[]:
-    #     #     return [0,0,0]
+        # if centroid_b_lst==[]:
+        #     return [0,0,0]
 
-    #     # centroid_b_mean = np.mean(centroid_b_lst, axis=0)
-    #     # if "FloorLampFactory" in name:
-    #     #     a = 1
-    #     if "wardrobe" in name:
-    #         import pdb
-    #     # gradient = centroid_a - centroid_b_mean
-    #     gradient_norm = np.linalg.norm(gradient)
-    #     if len(b_names) == 0 or gradient_norm == 0:
-    #         gradient = np.zeros(3)
-    #     else:
-    #         gradient = gradient / gradient_norm
-    #     TRANS_MULT = 0.05
-    #     translation = TRANS_MULT * obj_state.dof_matrix_translation @ gradient
-    #     if "SingleCabinet" in name:
-    #         import pdb
-    #         print(state.objs[name].obj.location)
-    #     return translation
+        # centroid_b_mean = np.mean(centroid_b_lst, axis=0)
+        # if "FloorLampFactory" in name:
+        #     a = 1
+        if "wardrobe" in name:
+            import pdb
+        # gradient = centroid_a - centroid_b_mean
+        gradient_norm = np.linalg.norm(gradient)
+        if len(b_names) == 0 or gradient_norm == 0:
+            gradient = np.zeros(3)
+        else:
+            gradient = gradient / gradient_norm
+        # TRANS_MULT = 0.05
+        translation = TRANS_MULT * obj_state.dof_matrix_translation @ gradient
+        if "SingleCabinet" in name:
+            import pdb
+            print(state.objs[name].obj.location)
+        return translation
 
 
 @dataclass

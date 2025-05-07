@@ -85,7 +85,7 @@ hanging = cl.StableAgainst(top, ceilingtags, margin=0.05)
 side_against_wall = cl.StableAgainst(side, walltags, margin=0.05)
 
 ontop = cl.StableAgainst(bottom, top, margin=0.005)
-on = cl.StableAgainst(bottom, {t.Subpart.SupportSurface, -t.Subpart.Top}, margin=0.005)
+on = cl.StableAgainst(bottom, {t.Subpart.SupportSurface, -t.Subpart.Top}, margin=0.025)
 # on = cl.StableAgainst(bottom, {t.Subpart.SupportSurface})
 
 # front_against = cl.StableAgainst(

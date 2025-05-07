@@ -23,8 +23,8 @@ Ideal for generating foundational layouts for common room types.
 Supported Room Types: living room, dining room, bedroom, bathroom, office, and classroom.
 Use Case 1: Create a foundational layout.
 
-Strengths: Provides a ready-made, realistic layout based on real-world data. with rich details.
-Weaknesses: Fixed layout, need to modify with other methods to meet user demand.
+Strengths: Provides a ready-made layout based on real-world data. Rich of details.
+Weaknesses: Fixed layout, need to modify with other methods to meet user demand. The layout is in low quality. Assets' quality is unstable.
 """
 
 
@@ -67,24 +67,24 @@ class InitMetaSceneExecute(BaseTool):
 
         action = self.name
         try:
-            # # # find scene
-            # save_dir = os.getenv("save_dir")
-            # json_name, roomsize = self.find_metascene(user_demand, ideas, roomtype)
-            # roomsize = self.get_roomsize(user_demand, ideas, roomsize, roomtype)
-            # success = get_scene_frontview(json_name)
-            # with open("/home/yandan/workspace/infinigen/roominfo.json", "w") as f:
-            #     info = {
-            #         "action": action,
-            #         "ideas": ideas,
-            #         "roomtype": roomtype,
-            #         "roomsize": roomsize,
-            #         "scene_id": json_name,
-            #         "save_dir": save_dir
-            #     }
-            #     json.dump(info, f, indent=4)
-            # os.system(f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json")
-            # success = update_infinigen(action, iter, json_name,ideas=ideas)
-            # assert success
+            # # find scene
+            save_dir = os.getenv("save_dir")
+            json_name, roomsize = self.find_metascene(user_demand, ideas, roomtype)
+            roomsize = self.get_roomsize(user_demand, ideas, roomsize, roomtype)
+            success = get_scene_frontview(json_name)
+            with open("/home/yandan/workspace/infinigen/roominfo.json", "w") as f:
+                info = {
+                    "action": action,
+                    "ideas": ideas,
+                    "roomtype": roomtype,
+                    "roomsize": roomsize,
+                    "scene_id": json_name,
+                    "save_dir": save_dir
+                }
+                json.dump(info, f, indent=4)
+            os.system(f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json")
+            success = update_infinigen(action, iter, json_name,ideas=ideas)
+            assert success
 
             #add relation
             action = "add_relation"

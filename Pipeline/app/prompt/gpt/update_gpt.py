@@ -36,7 +36,7 @@ Here is the information you receive:
 1.This is a {roomtype}. 
 2.The room size is [{roomsize}] in length and width.
 3.User demand for the entire scene: {user_demand}
-4.Ideas for this step (only for reference): {ideas}
+4.Ideas for this step (only for reference !!): {ideas}.  Do not limited to the ideas.
 5.This is the scene layout: {layout}
 6.This is the layout of door and windows: {structure}
 7.This is the image render from the top view: SCENE_IMAGE 
@@ -45,10 +45,11 @@ Please take a moment to relax and carefully look through each object.
 Apart from the ideas, you can also consider the following factors:
 
 1. Room Structure: Be aware of the door and windows. Make sure objects do not overlap with the door and windows.
-2. Collision and Layout Issues: Check if there are any collisions or improper placements of objects that disrupt the flow of the room.
+2. Collision and Layout Issues: Check if there are 1) any collisions, 2) improper placements of objects, 3) blockers that disrupt the flow of the room.
 3. User Prompt Satisfaction: Does the current scene meet the user's prompt requirements? What needs to be changed to align with the prompt more closely?
 4. Realism Enhancement: What adjustments can be made to make the scene feel more realistic? Consider removing or repositioning objects to enhance visual harmony and authenticity.
 5. Check Object: Check for any redundant, unnecessary, and crowded objects that could be removed to streamline the scene.
+6. Alignment: If there are multiple objects in the same category, are they well-aligned, such as desks aligned in rows and columns, shelves aligned against wall.
 
 What problem do you think it has? 
 Then tell me how to solve these problems.

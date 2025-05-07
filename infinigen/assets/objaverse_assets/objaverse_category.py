@@ -49,6 +49,7 @@ class ObjaverseCategoryFactory(ObjaverseFactory):
         else:  #from openshape
             if self.asset_file is not None:
                 filename = self.asset_file
+                front_view_angle = 0
             else:
                 with open(f"/home/yandan/workspace/infinigen/objav_files.json","r") as f:
                     LoadObjavFiles = json.load(f)  
@@ -65,7 +66,7 @@ class ObjaverseCategoryFactory(ObjaverseFactory):
             # parents = get_highest_parent_objects()      
             
             bpy.ops.object.select_all(action='DESELECT')
-            obj = select_meshes_under_empty(parent_obj.name)
+            select_meshes_under_empty(parent_obj.name)
             
             bpy.ops.object.join()
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')

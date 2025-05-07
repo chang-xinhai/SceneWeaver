@@ -111,7 +111,8 @@ def  stable_against(
     relation_state: state_def.RelationState,
     visualize=False,
     allow_overhangs=False,
-    use_initial = False
+    use_initial = False,
+    fix_pos=False
 ):
 
     # 这个函数stable_against主要用于检查两个对象在三维空间中的稳定性。
@@ -196,7 +197,7 @@ def  stable_against(
     elif relation.check_z:
         res = projected_a.within(projected_b.buffer(1e-2))
         # if (use_initial and not res) or (sa.dof_matrix_translation is not None and sa.obj.name=='FloorLampFactory(8520374).bbox_placeholder(3326486)' and not res):
-        if use_initial and not res:
+        if use_initial and not res and not fix_pos:
             move_vectors = []
             vertices = list(np.array(projected_a.exterior.coords))
             for point in vertices:
@@ -246,7 +247,7 @@ def  stable_against(
             [projected_a, projected_b], z_proj
         )
         res,vertical_diff = is_vertically_contained(projected_a_rotated, projected_b_rotated, return_diff=True)
-        if use_initial and not res:
+        if use_initial and not res and not fix_pos:
             tangent_1 = [0, 0, 1]
             tangent_2 = np.cross(normal_b, tangent_1)
             tangent_2 = tangent_2 / np.linalg.norm(tangent_2)

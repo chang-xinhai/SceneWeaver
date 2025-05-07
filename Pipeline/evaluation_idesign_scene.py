@@ -38,11 +38,11 @@ def statistic_traj(iter):
     trajs = dict()
     for i in range(iter+1):
         traj = dict()
-        with open(f"{save_dir}/args/args_{i}.json","r") as f:
-            j = json.load(f)
-            traj["iter"] = i
-            traj["action"] = j["action"]
-            traj["ideas"] = j["ideas"]
+        traj["iter"] = i
+        # with open(f"{save_dir}/args/args_{i}.json","r") as f:
+        #     j = json.load(f)
+        #     traj["action"] = j["action"]
+        #     traj["ideas"] = j["ideas"]
         with open(f"{save_dir}/pipeline/metric_{i}.json","r") as f:
             j = json.load(f)
             traj["results"] = dict()
@@ -82,13 +82,13 @@ def eval_scene(iter, user_demand):
     metric = dict()
     metric["Object Difference"] = obj_diff
     metric["GPT score (0-10, higher is better)"] = grading
-    metric["Physics score"] = {
-        "object number (higher is better)": results["Nobj"],
-        # "object not inside the room (lower is better)": results["OOB"],
-        # "object has collision (lower is better)": results["BBL"],
-        "object not inside the room (lower is better)": results["OOB Objects"],
-        "object has collision (lower is better)": results["BBL objects"],
-    }
+    # metric["Physics score"] = {
+    #     "object number (higher is better)": results["Nobj"],
+    #     "object not inside the room (lower is better)": results["OOB"],
+    #     "object has collision (lower is better)": results["BBL"],
+    #     # "object not inside the room (lower is better)": results["OOB Objects"],
+    #     # "object has collision (lower is better)": results["BBL objects"],
+    # }
     
     save_dir = os.getenv("save_dir")
     json_name = f"{save_dir}/pipeline/metric_{iter}.json"
@@ -102,6 +102,8 @@ def eval_scene(iter, user_demand):
 
 def eval_general_score(iter, user_demand):
     save_dir = os.getenv("save_dir")
+    if not os.path.exists(f"{save_dir}/pipeline/"):
+        os.mkdir(f"{save_dir}/pipeline/")
     # basedir = "/mnt/fillipo/yandan/scenesage/record_scene/bedroom/record_scene"
     image_path_1 = f"{save_dir}/record_scene/render_{iter}_marked.jpg"
     with open(f"{save_dir}/record_scene/layout_{iter}.json", "r") as f:
@@ -148,22 +150,22 @@ Scoring must be strict. If any critical issue is found (such as missing key obje
 **Evaluation Criteria**:
 
 1. **Realism**: How realistic the room appears. *Ignore texture, lighting, and doors.*
-    - **Good (8-10)**: The layout (position, rotation, and **size**) is believable. Common daily objects in **appropriate sizes** make the room feel lived-in. Rich of daily furniture and objects.
-    - **Bad (0-3)**: Unusual objects, **abnormal object sizes** (e.g., a huge cup or a tiny bed), or strange placements make the room unrealistic.
-    - **Note**: If object types or combinations defy real-world logic (e.g., bathtubs in bedrooms, pen bigger than book), score should be below 5.
+    - **Good (8-10)**: The layout is believable, and common daily objects make the room feel lived-in.
+    - **Bad (0-3)**: Unusual objects or strange placements make the room unrealistic.
+    - **Note**: If object types or combinations defy real-world logic (e.g., bathtubs in bedrooms), score should be below 5.
 
 2. **Functionality**: How well the room supports the intended activities (e.g., sleeping, working).
     - **Good (8-10)**: Contains the necessary furniture and setup for the specified function.
     - **Bad (0-3)**: Missing key objects or contains mismatched furniture (e.g., no bed in a bedroom).
     - **Note**: Even one missing critical item should lower the score below 6.
 
-3. **Layout**: Whether the furniture is arranged logically in good pose and aligns with the user’s preferences.
-    - **Good (8-10)**: Each object must in reasonable **size** according to its category (e.g., cups are in proper size to drink), neatly placed, relationships are reasonable (e.g., chairs face desks), sufficient space exists for walking, and orientations are correct, no collision between objects.
-    - **Bad (0-3)**: Floating objects, crowded floor, **abnormally scaled items** (e.g., oversized mugs, undersized tables), objects with collision, incorrect orientation, or large items placed oddly (e.g., sofa not against the wall). Large empty space.
-    - **Note**: If there are major **size problems** or the room has layout issues that affect use, it should not score above 5. 
-   
+3. **Layout**: Whether the furniture is arranged logically and aligns with the user’s preferences.
+    - **Good (8-10)**: Objects are neatly placed, relationships are reasonable (e.g., chairs face desks), sufficient space exists for walking, and orientations are correct.
+    - **Bad (0-3)**: Floating objects, crowded space, incorrect orientation, or large items placed oddly (e.g., sofa not against the wall).
+    - **Note**: If the room has layout issues that affect use, it should not score above 5.
+
 4. **Completion**: How complete and finished the room feels.
-    - **Good (8-10)**: All necessary large and small items are present. Has rich details. Each shelf has objects inside. Each supporter (e.g. table, desk, and shelf) has small objects on it. Empty area is less than 50%. The room feels done.
+    - **Good (8-10)**: All necessary large and small items are present. Has rich details. Each supporter (e.g. table, desk, and shelf) has small objects on it. The room feels done.
     - **Bad (0-3)**: Room is sparse or empty, lacks decor or key elements.
     - **Note**: If more than 30% of the room is blank or lacks detail, score under 5.
 
@@ -175,11 +177,11 @@ User Preference:
 Room layout:
 {layout}
 
-The Layout include each object's X-Y-Z Position, rotation, size (length, width, height) in meter, as well as relation info with parents.
+The Layout include each object's X-Y-Z Position, Z rotation, size (x_dim, y_dim, z_dim), as well as relation info with parents.
 Each key in layout is the name for each object, consisting of a random number and the category name, such as "3142143_table". 
 Note different category name can represent the same category, such as ChairFactory, armchair and chair can represent chair simultaneously.
 Count objects carefully! Do not miss any details. 
-Pay more attention to the orientation and size of each objects.
+Pay more attention to the orientation of each objects.
 
 Return the results in the following JSON format, the "comment" should be short:
 {example_json}
@@ -193,12 +195,9 @@ You are working in a 3D scene environment with the following conventions:
 - The X-Y plane is the floor.
 - X axis (red) points right, Y axis (green) points top, Z axis (blue) points up.
 - For the location [x,y,z], x,y means the location of object's center in x- and y-axis, z means the location of the object's bottom in z-axis.
-- The size [sx,sy,sz] means [length, width, height] or [width, length, height], which depends on assets itself. 
+- All asset local origins are centered in X-Y and at the bottom in Z.
 - By default, assets face the +X direction.
-- A rotation of [0, 0, 0.0] in Euler angles will turn the object to face +X.
 - A rotation of [0, 0, 1.57] in Euler angles will turn the object to face +Y.
-- A rotation of [0, 0, -1.57] in Euler angles will turn the object to face -Y.
-- A rotation of [0, 0, 3.14] in Euler angles will turn the object to face -X.
 - All bounding boxes are aligned with the local frame and marked in blue with category labels.
 - The front direction of objects are marked with yellow arrow.
 - Coordinates in the image are marked from [0, 0] at bottom-left of the room.
@@ -242,8 +241,47 @@ You are working in a 3D scene environment with the following conventions:
 
 
 if __name__ == "__main__":
-    os.environ["save_dir"] = "/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_an_office_0"
-    eval_scene(
-        2,
-        "Design me an office.",
-    )
+    
+    method = "idesign"
+    roomtype = "livingroom"
+    for i in range(10,20):
+        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/scene_{i}"
+        os.environ["save_dir"] = save_dir
+        print(f"evaluating {method} {roomtype}_{i}")
+        
+        metric = eval_scene(
+            0,
+            f"Design me a {roomtype}.",
+        )
+
+
+    score = {"gpt_real":[],
+             "gpt_function":[],
+             "gpt_layout":[],
+             "gpt_complet":[],
+             "NObj":[],
+             "BBO":[],
+             "BBL":[]}
+    
+    for i in [10,12,14,15,16,17,19]:
+    # for i in range(10):
+        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/scene_{i}"
+        with open(f"{save_dir}/pipeline/trajs_0.json","r") as f: 
+            j = json.load(f)
+
+        gptscore = j["0"]["results"]["GPT score (0-10, higher is better)"]
+        score["gpt_real"].append(gptscore["realism"]["grade"])
+        score["gpt_function"].append(gptscore["functionality"]["grade"])
+        score["gpt_layout"].append(gptscore["layout"]["grade"])
+        score["gpt_complet"].append(gptscore["completion"]["grade"])
+
+        physcore = j["0"]["results"]["Physics score"]
+        score["NObj"].append(physcore["object number"])
+        score["BBO"].append(len(physcore["object not inside the room"]))
+        score["BBL"].append(len(physcore["object has collision"]))
+
+    score_mean = dict()
+    for key,value in score.items():
+        score_mean[key] = round(np.mean(value),3)
+
+    print(score_mean)

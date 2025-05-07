@@ -68,7 +68,7 @@ def check_pre_move_validity(scene, a, parent_dict, dx, dy):
     return True
 
 
-def all_relations_valid(state, name, use_initial=False):
+def all_relations_valid(state, name, use_initial=False,fix_pos=False):
     rels = state.objs[name].relations
 
     for i, relation_state in enumerate(rels):
@@ -77,7 +77,7 @@ def all_relations_valid(state, name, use_initial=False):
                 if "OfficeChairFactory" in name:
                     a = 1
                 res = stable_against(
-                    state, name, relation_state, use_initial=use_initial
+                    state, name, relation_state, use_initial=use_initial,fix_pos=fix_pos
                 )
                 # import pdb
                 # pdb.set_trace()
@@ -209,12 +209,34 @@ def move_for_relation_and_collision(
     scene = state.trimesh_scene
     objstate = state.objs[name]
 
-    collision_objs = [
-        os.obj.name
-        for k, os in state.objs.items()
-        if k != name and t.Semantics.NoCollision not in os.tags
-    ]
+    # collision_objs = [
+    #     os.obj.name
+    #     for k, os in state.objs.items()
+    #     if k != name and t.Semantics.NoCollision not in os.tags
+    # ]
+    from infinigen_examples.steps.tools import export_relation
+    from infinigen_examples.steps.evaluate import get_relation_mapping
+    map_cp = get_relation_mapping(state)
+    collision_objs = []
+    for k, os in state.objs.items():
+        if k != name and t.Semantics.NoCollision not in os.tags:
+            objname = os.obj.name
+            if hasattr(os,"populate_obj") and map_cp[k]["child"]!=[]:
+                for child in map_cp[k]["child"]:
+                    for rel in state.objs[child].relations:
+                        if rel.target_name==k and export_relation(rel.relation) =="on":
+                            objname = os.populate_obj
+                            break
+            collision_objs.append(objname)
 
+    a_col_name = objstate.obj.name
+    if hasattr(objstate,"populate_obj") and map_cp[name]["child"]!=[]:
+        for child in map_cp[name]["child"]:
+            for rel in state.objs[child].relations:
+                if rel.target_name==name and export_relation(rel.relation) =="on":
+                    a_col_name = objstate.populate_obj
+                    break
+                
     if len(collision_objs) == 0:
         return True
     # invisible_others()
@@ -249,14 +271,14 @@ def move_for_relation_and_collision(
     if expand_collision:
         touch = any_touching_expand(  # mark
             scene,
-            objstate.obj.name,
+            a_col_name ,#objstate.obj.name,
             collision_objs,
             bvh_cache=state.bvh_cache,
         )
 
     else:
         touch = any_touching(  # mark
-            scene, objstate.obj.name, collision_objs, bvh_cache=state.bvh_cache
+            scene, a_col_name, collision_objs, bvh_cache=state.bvh_cache
         )
     if not constrain_contact(touch, should_touch=None, max_depth=0.0001):
         if visualize:

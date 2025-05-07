@@ -23,14 +23,15 @@ Using GPT to add additional objects into the current scene.
 Use Case 1: Add large objects in the current scene.
 Use Case 2: Add 1-2 small objects on the top of small supporting furniture, such as nightstand and cabinet,  when there is enough space. (e.g., add a cup on the nightstand).
 Use Case 3: Add several small objects on the top of large supporting furniture, such as dining table and desk, when there is enough space. (e.g., add daily tableware on the dining table).
-Use Case 4: Add small objects inside the large furniture. (e.g., add books in the shelf).
+Use Case 4: Add several small objects inside the large furniture. (e.g., add books in the shelf).
+Use Case 5: Add functional objects or decorations on the wall. (e.g., add painting, mirror, and TV on the wall).
 
 You **MUST** not :
 1.Do not add objects where there is no available space.
 2.Do not add small objects on any tall furniture, such as wardrob.
 
 Strengths: The location is accurate. Can add objects inside a container, such as objects in the shelf.
-Weaknesses: **Can not add objects on the wall or ceiling.** The rotation of asset is not accurate. Relation between small objects is not accurate. Can not modify objects in the current scene.  
+Weaknesses: **Can not add objects on the ceiling.** The rotation of asset is not accurate. Relation between small objects is not accurate. Can not modify objects in the current scene.  
 
 """
 

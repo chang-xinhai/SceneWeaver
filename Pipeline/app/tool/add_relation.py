@@ -20,7 +20,8 @@ Explicit relations will make the scene more tidy.
 
 Use Case 1: Add explicit relation between large objects, according to the layout, to make the scene better-organized. 
 Use Case 2: Add new relation between large objects, make the scene better-organized. 
-Use Case 3: Add floating small objects on/in a large object. 
+Use Case 3: Add againts_wall relation to large objects, make the objects stand against wall. 
+Use Case 4: Add floating small objects on/in a large object. 
 
 **Note:** Each object can have only one parent object (except for the room). Do not add relation between small objects.
 

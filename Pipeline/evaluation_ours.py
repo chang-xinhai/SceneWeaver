@@ -248,22 +248,22 @@ You are working in a 3D scene environment with the following conventions:
 
 if __name__ == "__main__":
     
-
-    for i in range(13):
-        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_bedroom_{i}"
-        img_dir = f"{save_dir}/record_scene"
-        max_iter = 0
-        for file in os.listdir(img_dir):
-            if file.endswith(".jpg") and len(file.split("_"))==2:
-                iter = int(file.split("_")[1].split(".")[0])
-                max_iter = max(max_iter,iter)
-        os.environ["save_dir"] = save_dir
-        print(f"evaluating ours Design_me_a_bedroom_{i} in iter {max_iter}")
+    roomtype = "living_room"
+    # for i in range(10):
+    #     save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_{roomtype}_{i}"
+    #     img_dir = f"{save_dir}/record_scene"
+    #     max_iter = 0
+    #     for file in os.listdir(img_dir):
+    #         if file.endswith(".jpg") and len(file.split("_"))==2:
+    #             iter = int(file.split("_")[1].split(".")[0])
+    #             max_iter = max(max_iter,iter)
+    #     os.environ["save_dir"] = save_dir
+    #     print(f"evaluating ours Design_me_a_{roomtype}_{i} in iter {max_iter}")
         
-        eval_scene(
-            max_iter,
-            f"Design me a bedroom.",
-        )
+    #     eval_scene(
+    #         max_iter,
+    #         f"Design me a {roomtype}.",
+    #     )
 
 
     score = {"gpt_real":[],
@@ -275,8 +275,8 @@ if __name__ == "__main__":
              "BBL":[]}
     
     # for i in [10,12,14,15,16,17,19]:
-    for i in range(7,13):
-        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_bedroom_{i}"
+    for i in range(10):
+        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_{roomtype}_{i}"
         img_dir = f"{save_dir}/record_scene"
         max_iter = 0
         for file in os.listdir(img_dir):

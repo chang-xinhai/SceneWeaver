@@ -38,11 +38,11 @@ def statistic_traj(iter):
     trajs = dict()
     for i in range(iter+1):
         traj = dict()
-        with open(f"{save_dir}/args/args_{i}.json","r") as f:
-            j = json.load(f)
-            traj["iter"] = i
-            traj["action"] = j["action"]
-            traj["ideas"] = j["ideas"]
+        traj["iter"] = i
+        # with open(f"{save_dir}/args/args_{i}.json","r") as f:
+        #     j = json.load(f)
+        #     traj["action"] = j["action"]
+        #     traj["ideas"] = j["ideas"]
         with open(f"{save_dir}/pipeline/metric_{i}.json","r") as f:
             j = json.load(f)
             traj["results"] = dict()
@@ -242,12 +242,12 @@ You are working in a 3D scene environment with the following conventions:
 
 if __name__ == "__main__":
     
-    method = "layoutgpt"
-    roomtype = "livingroom"
+    method = "holodeck"
+    roomtype = "bedroom"
     for i in range(10):
-        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/livingroom_{i}"
+        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/{roomtype}_{i}"
         os.environ["save_dir"] = save_dir
-        print(f"evaluating {method} scene_{i}")
+        print(f"evaluating {method} {roomtype}_{i}")
         
         metric = eval_scene(
             0,
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     
     # for i in [10,12,14,15,16,17,19]:
     for i in range(10):
-        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/livingroom_{i}"
+        save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/{roomtype}_{i}"
         with open(f"{save_dir}/pipeline/trajs_0.json","r") as f: 
             j = json.load(f)
 

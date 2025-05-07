@@ -22,7 +22,7 @@ Supported Room Types: Living room, bedroom, and dining room.
 Use Case 1: Create a foundational layout.
 
 Strengths: Room is clean and tidy. Assets in good quality.
-Weaknesses: Less details. Fixed layout, need to modify with other methods to meet user demand.
+Weaknesses: Fixed layout, less details. Need to modify with other methods to meet user demand.
 """
 
 
@@ -100,7 +100,7 @@ class InitPhySceneExecute(BaseTool):
     def find_physcene(self, user_demand, ideas, roomtype):
         roomtype = roomtype.lower()
         if roomtype.endswith("room"):
-            roomtype = roomtype[:-4]
+            roomtype = roomtype[:-4].strip()
         basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean/"
         files = os.listdir(basedir)
         random.shuffle(files)

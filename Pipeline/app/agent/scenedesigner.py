@@ -17,6 +17,7 @@ from app.tool.add_gpt import AddGPTExecute
 from app.tool.add_relation import AddRelationExecute
 from app.tool.update_layout import UpdateLayoutExecute
 from app.tool.update_rotation import UpdateRotationExecute
+from app.tool.update_size import UpdateSizeExecute
 from app.tool.remove_obj import RemoveExecute
 from app.tool.terminate import Terminate
 
@@ -65,13 +66,20 @@ class SceneDesigner():
 
     # Add general-purpose tools to the tool collection
     available_tools0 = ToolCollection(
-            InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
+            InitGPTExecute(),InitMetaSceneExecute(),InitPhySceneExecute()
         )
+    # available_tools0 = ToolCollection(
+    #         InitGPTExecute()
+    #     )
     available_tools1 = ToolCollection(
             AddAcdcExecute(), AddGPTExecute(), AddRelationExecute(),
-            UpdateLayoutExecute(),UpdateRotationExecute(),RemoveExecute(),
-            Terminate()
+            UpdateLayoutExecute(),UpdateRotationExecute(),UpdateSizeExecute(),
+            Terminate(),RemoveExecute()
         )
+    # available_tools1 = ToolCollection(
+    #         UpdateSizeExecute(),
+    #         Terminate()
+    #     )
     available_tools2 = ToolCollection(
             Terminate()
         )
@@ -93,11 +101,36 @@ class SceneDesigner():
         return self.memory.messages
     
     def step(self) -> str:
-
+            
         if self.current_step!=0:
             eval_results = self.eval(iter=self.current_step-1)
+        if self.current_step>1:
+            isvalid = self.check_valid(self.current_step-1)
+            if not isvalid:
+                save_dir = os.getenv("save_dir")
+                iter = self.current_step-1
+                os.system(f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_failed.jpg")
+                os.system(f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_failed.jpg")
+                os.system(f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_failed.json")
+                os.system(f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_failed.blend")
+                os.system(f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_failed.pkl")
+                os.system(f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_failed.json")
+                return  "Failed"
+        
         """Execute a single step: think and act."""
-        should_act = self.think()
+        retry = 0
+        while(True and retry<5):
+            should_act = self.think()
+            if self.tool_calls != []:
+                break
+            retry += 1
+
         if not should_act:
             return "Thinking complete - no action needed"
         
@@ -111,6 +144,26 @@ class SceneDesigner():
         #     eval_results = self.eval(self.current_step)
         return act_results
 
+    def check_valid(self,iter):
+        save_dir = os.getenv("save_dir")
+        json_name = f"{save_dir}/pipeline/metric_{iter}.json"
+        with open(json_name, "r") as f:
+            grades_new = json.load(f)
+            score_new = [v["grade"] for k,v in grades_new["GPT score (0-10, higher is better)"].items()]
+            score_new = sum(score_new)
+    
+        json_name = f"{save_dir}/pipeline/metric_{iter-1}.json"
+        with open(json_name, "r") as f:
+            grades_old = json.load(f)
+            score_old = [v["grade"] for k,v in grades_old["GPT score (0-10, higher is better)"].items()]
+            score_old = sum(score_old)
+
+        if score_old - score_new>=5:
+            return False
+        else:
+            return True
+         
+         
     def eval(self,iter): 
         user_demand = os.getenv("UserDemand")
         # iter = int(os.getenv("iter"))
@@ -164,47 +217,56 @@ class SceneDesigner():
         if self.next_step_prompt:
             user_msg = Message.user_message(self.next_step_prompt)
             self.messages.append(user_msg)
-
-        try:
-            if len(self.messages)>7:
-                messages = [self.messages[0]]+self.messages[-6:]
-            else:
-                messages = self.messages
-            # Get response with tool options
-            response = self.llm.ask_tool(
-                messages=messages,
-                system_msgs=(
-                    [Message.system_message(self.system_prompt)]
-                    if self.system_prompt
-                    else None
-                ),
-                tools=self.available_tools.to_params(),
-                tool_choice=self.tool_choices,
-            )
-            if self.current_step>0:
-                del self.messages[-2]
-
-        except ValueError:
-            raise
-        except Exception as e:
-            # Check if this is a RetryError containing TokenLimitExceeded
-            if hasattr(e, "__cause__") and isinstance(e.__cause__, TokenLimitExceeded):
-                token_limit_error = e.__cause__
-                logger.error(
-                    f"🚨 Token limit error (from RetryError): {token_limit_error}"
+        
+        retry = 0
+        while(True and retry<3):
+            try:
+                if len(self.messages)>7:
+                    messages = [self.messages[0]]+self.messages[-6:]
+                else:
+                    messages = self.messages
+                # Get response with tool options
+                response = self.llm.ask_tool(
+                    messages=messages,
+                    system_msgs=(
+                        [Message.system_message(self.system_prompt)]
+                        if self.system_prompt
+                        else None
+                    ),
+                    tools=self.available_tools.to_params(),
+                    tool_choice=self.tool_choices,
                 )
-                self.memory.add_message(
-                    Message.assistant_message(
-                        f"Maximum token limit reached, cannot continue execution: {str(token_limit_error)}"
+                self.tool_calls = tool_calls = (
+                    response.tool_calls if response and response.tool_calls else []
+                )
+                if self.tool_calls==[]:
+                    retry += 1
+                else:
+                    if self.current_step>0:
+                        del self.messages[-2]
+                    break
+                
+
+            except ValueError:
+                raise
+            except Exception as e:
+                # Check if this is a RetryError containing TokenLimitExceeded
+                if hasattr(e, "__cause__") and isinstance(e.__cause__, TokenLimitExceeded):
+                    token_limit_error = e.__cause__
+                    logger.error(
+                        f"🚨 Token limit error (from RetryError): {token_limit_error}"
                     )
-                )
-                self.state = AgentState.FINISHED
-                return False
-            raise
+                    self.memory.add_message(
+                        Message.assistant_message(
+                            f"Maximum token limit reached, cannot continue execution: {str(token_limit_error)}"
+                        )
+                    )
+                    self.state = AgentState.FINISHED
+                    return False
+                raise
 
-        self.tool_calls = tool_calls = (
-            response.tool_calls if response and response.tool_calls else []
-        )
+            
+            
         content = response.content if response and response.content else ""
 
         # Log response info
@@ -390,33 +452,37 @@ class SceneDesigner():
 
         results: List[str] = []
 
-        self.current_step = 1
+        self.current_step = 0
         save_dir = os.getenv("save_dir")
-
-        if self.current_step>0:
-            with open(f"{save_dir}/pipeline/memory_{self.current_step-1}.pkl", "rb") as file:
-                self.memory = dill.load(file)
-
-            with open(f"{save_dir}/pipeline/roomtype.txt","r") as f:
-                roomtype = f.readline().strip()
-                os.environ["roomtype"] = roomtype
-        
 
         while (
             self.current_step < self.max_steps and self.state != AgentState.FINISHED
         ):
 
+            if self.current_step>0:
+                with open(f"{save_dir}/pipeline/memory_{self.current_step-1}.pkl", "rb") as file:
+                    self.memory = dill.load(file)
+
+                with open(f"{save_dir}/pipeline/roomtype.txt","r") as f:
+                    roomtype = f.readline().strip()
+                    os.environ["roomtype"] = roomtype
+            
             os.environ["iter"] = str(self.current_step)
 
             if self.current_step==0:
                 self.available_tools = self.available_tools0
             elif self.current_step<self.max_steps-1:
                 self.available_tools = self.available_tools1
+                if hasattr(self,"tool_calls") and self.tool_calls[0].function.name=="add_acdc":  #modify size after using acdc
+                    self.available_tools = ToolCollection(UpdateSizeExecute())
             else:
                 self.available_tools = self.available_tools2
 
             logger.info(f"Executing step {self.current_step}/{self.max_steps}")
             step_result = self.step()
+            if step_result=="Failed":
+                self.current_step -= 1  
+                continue
 
             # Check for stuck state
             if self.is_stuck():

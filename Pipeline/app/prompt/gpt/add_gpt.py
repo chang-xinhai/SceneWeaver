@@ -26,16 +26,18 @@ You are working in a 3D scene environment with the following conventions:
 
 You need to return a dict including:
 1. A list of furniture categories to add, marked as "Number of new furniture". 
-You can refer but not limited to this category list: ['BeverageFridcge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink', 'StandingSink', 'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'elements.RugFactory', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack',  'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'Countertop', 'KitchenCabinet', 'KitchenIsland', 'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase', 'TableCocktail', 'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror', 'WallArt', 'WallShelf']
-    Do not add wall decorations or objects on the wall. If the user demand includes this object, filter it out.
+You can refer but not limited to this category list: ['BeverageFridcge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink', 'StandingSink', 'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'elements.RugFactory', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack',  'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'KitchenCabinet', 'KitchenIsland', 'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase',  'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror', 'WallArt', 'WallShelf']
     Do not use quota in name, such as baby's or teacher's.
     Do not add too many objects to make the scene crowded.
-2. An object list that stand with back against the wall, marked as "category_against_wall".
-3. Relation between different categories when they have a subordinate relationship, marked as "Relation".
+    Do not list previous object id, only list newly added objects.
+2. An object list that stand with back against the wall, marked as "category_against_wall". 
+    Against wall may include objects placed on the floor (sofa) as well as hanging on the wall (picture).
+3. An object list that stand on the floor (sofa), marked as "category_on_the_floor". 
+4. Relation between different categories when they have a subordinate relationship, marked as "Relation".
     The former object must be the newly added object and belong to the latter object, such as chair and table, nightstand and bed. 
     If the latter object is already in current scene, you can return the name of parent in the given layout, such as ["2312432_bed", "on"].
     If the latter obejct is newly add in this step, you can return the category and the index, such as ["bed","1","on"].
-4. The placement of new furnigure as a dict including, marked as "Placement".
+5. The placement of new furnigure as a dict including, marked as "Placement".
     (1) X-Y-Z Position and Z rotation of each furniture. Make the layout more sparse without collision.
     (2) The initial size of furniture in (x_dim, y_dim, z_dim) when they face to the positive X axis, which means (depth, width, height). 
     (3) Related old object that each new object belongs to or has relation with.
@@ -62,10 +64,12 @@ Here is the example:
     "User demand": "Bedroom",
     "Roomsize": [3, 4],
     "Number of new furniture": {"book":"2", "bench":"1"},
-    "category_against_wall": [],
+    "category_against_wall": ["painting"],
+    "category_on_the_floor": ["bench"],
     "Relation": [["book", "nightstand", "on"], ["book", "bench", "ontop"], ["bench", "bed", "front_to_front"]],
     "Placement": {
         "bench": {"1": {"position": [2.25,1.5], "rotation": [0,0,3.14], "size": [0.5,2,0.5], "parent":["3124134_bed","front_to_front"]}},
+        "painting": {"1": {"position": [0,2], "rotation": [0,0,0], "size": [0.05,1,0.5], "parent":[]}},
         "book": {"1": {"position": [0.2,0.1, 0.4], "rotation": [0,0,1.57], "size": [0.15,0.2,0.04], "parent":["2343214_nightstand", "ontop"]}, 
                 "2": {"position": [0.2,2.7,0.2], "rotation": [0,0,0], "size": [0.12,0.18,0.03], "parent":["bench","1","ontop"]}},
     }

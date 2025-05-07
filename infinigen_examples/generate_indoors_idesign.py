@@ -136,7 +136,18 @@ def compose_indoors(
             state, solver = init_graph.init_idesign(
                 stages, limits, solver, state, p
             )
-
+        elif action== "init_atiss" or action=="init_diffuscene":
+            state, solver = init_graph.init_atiss(
+                stages, limits, solver, state, p
+            )
+        elif action== "init_anyhome":
+            state, solver = init_graph.init_anyhome(
+                stages, limits, solver, state, p
+            )
+        elif action== "init_holodeck":
+            state, solver = init_graph.init_holodeck(
+                stages, limits, solver, state, p
+            )
         else:
             raise ValueError(f"Action is wrong: {action}")
 
@@ -227,7 +238,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--iter", type=int, default=0)
     parser.add_argument("--json_name", type=str, default="")
-    parser.add_argument("--method", type=str, default="layoutgpt")
+    parser.add_argument("--method", type=str, default="anyhome")
     parser.add_argument("--description", type=str, default="")
     parser.add_argument("--inplace", type=str, default="")
     parser.add_argument("--output_folder", type=Path)
@@ -304,6 +315,7 @@ if __name__ == "__main__":
         os.system(f"mkdir {save_dir}/args")
         os.system(f"mkdir {save_dir}/record_files")
         os.system(f"mkdir {save_dir}/record_scene")
-    os.system(f"cp args.json {save_dir}/args/args_{args.iter}.json")
+    os.system(f"cp args_{args.method}.json {save_dir}/args/args_{args.method}.json")
+    os.system(f"cp roominfo_{args.method}.json {save_dir}/roominfo_{args.method}.json")
 
     main(args)
