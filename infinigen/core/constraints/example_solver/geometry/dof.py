@@ -24,8 +24,8 @@ from infinigen.core.constraints.example_solver.room.constants import (
     WALL_HEIGHT,
     WALL_THICKNESS,
 )
-from infinigen_examples.util.visible import invisible_others, visible_others
 from infinigen.core.tags import Subpart
+from infinigen_examples.util.visible import invisible_others, visible_others
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +100,9 @@ def combine_rotation_constraints(parent_planes, eps=0.01):
         for name, poly in parent_planes
     ]
 
-    if normals==[]:
+    if normals == []:
         return np.ones(3)
-    
+
     # Start with the first constraint
     combined_axis = rotation_constraint(normals[0])
 
@@ -309,7 +309,7 @@ def project(points, plane_normal):
 def apply_relations_surfacesample(
     state: state_def.State, name: str, use_initial=False, closest_surface=False
 ):
-    if name =="1603808_dumbbell":
+    if name == "1603808_dumbbell":
         a = 1
     obj_state = state.objs[name]  # 获取指定对象的状态
     obj_name = obj_state.obj.name
@@ -326,7 +326,7 @@ def apply_relations_surfacesample(
     # 抛出异常：对象没有关系
     if len(obj_state.relations) == 0:
         print(f"Object {name} has no relations")
-        return  parent_planes #TODO YYD
+        return parent_planes  # TODO YYD
         # raise ValueError(f"Object {name} has no relations")
     # 抛出异常：对象关系超过支持的数量
     elif len(obj_state.relations) > 3:
@@ -343,17 +343,22 @@ def apply_relations_surfacesample(
                 f"Got {relation_state.relation} for {name=} {relation_state.target_name=}"
             )
         # 获取父对象
-        if  Subpart.SupportSurface in relation_state.relation.parent_tags and \
-            relation_state.target_name!='newroom_0-0' and hasattr(state.objs[relation_state.target_name],"populate_obj") and \
-            hasattr(state.objs[relation_state.target_name],"populate_obj"):  #TODO YYD
-            parent_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+        if (
+            Subpart.SupportSurface in relation_state.relation.parent_tags
+            and relation_state.target_name != "newroom_0-0"
+            and hasattr(state.objs[relation_state.target_name], "populate_obj")
+            and hasattr(state.objs[relation_state.target_name], "populate_obj")
+        ):  # TODO YYD
+            parent_obj = bpy.data.objects.get(
+                state.objs[relation_state.target_name].populate_obj
+            )
         else:
             parent_obj = state.objs[relation_state.target_name].obj
         # 获取对象和平面关系状态
         # invisible_others(hide_placeholder=True)
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         # visible_others()
-        if name=="1980528_CountertopFactory":
+        if name == "1980528_CountertopFactory":
             a = 1
         obj_plane, parent_plane = state.planes.get_rel_state_planes(
             state, name, relation_state, closest_surface=closest_surface
@@ -400,7 +405,6 @@ def apply_relations_surfacesample(
     # print(obj_planes)
     # print([i.parent_plane_idx for i in obj_state.relations])
     # print(parent_planes)
-    
 
     valid, dof, T = check_init_valid(
         state, name, obj_planes, parent_planes, margins, rev_normals
@@ -432,7 +436,7 @@ def apply_relations_surfacesample(
         rev_normal1 = rev_normals[0]
         rev_normal2 = rev_normals[1]
         # 获取父对象的标记子网
-        
+
         parent1_trimesh = state.planes.get_tagged_submesh(
             state.trimesh_scene, parent_obj1.name, parent_tags1, parent_plane1
         )
@@ -512,9 +516,14 @@ def apply_relations_surfacesample(
         assert len(parent_planes) == 1, (name, len(parent_planes))  # 确保父平面数量为1
         # 遍历对象的关系
         for i, relation_state in enumerate(obj_state.relations):
-            if Subpart.SupportSurface in relation_state.relation.parent_tags and \
-                relation_state.target_name!='newroom_0-0' and hasattr(state.objs[relation_state.target_name],"populate_obj"):  #TODO YYD
-                parent_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+            if (
+                Subpart.SupportSurface in relation_state.relation.parent_tags
+                and relation_state.target_name != "newroom_0-0"
+                and hasattr(state.objs[relation_state.target_name], "populate_obj")
+            ):  # TODO YYD
+                parent_obj = bpy.data.objects.get(
+                    state.objs[relation_state.target_name].populate_obj
+                )
             else:
                 parent_obj = state.objs[relation_state.target_name].obj
             obj_plane, parent_plane = state.planes.get_rel_state_planes(

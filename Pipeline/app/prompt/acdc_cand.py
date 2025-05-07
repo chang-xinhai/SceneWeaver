@@ -1,4 +1,3 @@
-
 system_prompt = """
 Given the information of current scene, you need to add small objects on the large furnitures. 
 

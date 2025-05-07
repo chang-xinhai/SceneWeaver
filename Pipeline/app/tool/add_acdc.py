@@ -1,21 +1,19 @@
-import sys
-from typing import Dict
-
-from app.tool.base import BaseTool
 import json
 import os
 import random
+import sys
+from typing import Dict
+
 import numpy as np
-from gpt import GPT4 
-from app.utils import extract_json, dict2str, lst2str
-import json
+from gpt import GPT4
 
-from app.tool.update_infinigen import update_infinigen
+from app.prompt.acdc_cand import system_prompt, user_prompt
 from app.tool.add_relation import add_relation
+from app.tool.base import BaseTool
+from app.tool.update_infinigen import update_infinigen
+from app.utils import dict2str, extract_json, lst2str
 
-from app.prompt.acdc_cand import system_prompt,user_prompt
-
-DESCRIPTION="""
+DESCRIPTION = """
 Using image generation and 3D reconstruction to add additional objects into the current scene.
 
 Use Case 1: Add **a group of** small objects on the top of an empty and large furniture, such as a table, cabinet, and desk when there is nothing on its top. 
@@ -35,7 +33,7 @@ Weaknesses: Very slow. Can not add objects on the wall, ground, or ceiling. Can 
 
 class AddAcdcExecute(BaseTool):
     """A tool for executing Python code with timeout and safety restrictions."""
-    
+
     name: str = "add_acdc"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -49,16 +47,14 @@ class AddAcdcExecute(BaseTool):
         "required": ["ideas"],
     }
 
-
     def execute(self, ideas: str) -> str:
-
         user_demand = os.getenv("UserDemand")
         iter = int(os.getenv("iter"))
         roomtype = os.getenv("roomtype")
         action = self.name
         try:
             steps = gen_ACDC_cand(user_demand, ideas, roomtype, iter)
-            
+
             inplace = False
             acdc_record = dict()
             for obj_id, info in steps.items():
@@ -93,16 +89,22 @@ class AddAcdcExecute(BaseTool):
                                 break
                     assert j["success"]
                 else:
-                    json_name = acdc_record[sd_prompt] 
-              
+                    json_name = acdc_record[sd_prompt]
+
                 update_infinigen(
-                    action, iter, json_name, description=obj_id, inplace=inplace,ideas=ideas
+                    action,
+                    iter,
+                    json_name,
+                    description=obj_id,
+                    inplace=inplace,
+                    ideas=ideas,
                 )
                 inplace = True
 
             return f"Successfully add objects with ACDC."
         except Exception as e:
             return f"Error adding objects with ACDC"
+
 
 def acdc(img_filename, obj_id, category):
     # objtype = obj_id.split("_")[1:]
@@ -117,7 +119,6 @@ def acdc(img_filename, obj_id, category):
     with open("/home/yandan/workspace/digital-cousins/args.json", "w") as f:
         json.dump(j, f, indent=4)
 
-
     import subprocess
 
     cmd = """
@@ -130,10 +131,13 @@ def acdc(img_filename, obj_id, category):
     subprocess.run(["bash", "-c", cmd])
     # os.system("bash -i /home/yandan/workspace/digital-cousins/run.sh")
     save_dir = os.getenv("save_dir")
-    json_name = f"{save_dir}/pipeline/acdc_output/step_3_output/scene_0/scene_0_info.json"
+    json_name = (
+        f"{save_dir}/pipeline/acdc_output/step_3_output/scene_0/scene_0_info.json"
+    )
 
     return json_name
- 
+
+
 def gen_img_SD(SD_prompt, obj_id, obj_size):
     # objtype = obj_id.split("_")[1:]
     # objtype = "_".join(objtype)
@@ -149,24 +153,24 @@ def gen_img_SD(SD_prompt, obj_id, obj_size):
 
     return img_filename
 
-def gen_ACDC_cand(user_demand,ideas,roomtype,iter):
+
+def gen_ACDC_cand(user_demand, ideas, roomtype, iter):
     save_dir = os.getenv("save_dir")
     with open(f"{save_dir}/record_scene/layout_{iter-1}.json", "r") as f:
         layout = json.load(f)
     layout = layout["objects"]
 
-    #convert size
+    # convert size
     for key in layout.keys():
         size = layout[key]["size"]
-        size_new = [size[1],size[0],size[2]]
+        size_new = [size[1], size[0], size[2]]
         layout[key]["size"] = size_new
 
     gpt = GPT4(version="4.1")
 
-    user_prompt_1 = user_prompt.format(user_demand=user_demand,
-                                       ideas=ideas,
-                                       roomtype=roomtype,
-                                       scene_layout = layout) 
+    user_prompt_1 = user_prompt.format(
+        user_demand=user_demand, ideas=ideas, roomtype=roomtype, scene_layout=layout
+    )
 
     prompt_payload = gpt.get_payload(system_prompt, user_prompt_1)
 
@@ -178,4 +182,3 @@ def gen_ACDC_cand(user_demand,ideas,roomtype,iter):
         json.dump(results, f, indent=4)
 
     return results
-    

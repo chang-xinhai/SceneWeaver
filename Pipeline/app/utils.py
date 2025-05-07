@@ -1,9 +1,9 @@
+import base64
 import json
 import math
 import random
 import re
 from typing import Any, Dict
-import base64
 
 # def extract_json(input_string):
 #     # Using regex to identify the JSON structure in the string
@@ -22,6 +22,7 @@ import base64
 #     else:
 #         print("No valid JSON found.")
 #         return None
+
 
 def extract_json(input_string):
     # Step 1: Extract the JSON string
@@ -151,7 +152,6 @@ def get_bbox_dims(obj_data: Dict[str, Any]):
     return {k: maxs[k] - mins[k] for k in ["x", "y", "z"]}
 
 
-
 def dict2str(d, indent=0):
     """
     Convert a dictionary into a formatted string.
@@ -182,8 +182,10 @@ def dict2str(d, indent=0):
             #     for item in value
             # )
             list_str = ", ".join(
-                dict2str(item, indent + 1) if isinstance(item, dict)
-                else f"{item:.2f}" if isinstance(item, float)
+                dict2str(item, indent + 1)
+                if isinstance(item, dict)
+                else f"{item:.2f}"
+                if isinstance(item, float)
                 else str(item)
                 for item in value
             )
@@ -203,7 +205,8 @@ def lst2str(lst):
     else:
         lst = list(map(str, lst))
         return "[" + ", ".join(lst) + "]"
-    
+
+
 def encode_image(image_path):
     """
     Encodes image located at @image_path so that it can be included as part of GPT prompts

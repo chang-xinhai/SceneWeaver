@@ -5,6 +5,7 @@
 # Authors: Alexander Raistrick
 
 import logging
+import os
 import typing
 from dataclasses import dataclass
 
@@ -29,7 +30,6 @@ from infinigen_examples.util.visible import invisible_others, visible_others
 
 from . import moves
 from .reassignment import pose_backup, restore_pose_backup
-import os
 
 # from line_profiler import LineProfiler
 
@@ -45,7 +45,9 @@ def sample_rand_placeholder(gen_class: type[AssetFactory], dimension=None):
     if singleton_gen and gen_class in GLOBAL_GENERATOR_SINGLETON_CACHE:
         gen = GLOBAL_GENERATOR_SINGLETON_CACHE[gen_class]
     else:
-        fac_seed_lst = [obj.name.split(")")[0].split("(")[-1] for obj in bpy.data.objects]
+        fac_seed_lst = [
+            obj.name.split(")")[0].split("(")[-1] for obj in bpy.data.objects
+        ]
         fac_seed = np.random.randint(1e7)
         while str(fac_seed) in fac_seed_lst:
             fac_seed = np.random.randint(1e7)
@@ -151,12 +153,13 @@ class Addition(moves.Move):
         logger.debug(f"{self} {success=}")
         return success
 
-    def remove_onfloor_rel(self,gen_class,gen,T=0.3):
+    def remove_onfloor_rel(self, gen_class, gen, T=0.3):
         from infinigen_examples.steps.tools import export_relation
+
         if self.relation_assignments is None:
-            return 
-            
-        if gen_class.__name__ == "MetaCategoryFactory" and gen.location_orig[2]>T:
+            return
+
+        if gen_class.__name__ == "MetaCategoryFactory" and gen.location_orig[2] > T:
             new_assignments = []
             for rel in self.relation_assignments:
                 relname = export_relation(rel.relation)
@@ -179,23 +182,22 @@ class Addition(moves.Move):
         asset_file=None,
         expand_collision=False,
     ):  # mark
-        
         assert target_name not in state.objs
         import copy
+
         if "keyboard" in target_name:
             a = 1
         self._new_obj, gen = sample_rand_placeholder(gen_class)
-        
+
         if size is not None:
             self._new_obj = resize_obj(self._new_obj, size)
 
         parse_scene.add_to_scene(state.trimesh_scene, self._new_obj, preprocess=True)
-        
 
         tags = self.temp_force_tags.union(usage_lookup.usages_of_factory(gen.__class__))
 
         assert isinstance(self._new_obj, bpy.types.Object)
-        self.remove_onfloor_rel(gen_class,gen)
+        self.remove_onfloor_rel(gen_class, gen)
 
         objstate = ObjectState(
             obj=self._new_obj,
@@ -206,7 +208,7 @@ class Addition(moves.Move):
         )
 
         state.objs[target_name] = objstate
-        dof.apply_relations_surfacesample(state, target_name,closest_surface=True)
+        dof.apply_relations_surfacesample(state, target_name, closest_surface=True)
 
         # name = "SofaFactory(1351066).bbox_placeholder(2179127)"
         name = self._new_obj.name
@@ -216,23 +218,22 @@ class Addition(moves.Move):
             position = gen.location_orig
             room_width = os.getenv("room_width")
             room_height = os.getenv("room_height")
-            position[0] += float(room_width)/2
-            position[1] += float(room_height)/2
+            position[0] += float(room_width) / 2
+            position[1] += float(room_height) / 2
 
         if gen_class.__name__ == "ThreedFrontCategoryFactory":
             room_width = os.getenv("room_width")
             room_height = os.getenv("room_height")
             # position = gen.location_orig
-            position[0] += float(room_width)/2
-            position[1] += float(room_height)/2
+            position[0] += float(room_width) / 2
+            position[1] += float(room_height) / 2
 
         # invisible_others()
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         # visible_others()
-        
-                
+
         iu.set_location(state.trimesh_scene, name, position)
-        iu.set_rotation(state.trimesh_scene, name, [0,0,rotation])
+        iu.set_rotation(state.trimesh_scene, name, [0, 0, rotation])
         # iu.translate(state.trimesh_scene, name, position)
         # iu.rotate(state.trimesh_scene, name, np.array([0, 0, 1]), rotation)
 
@@ -243,7 +244,7 @@ class Addition(moves.Move):
                 expand_collision=expand_collision,
                 n_try_resolve=1,
                 use_initial=True,
-                closest_surface=True,  #TODO YYD
+                closest_surface=True,  # TODO YYD
             )  # check
             logger.debug(f"{self} {success=}")
             return success
@@ -263,13 +264,12 @@ class Addition(moves.Move):
 
 
 def resize_obj(obj, size, apply_transform=True):
-    
     x_dim, y_dim, z_dim = size
-    if x_dim==-1:
+    if x_dim == -1:
         return obj
-    x_scale = x_dim / obj.dimensions[0] if obj.dimensions[0]!=0 else 1 
-    y_scale = y_dim / obj.dimensions[1] if obj.dimensions[1]!=0 else 1 
-    z_scale = z_dim / obj.dimensions[2] if obj.dimensions[2]!=0 else 1 
+    x_scale = x_dim / obj.dimensions[0] if obj.dimensions[0] != 0 else 1
+    y_scale = y_dim / obj.dimensions[1] if obj.dimensions[1] != 0 else 1
+    z_scale = z_dim / obj.dimensions[2] if obj.dimensions[2] != 0 else 1
 
     obj.scale = (x_scale, y_scale, z_scale)
 

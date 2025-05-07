@@ -1,22 +1,20 @@
+import json
 import multiprocessing
+import os
+import random
 import sys
 from io import StringIO
 from typing import Dict
 
-from app.tool.base import BaseTool
-import json
-import os
-import random
+from gpt import GPT4
 
-from gpt import GPT4 
-from app.utils import extract_json, dict2str
-import json
+from app.tool.add_relation import add_relation
+from app.tool.base import BaseTool
 from app.tool.metascene_frontview import get_scene_frontview
 from app.tool.update_infinigen import update_infinigen
-from app.tool.add_relation import add_relation
+from app.utils import dict2str, extract_json
 
-
-DESCRIPTION="""
+DESCRIPTION = """
 Load the most related scene from a Real2Sim indoor scene dataset as the basic scene.
 Ideal for generating foundational layouts for common room types.
 
@@ -30,7 +28,7 @@ Weaknesses: Fixed layout, need to modify with other methods to meet user demand.
 
 class InitMetaSceneExecute(BaseTool):
     """A tool for executing Python code with timeout and safety restrictions."""
-    
+
     name: str = "init_metascene"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -47,7 +45,6 @@ class InitMetaSceneExecute(BaseTool):
         },
         "required": ["ideas", "roomtype"],
     }
-
 
     def execute(self, ideas: str, roomtype: str) -> str:
         """
@@ -79,18 +76,20 @@ class InitMetaSceneExecute(BaseTool):
                     "roomtype": roomtype,
                     "roomsize": roomsize,
                     "scene_id": json_name,
-                    "save_dir": save_dir
+                    "save_dir": save_dir,
                 }
                 json.dump(info, f, indent=4)
-            os.system(f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json")
-            success = update_infinigen(action, iter, json_name,ideas=ideas)
+            os.system(
+                f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json"
+            )
+            success = update_infinigen(action, iter, json_name, ideas=ideas)
             assert success
 
-            #add relation
+            # add relation
             action = "add_relation"
             json_name = add_relation(user_demand, ideas, iter, roomtype)
             success = update_infinigen(
-                action, iter, json_name, inplace=True, invisible=True,ideas=ideas
+                action, iter, json_name, inplace=True, invisible=True, ideas=ideas
             )
             assert success
 
@@ -98,9 +97,7 @@ class InitMetaSceneExecute(BaseTool):
         except Exception as e:
             return f"Error initializing scene by loading MetaScene."
 
- 
     def find_metascene(self, user_demand, ideas, roomtype):
-
         def statistic_obj_nums(scene_id):
             filename = f"/mnt/fillipo/huangyue/recon_sim/7_anno_v4/export_stage2_sm/{scene_id}/metadata.json"
             with open(filename, "r") as f:
@@ -120,7 +117,7 @@ class InitMetaSceneExecute(BaseTool):
             for scene_id in scene_ids:
                 try:
                     scene_type = scenes[scene_id]["roomtype"]
-                    if len(scene_type)>1:
+                    if len(scene_type) > 1:
                         continue
                     for info in scene_type:
                         if roomtype in info["predicted"] and info["confidence"] > 0.8:
@@ -136,7 +133,9 @@ class InitMetaSceneExecute(BaseTool):
             with open("category_counts.json", "w") as f:
                 json.dump(category_counts, f, indent=4)
 
-            scene_id = self.match_scene_id(category_counts, user_demand, ideas, roomtype)
+            scene_id = self.match_scene_id(
+                category_counts, user_demand, ideas, roomtype
+            )
 
             return scene_id
 
@@ -153,24 +152,27 @@ class InitMetaSceneExecute(BaseTool):
         # scene_id = "scene0697_00"
         json_name = scene_id
 
-        with open("/mnt/fillipo/yandan/metascene/export_stage2_sm/roomsize.json", "r") as f:
+        with open(
+            "/mnt/fillipo/yandan/metascene/export_stage2_sm/roomsize.json", "r"
+        ) as f:
             data = json.load(f)
             room_size = data[scene_id]
             room_size = [round(room_size["size_x"], 1), round(room_size["size_y"], 1)]
 
         return json_name, room_size
-    
 
-    def match_scene_id(self, category_counts,user_demand,ideas,roomtype):
+    def match_scene_id(self, category_counts, user_demand, ideas, roomtype):
         from app.prompt.metascene.match_sceneid import system_prompt, user_prompt
 
         category_counts = dict2str(category_counts)
-        
-        user_prompt_1 = user_prompt.format(user_demand=user_demand,
-                                        roomtype=roomtype,
-                                        ideas=ideas,
-                                        category_counts = category_counts) 
-            
+
+        user_prompt_1 = user_prompt.format(
+            user_demand=user_demand,
+            roomtype=roomtype,
+            ideas=ideas,
+            category_counts=category_counts,
+        )
+
         gpt = GPT4(version="4.1")
 
         prompt_payload = gpt.get_payload(system_prompt, user_prompt_1)
@@ -178,19 +180,20 @@ class InitMetaSceneExecute(BaseTool):
         print("matched scene id :", gpt_text_response)
 
         return gpt_text_response
-    
-    def get_roomsize(self, user_demand,ideas,roomsize,roomtype):
+
+    def get_roomsize(self, user_demand, ideas, roomsize, roomtype):
         from app.prompt.metascene.get_roomsize import system_prompt, user_prompt
 
-        user_prompt_1 = user_prompt.format(user_demand=user_demand,roomtype=roomtype,ideas=ideas,roomsize=roomsize) 
-            
-        gpt = GPT4(version='4o')
+        user_prompt_1 = user_prompt.format(
+            user_demand=user_demand, roomtype=roomtype, ideas=ideas, roomsize=roomsize
+        )
+
+        gpt = GPT4(version="4o")
 
         prompt_payload = gpt.get_payload(system_prompt, user_prompt_1)
         gpt_text_response = gpt(payload=prompt_payload, verbose=True)
-        print("roomsize :",gpt_text_response)
+        print("roomsize :", gpt_text_response)
         roomsize = gpt_text_response.split(",")
-        roomsize = [round(float(roomsize[0]),1),round(float(roomsize[1]),1)]
+        roomsize = [round(float(roomsize[0]), 1), round(float(roomsize[1]), 1)]
 
         return roomsize
-        

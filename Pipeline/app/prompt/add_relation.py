@@ -1,4 +1,3 @@
-
 system_prompt = """
 You are an expert in 3D scene design. We design a code to manage the scene, where more relations will make the scene more tidy.
 Sometimes the relation is encoded in the layout coordinate rather than represented explicitly, making it difficult to manage.

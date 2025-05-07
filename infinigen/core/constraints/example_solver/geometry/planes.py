@@ -12,6 +12,7 @@ import gin
 import numpy as np
 import trimesh
 from tqdm import tqdm
+
 import infinigen.core.util.blender as butil
 from infinigen.core import tagging
 from infinigen.core import tags as t
@@ -29,16 +30,16 @@ def global_vertex_coordinates(obj, local_vertex):
 
 
 def global_polygon_normal(obj, polygon):
-
     loc, rot, scale = obj.matrix_world.decompose()
     rot = rot.to_matrix()
     normal = rot @ polygon.normal
-    if polygon.normal[0] == 0 and polygon.normal[1] == 0 and polygon.normal[2] == 0 :
-        bpy.data.meshes['raw_model.006'].calc_normals() 
-        mesh = bpy.data.meshes['raw_model.006']
+    if polygon.normal[0] == 0 and polygon.normal[1] == 0 and polygon.normal[2] == 0:
+        bpy.data.meshes["raw_model.006"].calc_normals()
+        mesh = bpy.data.meshes["raw_model.006"]
         coords = [mesh.vertices[i].co for i in polygon.vertices]
 
         import pdb
+
         pdb.set_trace()
     try:
         return normal / np.linalg.norm(normal)
@@ -188,9 +189,9 @@ class Planes:
         """
 
         tags = t.to_tag_set(tags)
-        
+
         mask = tagging.tagged_face_mask(obj, tags)
-        
+
         if not mask.any():
             obj_tags = tagging.union_object_tags(obj)
             logger.warning(
@@ -205,7 +206,11 @@ class Planes:
         return planes
 
     def get_rel_state_planes(
-        self, state, name: str, relation_state: tuple, closest_surface=False  #TODO YYD closest_surface=FALSE
+        self,
+        state,
+        name: str,
+        relation_state: tuple,
+        closest_surface=False,  # TODO YYD closest_surface=FALSE
     ):
         obj = state.objs[name].obj
         relation = relation_state.relation
@@ -213,15 +218,20 @@ class Planes:
         obj_tags = relation.child_tags
         parent_tags = relation.parent_tags
 
-        if Subpart.SupportSurface in parent_tags and relation_state.target_name!='newroom_0-0' \
-            and hasattr(state.objs[relation_state.target_name],"populate_obj"): #TODO YYD
-            parent_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+        if (
+            Subpart.SupportSurface in parent_tags
+            and relation_state.target_name != "newroom_0-0"
+            and hasattr(state.objs[relation_state.target_name], "populate_obj")
+        ):  # TODO YYD
+            parent_obj = bpy.data.objects.get(
+                state.objs[relation_state.target_name].populate_obj
+            )
         else:
             parent_obj = state.objs[relation_state.target_name].obj
         if name == "1603808_dumbbell":
             a = 1
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
-        if obj.name=="CountertopFactory(378489).bbox_placeholder(6660430)":
+        if obj.name == "CountertopFactory(378489).bbox_placeholder(6660430)":
             a = 1
         obj_all_planes = self.get_tagged_planes(
             obj, obj_tags
@@ -253,7 +263,9 @@ class Planes:
         else:
             obj_plane = obj_all_planes[relation_state.child_plane_idx]
 
-        if closest_surface and obj_plane is not None and parent_plane is not None: # and len(parent_all_planes)<10000:
+        if (
+            closest_surface and obj_plane is not None and parent_plane is not None
+        ):  # and len(parent_all_planes)<10000:
             parent_plane_idx, child_plane_idx = self.get_closest_surface(
                 state,
                 relation_state,
@@ -297,22 +309,29 @@ class Planes:
         # find closest parent plane
         min_d = 1000
         # state.planes.get_tagged_submesh_prefast(state.trimesh_scene, parent_obj.name, parent_tags, parent_all_planes)
-        print("Getting the closest surface of ",parent_obj.name, "planes number: ",len(parent_all_planes))
+        print(
+            "Getting the closest surface of ",
+            parent_obj.name,
+            "planes number: ",
+            len(parent_all_planes),
+        )
         for idx, parent_plane in tqdm(enumerate(parent_all_planes)):
-            if parent_obj.name=="newroom_0-0":
+            if parent_obj.name == "newroom_0-0":
                 parent_plane_trimesh = state.planes.get_tagged_submesh(
                     state.trimesh_scene, parent_obj.name, parent_tags, parent_plane
                 )
             else:
-                #if object has too many planes, obmit some of them
-                if len(parent_all_planes)>1000 and parent_obj.name.startswith("MetaCategoryFactory"):
-                    ratio = len(parent_all_planes)//1000+1
-                    if idx%ratio!=0:
+                # if object has too many planes, obmit some of them
+                if len(parent_all_planes) > 1000 and parent_obj.name.startswith(
+                    "MetaCategoryFactory"
+                ):
+                    ratio = len(parent_all_planes) // 1000 + 1
+                    if idx % ratio != 0:
                         continue
                 parent_plane_trimesh = state.planes.get_tagged_submesh_fast(
                     state.trimesh_scene, parent_obj.name, parent_tags, parent_plane
                 )
-            
+
             # print(parent_obj.name,idx,len(parent_all_planes))
             distance = trimesh.proximity.signed_distance(parent_plane_trimesh, center)
             if min_d > abs(distance):
@@ -373,7 +392,7 @@ class Planes:
         tmesh = meshes_from_names(scene, name)[0]
         geom = tmesh.submesh(np.where(mask), append=True)
         return geom
-    
+
     def get_tagged_submesh_fast(
         self, scene: trimesh.Scene, name: str, tags: set, plane: int
     ):
@@ -399,7 +418,7 @@ class Planes:
         obj_id = obj.name
         # t1 = time.time()
         # print(f"Command 1 took {t1 - t0:.4f} seconds")
-        current_hash = self.calculate_mesh_hash(obj) 
+        current_hash = self.calculate_mesh_hash(obj)
         # t2 = time.time()
         # print(f"Command 2 took {t2 - t1:.4f} seconds")
         face_mask_hash = self.hash_face_mask(face_mask)
@@ -423,7 +442,6 @@ class Planes:
         # print(f"Command 7 took {t7 - t6:.4f} seconds")
         cache_key = (obj_id, plane_hash, face_mask_hash)
 
-
         mesh_or_face_mask_changed = (
             cache_key not in self._cached_plane_masks
             or self._mesh_hashes.get(obj_id) != current_hash
@@ -431,11 +449,11 @@ class Planes:
         if not mesh_or_face_mask_changed:
             # logger.info(f'Cache HIT plane mask for {obj.name=}')
             return self._cached_plane_masks[cache_key]["mask"]
-        
+
         # If mesh or face mask changed, update the hash and recompute
         self._mesh_hashes[obj_id] = current_hash
 
-        name,idx = plane
+        name, idx = plane
         plane_mask = np.zeros(face_mask.shape, dtype=bool)
         plane_mask[idx] = True
 
@@ -445,7 +463,7 @@ class Planes:
         }
 
         return plane_mask
-    
+
     def tagged_plane_mask(
         self,
         obj: bpy.types.Object,

@@ -14,7 +14,7 @@ class GPT4(GPT4o):
         "4o-mini": "gpt-4o-mini",
         "gpt-4-turbo": "gpt-4-turbo-2024-04-09",
         "4.5": "gpt-4.5-preview-2025-02-27",
-        "4.1": "gpt-4.1-2025-04-14"
+        "4.1": "gpt-4.1-2025-04-14",
     }
 
     def __init__(self, version="gpt-4-turbo", region="eastus2"):

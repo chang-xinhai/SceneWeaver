@@ -13,13 +13,12 @@ from tqdm import tqdm
 from infinigen.core import tagging
 from infinigen.core import tags as t
 from infinigen.core.constraints import usage_lookup
-from infinigen.core.constraints.constraint_language.util import delete_obj
+from infinigen.core.constraints.constraint_language.util import delete_obj, sync_trimesh
 from infinigen.core.constraints.example_solver.geometry import parse_scene
 from infinigen.core.constraints.example_solver.state_def import State
 from infinigen.core.placement.placement import parse_asset_name
 from infinigen.core.util import blender as butil
 from infinigen_examples.util.visible import invisible_others, visible_others
-from infinigen.core.constraints.constraint_language.util import sync_trimesh
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +169,7 @@ def populate_state_placeholders_mid(
     # 如果 final 参数为 True，执行以下操作
     targets = []  # 用于存放待处理的目标对象
     # 遍历状态中的所有对象
-    
+
     for objkey, os in state.objs.items():
         # 如果对象没有生成器，则跳过
         if os.generator is None:
@@ -194,10 +193,8 @@ def populate_state_placeholders_mid(
     update_state_mesh_objs = []  # 用于存放需要更新的网格对象信息
     # 遍历目标对象，执行生成和处理
     for i, objkey in enumerate(targets):
-        
-        
         #     print("aaaaaaaaaaa")
-            # pdb.set_trace()
+        # pdb.set_trace()
         os = state.objs[objkey]
         placeholder = os.obj  # 获取占位符对象
         # if any(obj.name == placeholder.name.replace("bbox_placeholder","spawn_asset") for obj in unique_assets.objects):
@@ -207,7 +204,7 @@ def populate_state_placeholders_mid(
         #'ThreedFrontCategoryFactory(2179127).bbox_placeholder(620454)'
         old_objname = placeholder.name  # 记录原对象的名称
         update_state_mesh_objs.append((objkey, old_objname))  # 将旧对象信息加入更新列表
-        
+
         *_, inst_seed = parse_asset_name(placeholder.name)  # 解析资产名称并提取实例种子
         if "SinkFactory" in objkey:
             import pdb
@@ -218,12 +215,24 @@ def populate_state_placeholders_mid(
         if any(obj.name == populate_obj_name for obj in unique_assets.objects):
             obj = unique_assets.objects[populate_obj_name]
             obj.location = placeholder.location
-            obj.rotation_mode = 'XYZ'
+            obj.rotation_mode = "XYZ"
             obj.rotation_euler = placeholder.rotation_euler
 
-            scale_x = placeholder.dimensions[0] / obj.dimensions[0] if obj.dimensions[0]!=0 else 1 
-            scale_y = placeholder.dimensions[1] / obj.dimensions[1] if obj.dimensions[1]!=0 else 1 
-            scale_z = placeholder.dimensions[2] / obj.dimensions[2] if obj.dimensions[2]!=0 else 1 
+            scale_x = (
+                placeholder.dimensions[0] / obj.dimensions[0]
+                if obj.dimensions[0] != 0
+                else 1
+            )
+            scale_y = (
+                placeholder.dimensions[1] / obj.dimensions[1]
+                if obj.dimensions[1] != 0
+                else 1
+            )
+            scale_z = (
+                placeholder.dimensions[2] / obj.dimensions[2]
+                if obj.dimensions[2] != 0
+                else 1
+            )
             obj.scale = (scale_x, scale_y, scale_z)
             bpy.context.view_layer.objects.active = obj  # Set as active object
             obj.select_set(True)  # Select the object
@@ -275,7 +284,7 @@ def populate_state_placeholders_mid(
             )
             update_state_mesh_objs += cut_objs  # 更新网格对象列表
         state.objs[objkey].populate_obj = obj.name
-    
+
     unique_assets.hide_viewport = False  # 恢复显示资产集合的视图
     # 如果是最终的处理，则返回
     if final:
@@ -305,7 +314,7 @@ def populate_state_placeholders_mid(
         for objkey, old_objname in tqdm(
             set(update_state_mesh_objs), desc="Updating trimesh with populated objects"
         ):
-            if objkey=="newroom_0-0":
+            if objkey == "newroom_0-0":
                 continue
             # populated obj
             os = state.objs[objkey]
@@ -330,17 +339,15 @@ def populate_state_placeholders_mid(
         for objkey, old_objname in tqdm(
             set(update_state_mesh_objs), desc="Updating trimesh with populated objects"
         ):
-            if objkey=="newroom_0-0":
+            if objkey == "newroom_0-0":
                 continue
             os = state.objs[objkey]
             obj = bpy.data.objects.get(os.populate_obj)
             parse_scene.preprocess_obj(obj)
             sync_trimesh(state.trimesh_scene, obj.name)
-           
 
-def update_asset_location(
-    state: State, filter=None, final=False, update_trimesh=True
-):
+
+def update_asset_location(state: State, filter=None, final=False, update_trimesh=True):
     # 记录信息，表示正在填充占位符，并记录 final 和 filter 参数的值
     logger.info(f"Populating placeholders {final=} {filter=}")
     # 获取名为 "unique_assets" 的集合，用于存放唯一的资产对象
@@ -349,7 +356,7 @@ def update_asset_location(
     # 如果 final 参数为 True，执行以下操作
     targets = []  # 用于存放待处理的目标对象
     # 遍历状态中的所有对象
-    
+
     for objkey, os in state.objs.items():
         # 如果对象没有生成器，则跳过
         if os.generator is None:
@@ -380,9 +387,9 @@ def update_asset_location(
         #'ThreedFrontCategoryFactory(2179127).bbox_placeholder(620454)'
         old_objname = placeholder.name  # 记录原对象的名称
         update_state_mesh_objs.append((objkey, old_objname))  # 将旧对象信息加入更新列表
-        
+
         *_, inst_seed = parse_asset_name(placeholder.name)  # 解析资产名称并提取实例种子
-        
+
         # # 使用生成器生成新的对象，并设置位置、旋转等属性 'ThreedFrontCategoryFactory(2179127).spawn_asset(620454)'
         populate_obj_name = placeholder.name.replace(
             "bbox_placeholder", "spawn_asset"
@@ -390,12 +397,24 @@ def update_asset_location(
         if any(obj.name == populate_obj_name for obj in unique_assets.objects):
             obj = unique_assets.objects[populate_obj_name]
             obj.location = placeholder.location
-            obj.rotation_mode = 'XYZ'
+            obj.rotation_mode = "XYZ"
             obj.rotation_euler = placeholder.rotation_euler
 
-            scale_x = placeholder.dimensions[0] / obj.dimensions[0] if obj.dimensions[0]!=0 else 1 
-            scale_y = placeholder.dimensions[1] / obj.dimensions[1] if obj.dimensions[1]!=0 else 1 
-            scale_z = placeholder.dimensions[2] / obj.dimensions[2] if obj.dimensions[2]!=0 else 1 
+            scale_x = (
+                placeholder.dimensions[0] / obj.dimensions[0]
+                if obj.dimensions[0] != 0
+                else 1
+            )
+            scale_y = (
+                placeholder.dimensions[1] / obj.dimensions[1]
+                if obj.dimensions[1] != 0
+                else 1
+            )
+            scale_z = (
+                placeholder.dimensions[2] / obj.dimensions[2]
+                if obj.dimensions[2] != 0
+                else 1
+            )
             obj.scale = (scale_x, scale_y, scale_z)
             bpy.context.view_layer.objects.active = obj  # Set as active object
             obj.select_set(True)  # Select the object
@@ -447,7 +466,7 @@ def update_asset_location(
             )
             update_state_mesh_objs += cut_objs  # 更新网格对象列表
         state.objs[objkey].populate_obj = obj.name
-    
+
     unique_assets.hide_viewport = False  # 恢复显示资产集合的视图
     # 如果是最终的处理，则返回
     if final:
@@ -477,7 +496,7 @@ def update_asset_location(
         for objkey, old_objname in tqdm(
             set(update_state_mesh_objs), desc="Updating trimesh with populated objects"
         ):
-            if objkey=="newroom_0-0":
+            if objkey == "newroom_0-0":
                 continue
             # populated obj
             os = state.objs[objkey]

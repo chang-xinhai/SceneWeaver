@@ -14,7 +14,12 @@ from infinigen.core import execute_tasks, init, placement, surface, tagging
 from infinigen.core import tags as t
 from infinigen.core.constraints.example_solver.room import decorate as room_dec
 from infinigen.core.util import blender as butil
-from infinigen_examples.steps.draw_bbox import add_rotated_bbox_wireframe
+from infinigen_examples.steps.draw_bbox import (
+    add_rotated_bbox_wireframe,
+    get_arrow,
+    get_bbox,
+    get_coord,
+)
 from infinigen_examples.util import constraint_util as cu
 from infinigen_examples.util.generate_indoors_util import (
     apply_greedy_restriction,
@@ -24,7 +29,6 @@ from infinigen_examples.util.generate_indoors_util import (
     restrict_solving,
 )
 from infinigen_examples.util.visible import invisible_others, visible_others
-from infinigen_examples.steps.draw_bbox import get_bbox,get_arrow,get_coord
 
 
 def change_attr(obj, condition, replace_attr, visited=None, path=""):
@@ -252,7 +256,7 @@ def export_layout(state, solver, save_dir):
                 round(a, 2) for a in list(objinfo.obj.dimensions)
             ]
         else:
-            objinfo.obj.rotation_mode = 'XYZ' 
+            objinfo.obj.rotation_mode = "XYZ"
             bpy.context.view_layer.update()
             offset_vector = calc_position_bias(objinfo.obj)
             results["objects"][objkey] = dict()
@@ -408,7 +412,6 @@ def merge_two_image(background_imgfile, foregroung_imgfile):
     combined.convert("RGB").save(filename, "JPEG", quality=95)
 
     return
-
 
 
 def world_to_image(image_path, output_path):
@@ -595,7 +598,9 @@ def save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p):
 
 def is_module(attr):
     isstr = (
-        isinstance(attr, str) and attr not in ["__module__", "__name__","name"] and attr.startswith("infinigen.")
+        isinstance(attr, str)
+        and attr not in ["__module__", "__name__", "name"]
+        and attr.startswith("infinigen.")
     )
     if isstr:
         try:
@@ -738,4 +743,3 @@ def load_record(iter):
     # pdb.set_trace()
     # a = state.trimesh_scene.geometry['MetaCategoryFactory(1251161).spawn_asset(3960590)']
     return state, solver, terrain, house_bbox, solved_bbox, p
-

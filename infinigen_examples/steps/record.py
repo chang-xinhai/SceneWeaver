@@ -1,3 +1,5 @@
+import os
+
 import bpy
 
 from infinigen.core import tagging
@@ -8,7 +10,7 @@ from infinigen.core.constraints.example_solver import (
     populate,
     state_def,
 )
-import os
+
 from .tools import export_layout, load_record, render_scene, save_record
 
 
@@ -26,7 +28,12 @@ def record_scene(state, solver, terrain, house_bbox, solved_bbox, camera_rigs, i
     save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p)
     save_dir = os.getenv("save_dir")
     render_scene(
-        p, solved_bbox, camera_rigs, state, solver, filename=f"{save_dir}/record_scene/render_{iter}.jpg"
+        p,
+        solved_bbox,
+        camera_rigs,
+        state,
+        solver,
+        filename=f"{save_dir}/record_scene/render_{iter}.jpg",
     )
 
     return
@@ -54,7 +61,6 @@ def export_supporter(state, obj_name, export_path):
             bpy.ops.wm.save_as_mainfile(
                 filepath=export_path, check_existing=False, compress=False, copy=True
             )
-            
 
             # Open the new file
             bpy.ops.wm.open_mainfile(filepath=export_path)
@@ -64,7 +70,7 @@ def export_supporter(state, obj_name, export_path):
                     bpy.data.objects.remove(o, do_unlink=True)
             # Save only the remaining object
             bpy.ops.wm.save_as_mainfile(filepath=export_path)
-            
+
             candidate = "/home/yandan/workspace/infinigen/record_files/obj.blend"
             bpy.ops.wm.save_as_mainfile(
                 filepath=candidate, check_existing=False, compress=False, copy=True

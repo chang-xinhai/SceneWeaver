@@ -4,7 +4,13 @@ import subprocess
 
 
 def update_infinigen(
-    action, iter, json_name, ideas=None, description=None, inplace=False, invisible=False
+    action,
+    iter,
+    json_name,
+    ideas=None,
+    description=None,
+    inplace=False,
+    invisible=False,
 ):
     j = {
         "iter": iter,
@@ -13,8 +19,8 @@ def update_infinigen(
         #  "roomsize": roomsize,
         "description": description,
         "inplace": inplace,
-        "success":False,
-        "ideas":ideas
+        "success": False,
+        "ideas": ideas,
     }
 
     argsfile = f"/home/yandan/workspace/infinigen/args.json"
@@ -39,4 +45,3 @@ def update_infinigen(
     assert j["success"]
     print("infinigen success")
     return j["success"]
- 

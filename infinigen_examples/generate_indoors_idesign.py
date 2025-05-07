@@ -57,6 +57,7 @@ from infinigen_examples.steps import (
     basic_scene,
     camera,
     complete_structure,
+    evaluate,
     init_graph,
     light,
     populate_placeholder,
@@ -64,7 +65,6 @@ from infinigen_examples.steps import (
     room_structure,
     solve_objects,
     update_graph,
-    evaluate
 )
 from infinigen_examples.util import constraint_util as cu
 from infinigen_examples.util.generate_indoors_util import (
@@ -74,19 +74,26 @@ from infinigen_examples.util.generate_indoors_util import (
     place_cam_overhead,
     restrict_solving,
 )
-from infinigen_examples.util.visible import invisible_others, visible_others, invisible_wall
+from infinigen_examples.util.visible import (
+    invisible_others,
+    invisible_wall,
+    visible_others,
+)
 
 logger = logging.getLogger(__name__)
 
 all_vars = [cu.variable_room, cu.variable_obj]
+
+
 def view_all():
     if not bpy.app.background:
         for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 for region in area.regions:
-                    if region.type == 'WINDOW':
-                        override = {'area': area, 'region': region}
+                    if region.type == "WINDOW":
+                        override = {"area": area, "region": region}
                         bpy.ops.view3d.view_all(override, center=True)
+
 
 @gin.configurable
 def compose_indoors(
@@ -116,7 +123,9 @@ def compose_indoors(
         p, terrain = basic_scene.basic_scene(
             scene_seed, output_folder, overrides, logger, p
         )
-        os.environ["ROOM_INFO"] = f"/home/yandan/workspace/infinigen/roominfo_{method}.json"
+        os.environ["ROOM_INFO"] = (
+            f"/home/yandan/workspace/infinigen/roominfo_{method}.json"
+        )
         state, solver, override = room_structure.build_room_structure(
             p, overrides, stages, logger, output_folder, scene_seed, consgraph
         )
@@ -128,29 +137,18 @@ def compose_indoors(
         )
         view_all()
 
-        if action== "init_layoutgpt":
-            state, solver = init_graph.init_layoutgpt(
-                stages, limits, solver, state, p
-            )
-        elif action== "init_idesign":
-            state, solver = init_graph.init_idesign(
-                stages, limits, solver, state, p
-            )
-        elif action== "init_atiss" or action=="init_diffuscene":
-            state, solver = init_graph.init_atiss(
-                stages, limits, solver, state, p
-            )
-        elif action== "init_anyhome":
-            state, solver = init_graph.init_anyhome(
-                stages, limits, solver, state, p
-            )
-        elif action== "init_holodeck":
-            state, solver = init_graph.init_holodeck(
-                stages, limits, solver, state, p
-            )
+        if action == "init_layoutgpt":
+            state, solver = init_graph.init_layoutgpt(stages, limits, solver, state, p)
+        elif action == "init_idesign":
+            state, solver = init_graph.init_idesign(stages, limits, solver, state, p)
+        elif action == "init_atiss" or action == "init_diffuscene":
+            state, solver = init_graph.init_atiss(stages, limits, solver, state, p)
+        elif action == "init_anyhome":
+            state, solver = init_graph.init_anyhome(stages, limits, solver, state, p)
+        elif action == "init_holodeck":
+            state, solver = init_graph.init_holodeck(stages, limits, solver, state, p)
         else:
             raise ValueError(f"Action is wrong: {action}")
-
 
     solved_rooms = [bpy.data.objects["newroom_0-0"]]
     height = complete_structure.finalize_scene(
@@ -166,8 +164,6 @@ def compose_indoors(
         camera_rigs,
     )
     invisible_wall()
-    
-
 
     # save_path = "debug2.blend"
 
@@ -178,15 +174,13 @@ def compose_indoors(
     #         stages, limits, solver, state, p, consgraph, overrides
     #     )
 
-    
-  
     # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
     # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
     record.record_scene(
         state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p
     )
 
-    evaluate.eval_metric(state,iter)
+    evaluate.eval_metric(state, iter)
 
     record_success()
 
@@ -197,14 +191,16 @@ def compose_indoors(
         "whole_bbox": house_bbox,
     }
 
+
 def record_success():
     with open("args.json", "r") as f:
         j = json.load(f)
-    
+
     with open("args.json", "w") as f:
         j["success"] = True
-        json.dump(j,f,indent=4)
+        json.dump(j, f, indent=4)
     return
+
 
 def main(args):
     scene_seed = init.apply_scene_seed(args.seed)
@@ -305,7 +301,9 @@ if __name__ == "__main__":
         args.inplace = j["inplace"]
         args.json_name = j["json_name"]
 
-    with open(f"/home/yandan/workspace/infinigen/roominfo_{args.method}.json","r") as f:
+    with open(
+        f"/home/yandan/workspace/infinigen/roominfo_{args.method}.json", "r"
+    ) as f:
         j = json.load(f)
         save_dir = j["save_dir"]
         os.environ["save_dir"] = save_dir

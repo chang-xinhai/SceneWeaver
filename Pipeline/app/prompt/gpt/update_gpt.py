@@ -1,4 +1,3 @@
-
 system_prompt = """
 You are an expert in 3D scene evaluation. 
 

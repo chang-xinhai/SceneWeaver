@@ -1,44 +1,43 @@
-from pydantic import Field
+import json
+import os
+from contextlib import asynccontextmanager
+from typing import Any, List, Optional, Union
+
+import dill
+from pydantic import BaseModel, Field, model_validator
 
 from app.config import config
-from app.prompt.scenedesigner import NEXT_STEP_PROMPT, SYSTEM_PROMPT
-
-from typing import List, Optional
-from app.schema import ROLE_TYPE, AgentState, Memory, Message
-
+from app.evaluation import eval_scene
+from app.exceptions import TokenLimitExceeded
+from app.llm import LLM
 from app.logger import logger
-
-from app.tool.init_gpt import InitGPTExecute
-from app.tool.init_metascene import InitMetaSceneExecute
-from app.tool.init_physcene import InitPhySceneExecute
-
+from app.prompt.scenedesigner import NEXT_STEP_PROMPT, SYSTEM_PROMPT
+from app.prompt.sceneinfo import sceneinfo_prompt
+from app.schema import (
+    ROLE_TYPE,
+    TOOL_CHOICE_TYPE,
+    AgentState,
+    Memory,
+    Message,
+    ToolCall,
+    ToolChoice,
+)
 from app.tool.add_acdc import AddAcdcExecute
 from app.tool.add_gpt import AddGPTExecute
 from app.tool.add_relation import AddRelationExecute
+from app.tool.init_gpt import InitGPTExecute
+from app.tool.init_metascene import InitMetaSceneExecute
+from app.tool.init_physcene import InitPhySceneExecute
+from app.tool.remove_obj import RemoveExecute
+from app.tool.terminate import Terminate
+from app.tool.tool_collection import ToolCollection
 from app.tool.update_layout import UpdateLayoutExecute
 from app.tool.update_rotation import UpdateRotationExecute
 from app.tool.update_size import UpdateSizeExecute
-from app.tool.remove_obj import RemoveExecute
-from app.tool.terminate import Terminate
+from app.utils import dict2str, encode_image, extract_json, lst2str
 
-from app.tool.tool_collection import ToolCollection
 
-from app.schema import TOOL_CHOICE_TYPE, AgentState, Message, ToolCall, ToolChoice
-from app.exceptions import TokenLimitExceeded
-from app.schema import AgentState, Memory
-from app.llm import LLM
-from app.evaluation import eval_scene
-from pydantic import BaseModel, Field, model_validator
-
-import json
-import os
-from typing import Any, List, Optional, Union
-from contextlib import asynccontextmanager
-from app.utils import extract_json, dict2str, lst2str
-import dill
-from app.prompt.sceneinfo import sceneinfo_prompt
-from app.utils import encode_image
-class SceneDesigner():
+class SceneDesigner:
     """
     A versatile general-purpose agent that uses planning to solve various tasks.
 
@@ -66,23 +65,26 @@ class SceneDesigner():
 
     # Add general-purpose tools to the tool collection
     available_tools0 = ToolCollection(
-            InitGPTExecute(),InitMetaSceneExecute(),InitPhySceneExecute()
-        )
+        InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
+    )
     # available_tools0 = ToolCollection(
     #         InitGPTExecute()
     #     )
     available_tools1 = ToolCollection(
-            AddAcdcExecute(), AddGPTExecute(), AddRelationExecute(),
-            UpdateLayoutExecute(),UpdateRotationExecute(),UpdateSizeExecute(),
-            Terminate(),RemoveExecute()
-        )
+        AddAcdcExecute(),
+        AddGPTExecute(),
+        AddRelationExecute(),
+        UpdateLayoutExecute(),
+        UpdateRotationExecute(),
+        UpdateSizeExecute(),
+        Terminate(),
+        RemoveExecute(),
+    )
     # available_tools1 = ToolCollection(
     #         UpdateSizeExecute(),
     #         Terminate()
     #     )
-    available_tools2 = ToolCollection(
-            Terminate()
-        )
+    available_tools2 = ToolCollection(Terminate())
     current_step: int = 0
     memory = Memory()
     state = AgentState.IDLE
@@ -94,38 +96,61 @@ class SceneDesigner():
     #     if not isinstance(self.memory, Memory):
     #         self.memory = Memory()
     #     return self
-    
+
     @property
     def messages(self) -> List[Message]:
         """Retrieve a list of messages from the agent's memory."""
         return self.memory.messages
-    
+
     def step(self) -> str:
-            
-        if self.current_step!=0:
-            eval_results = self.eval(iter=self.current_step-1)
-        if self.current_step>1:
-            isvalid = self.check_valid(self.current_step-1)
+        if self.current_step != 0:
+            eval_results = self.eval(iter=self.current_step - 1)
+        if self.current_step > 1:
+            isvalid = self.check_valid(self.current_step - 1)
             if not isvalid:
                 save_dir = os.getenv("save_dir")
-                iter = self.current_step-1
-                os.system(f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_failed.jpg")
-                os.system(f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_failed.jpg")
-                os.system(f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_failed.json")
-                os.system(f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_failed.blend")
-                os.system(f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_failed.pkl")
-                os.system(f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_failed.json")
-                return  "Failed"
-        
+                iter = self.current_step - 1
+                os.system(
+                    f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_failed.jpg"
+                )
+                os.system(
+                    f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_failed.jpg"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_failed.json"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_failed.blend"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_failed.pkl"
+                )
+                os.system(
+                    f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_failed.json"
+                )
+                return "Failed"
+
         """Execute a single step: think and act."""
         retry = 0
-        while(True and retry<5):
+        while True and retry < 5:
             should_act = self.think()
             if self.tool_calls != []:
                 break
@@ -133,38 +158,45 @@ class SceneDesigner():
 
         if not should_act:
             return "Thinking complete - no action needed"
-        
+
         act_results = self.act()
 
-        if self.current_step==self.max_steps-1 or \
-            self.tool_calls[0].function.name=="terminate": #evaluate final step 
+        if (
+            self.current_step == self.max_steps - 1
+            or self.tool_calls[0].function.name == "terminate"
+        ):  # evaluate final step
             eval_results = self.eval(iter=self.current_step)
-        
+
         # if self.memory.messages[-1].name!="terminate":
         #     eval_results = self.eval(self.current_step)
         return act_results
 
-    def check_valid(self,iter):
+    def check_valid(self, iter):
         save_dir = os.getenv("save_dir")
         json_name = f"{save_dir}/pipeline/metric_{iter}.json"
         with open(json_name, "r") as f:
             grades_new = json.load(f)
-            score_new = [v["grade"] for k,v in grades_new["GPT score (0-10, higher is better)"].items()]
+            score_new = [
+                v["grade"]
+                for k, v in grades_new["GPT score (0-10, higher is better)"].items()
+            ]
             score_new = sum(score_new)
-    
+
         json_name = f"{save_dir}/pipeline/metric_{iter-1}.json"
         with open(json_name, "r") as f:
             grades_old = json.load(f)
-            score_old = [v["grade"] for k,v in grades_old["GPT score (0-10, higher is better)"].items()]
+            score_old = [
+                v["grade"]
+                for k, v in grades_old["GPT score (0-10, higher is better)"].items()
+            ]
             score_old = sum(score_old)
 
-        if score_old - score_new>=5:
+        if score_old - score_new >= 5:
             return False
         else:
             return True
-         
-         
-    def eval(self,iter): 
+
+    def eval(self, iter):
         user_demand = os.getenv("UserDemand")
         # iter = int(os.getenv("iter"))
         grades = eval_scene(iter, user_demand)
@@ -177,52 +209,53 @@ class SceneDesigner():
         result = "The evaluated reults of the current scene is : \n" + result
         if self.max_observe:
             result = result[: self.max_observe]
-            
-        logger.info(
-            f"🎯 Evaluation Results: '{result}'"
-        )
-        
+
+        logger.info(f"🎯 Evaluation Results: '{result}'")
+
         # Add tool response to memory
         user_msg = Message.user_message(result)
         self.memory.add_message(user_msg)
-        
 
         return result
-    
+
     def load_sceneinfo(self):
         save_dir = os.getenv("save_dir")
         image_path = f"{save_dir}/record_scene/render_{self.current_step-1}_marked.jpg"
-        with open(f"{save_dir}/record_scene/layout_{self.current_step-1}.json", "r") as f:
+        with open(
+            f"{save_dir}/record_scene/layout_{self.current_step-1}.json", "r"
+        ) as f:
             layout = json.load(f)
         roomsize = layout["roomsize"]
         roomsize = lst2str(roomsize)
         structure = dict2str(layout["structure"])
         layout = dict2str(layout["objects"])
 
-        prompt = sceneinfo_prompt.format(roomtype=os.getenv("roomtype"),
-                                roomsize=roomsize,
-                                layout=layout,
-                                structure=structure)
-        
+        prompt = sceneinfo_prompt.format(
+            roomtype=os.getenv("roomtype"),
+            roomsize=roomsize,
+            layout=layout,
+            structure=structure,
+        )
+
         base64_image = encode_image(image_path)
-        return prompt,base64_image
-        
+        return prompt, base64_image
+
     def think(self) -> bool:
         """Process current state and decide next actions using tools"""
-        if self.current_step>0:
-            sceneinfo_prompt,base64_image = self.load_sceneinfo()
-            user_msg = Message.user_message(sceneinfo_prompt,base64_image = base64_image)
+        if self.current_step > 0:
+            sceneinfo_prompt, base64_image = self.load_sceneinfo()
+            user_msg = Message.user_message(sceneinfo_prompt, base64_image=base64_image)
             self.messages.append(user_msg)
 
         if self.next_step_prompt:
             user_msg = Message.user_message(self.next_step_prompt)
             self.messages.append(user_msg)
-        
+
         retry = 0
-        while(True and retry<3):
+        while True and retry < 3:
             try:
-                if len(self.messages)>7:
-                    messages = [self.messages[0]]+self.messages[-6:]
+                if len(self.messages) > 7:
+                    messages = [self.messages[0]] + self.messages[-6:]
                 else:
                     messages = self.messages
                 # Get response with tool options
@@ -239,19 +272,20 @@ class SceneDesigner():
                 self.tool_calls = tool_calls = (
                     response.tool_calls if response and response.tool_calls else []
                 )
-                if self.tool_calls==[]:
+                if self.tool_calls == []:
                     retry += 1
                 else:
-                    if self.current_step>0:
+                    if self.current_step > 0:
                         del self.messages[-2]
                     break
-                
 
             except ValueError:
                 raise
             except Exception as e:
                 # Check if this is a RetryError containing TokenLimitExceeded
-                if hasattr(e, "__cause__") and isinstance(e.__cause__, TokenLimitExceeded):
+                if hasattr(e, "__cause__") and isinstance(
+                    e.__cause__, TokenLimitExceeded
+                ):
                     token_limit_error = e.__cause__
                     logger.error(
                         f"🚨 Token limit error (from RetryError): {token_limit_error}"
@@ -265,8 +299,6 @@ class SceneDesigner():
                     return False
                 raise
 
-            
-            
         content = response.content if response and response.content else ""
 
         # Log response info
@@ -319,7 +351,7 @@ class SceneDesigner():
                 )
             )
             return False
-        
+
     def act(self) -> str:
         """Execute tool calls and handle their results"""
         if not self.tool_calls:
@@ -333,7 +365,7 @@ class SceneDesigner():
         results = []
         for command in self.tool_calls:
             # Reset base64_image for each tool call
-            
+
             self._current_base64_image = None
 
             result = self.execute_tool(command)
@@ -356,7 +388,7 @@ class SceneDesigner():
             results.append(result)
 
         return "\n\n".join(results)
-    
+
     def execute_tool(self, command: ToolCall) -> str:
         """Execute a single tool call with robust error handling"""
         if not command or not command.function or not command.function.name:
@@ -376,7 +408,6 @@ class SceneDesigner():
 
             # Handle special tools
             self._handle_special_tool(name=name, result=result)
-            
 
             # # Check if result is a ToolResult with base64_image
             # if hasattr(result, "base64_image") and result.base64_image:
@@ -384,13 +415,13 @@ class SceneDesigner():
             #     basedir = "/home/yandan/workspace/infinigen/record_scene"
             #     self._current_base64_image = f"{basedir}/render_{self.current_step}_marked.jpg"
 
-                # # Format result for display
-                # observation = (
-                #     f"Observed output of cmd `{name}` executed:\n{str(result)}"
-                #     if result
-                #     else f"Cmd `{name}` completed with no output"
-                # )
-                # return observation
+            # # Format result for display
+            # observation = (
+            #     f"Observed output of cmd `{name}` executed:\n{str(result)}"
+            #     if result
+            #     else f"Cmd `{name}` completed with no output"
+            # )
+            # return observation
 
             # Format result for display (standard case)
             observation = (
@@ -410,12 +441,12 @@ class SceneDesigner():
             error_msg = f"⚠️ Tool '{name}' encountered a problem: {str(e)}"
             logger.exception(error_msg)
             return f"Error: {error_msg}"
-        
+
     def _handle_special_tool(self, name: str, result: Any, **kwargs):
         """Handle special tool execution and state changes"""
         if not self._is_special_tool(name):
             return
-    
+
         if self._should_finish_execution(name=name, result=result, **kwargs):
             # Set agent state to finished
             logger.info(f"🏁 Special tool '{name}' has completed the task!")
@@ -425,12 +456,11 @@ class SceneDesigner():
     def _should_finish_execution(**kwargs) -> bool:
         """Determine if tool execution should finish the agent"""
         return True
-    
+
     def _is_special_tool(self, name: str) -> bool:
         """Check if tool name is in special tools list"""
-        
-        return name.lower() in [n.lower() for n in self.special_tool_names]
 
+        return name.lower() in [n.lower() for n in self.special_tool_names]
 
     def run(self, request: Optional[str] = None) -> str:
         """Execute the agent's main loop asynchronously.
@@ -455,33 +485,35 @@ class SceneDesigner():
         self.current_step = 0
         save_dir = os.getenv("save_dir")
 
-        while (
-            self.current_step < self.max_steps and self.state != AgentState.FINISHED
-        ):
-
-            if self.current_step>0:
-                with open(f"{save_dir}/pipeline/memory_{self.current_step-1}.pkl", "rb") as file:
+        while self.current_step < self.max_steps and self.state != AgentState.FINISHED:
+            if self.current_step > 0:
+                with open(
+                    f"{save_dir}/pipeline/memory_{self.current_step-1}.pkl", "rb"
+                ) as file:
                     self.memory = dill.load(file)
 
-                with open(f"{save_dir}/pipeline/roomtype.txt","r") as f:
+                with open(f"{save_dir}/pipeline/roomtype.txt", "r") as f:
                     roomtype = f.readline().strip()
                     os.environ["roomtype"] = roomtype
-            
+
             os.environ["iter"] = str(self.current_step)
 
-            if self.current_step==0:
+            if self.current_step == 0:
                 self.available_tools = self.available_tools0
-            elif self.current_step<self.max_steps-1:
+            elif self.current_step < self.max_steps - 1:
                 self.available_tools = self.available_tools1
-                if hasattr(self,"tool_calls") and self.tool_calls[0].function.name=="add_acdc":  #modify size after using acdc
+                if (
+                    hasattr(self, "tool_calls")
+                    and self.tool_calls[0].function.name == "add_acdc"
+                ):  # modify size after using acdc
                     self.available_tools = ToolCollection(UpdateSizeExecute())
             else:
                 self.available_tools = self.available_tools2
 
             logger.info(f"Executing step {self.current_step}/{self.max_steps}")
             step_result = self.step()
-            if step_result=="Failed":
-                self.current_step -= 1  
+            if step_result == "Failed":
+                self.current_step -= 1
                 continue
 
             # Check for stuck state
@@ -489,25 +521,26 @@ class SceneDesigner():
                 self.handle_stuck_state()
             results.append(f"Step {self.current_step}: {step_result}")
 
-            with open(f"{save_dir}/pipeline/memory_{self.current_step}.pkl", "wb") as file:
+            with open(
+                f"{save_dir}/pipeline/memory_{self.current_step}.pkl", "wb"
+            ) as file:
                 dill.dump(self.memory, file)
             roomtype = os.getenv("roomtype")
-            with open(f"{save_dir}/pipeline/roomtype.txt","w") as f:
+            with open(f"{save_dir}/pipeline/roomtype.txt", "w") as f:
                 f.write(roomtype)
 
             self.current_step += 1
-            if self.tool_calls[0].function.name=="terminate":
+            if self.tool_calls[0].function.name == "terminate":
                 self.state = AgentState.FINISHED
                 results.append(f"Terminated: successfullly stop.")
 
-        
         if self.current_step >= self.max_steps:
             self.current_step = 0
             self.state = AgentState.IDLE
             results.append(f"Terminated: Reached max steps ({self.max_steps})")
 
         return "\n".join(results) if results else "No steps executed"
-    
+
     def handle_stuck_state(self):
         """Handle stuck state by adding a prompt to change strategy"""
         stuck_prompt = "\
@@ -532,7 +565,7 @@ class SceneDesigner():
         )
 
         return duplicate_count >= self.duplicate_threshold
-    
+
     def update_memory(
         self,
         role: ROLE_TYPE,  # type: ignore

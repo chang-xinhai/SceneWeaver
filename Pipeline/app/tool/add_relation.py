@@ -1,19 +1,18 @@
-import sys
-from typing import Dict
-
-from app.tool.base import BaseTool
 import json
 import os
 import random
+import sys
+from typing import Dict
+
 import numpy as np
-from gpt import GPT4 
-from app.utils import extract_json, dict2str, lst2str
-import json
+from gpt import GPT4
 
+from app.prompt.add_relation import example, system_prompt, user_prompt
+from app.tool.base import BaseTool
 from app.tool.update_infinigen import update_infinigen
-from app.prompt.add_relation import system_prompt,user_prompt,example
+from app.utils import dict2str, extract_json, lst2str
 
-DESCRIPTION="""
+DESCRIPTION = """
 Add explicit relation between objects in the current scene according to the layout. 
 Sometimes the relation is encoded in the layout coordinate rather than represented explicitly, making it difficult to manage.
 Explicit relations will make the scene more tidy.
@@ -46,7 +45,6 @@ Weaknesses: Can not fix the layout problem, such as placing the object into the 
 
 
 class AddRelationExecute(BaseTool):
-    
     name: str = "add_relation"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -66,7 +64,7 @@ class AddRelationExecute(BaseTool):
         roomtype = os.getenv("roomtype")
         action = self.name
         try:
-            #find scene
+            # find scene
             json_name = add_relation(user_demand, ideas, iter, roomtype)
             success = update_infinigen(
                 action, iter, json_name, inplace=False, invisible=True, ideas=ideas
@@ -79,19 +77,14 @@ class AddRelationExecute(BaseTool):
 
 def add_relation(user_demand, ideas, iter, roomtype):
     save_dir = os.getenv("save_dir")
-    if iter==0:
+    if iter == 0:
         render_path = f"{save_dir}/record_scene/render_{iter}.jpg"
-        with open(
-            f"{save_dir}/record_scene/layout_{iter}.json", "r"
-        ) as f:
+        with open(f"{save_dir}/record_scene/layout_{iter}.json", "r") as f:
             layout = json.load(f)
     else:
         render_path = f"{save_dir}/record_scene/render_{iter-1}.jpg"
-        with open(
-            f"{save_dir}/record_scene/layout_{iter-1}.json", "r"
-        ) as f:
+        with open(f"{save_dir}/record_scene/layout_{iter-1}.json", "r") as f:
             layout = json.load(f)
-    
 
     roomsize = layout["roomsize"]
     roomsize = lst2str(roomsize)

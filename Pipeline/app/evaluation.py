@@ -1,12 +1,14 @@
-
 import json
+import os
 import re
 import time
-import os
+
 import numpy as np
 import requests
 from gpt import GPT4
+
 from app.utils import dict2str
+
 
 def diff_objects(iter):
     save_dir = os.getenv("save_dir")
@@ -17,9 +19,7 @@ def diff_objects(iter):
         objs_now = layout.keys()
 
     if iter == 0:
-        return {"newly added objects":list(objs_now),
-                "removed objects":[]}
-    
+        return {"newly added objects": list(objs_now), "removed objects": []}
 
     with open(f"{save_dir}/record_scene/layout_{iter-1}.json", "r") as f:
         layout = json.load(f)
@@ -28,30 +28,28 @@ def diff_objects(iter):
 
     new_objs = list(set(objs_now) - set(objs_past))
     remove_obs = list(set(objs_past) - set(objs_now))
-    return {"newly added objects":new_objs,
-            "removed objects":remove_obs}
-
+    return {"newly added objects": new_objs, "removed objects": remove_obs}
 
 
 def statistic_traj(iter):
     save_dir = os.getenv("save_dir")
     trajs = dict()
-    for i in range(iter+1):
+    for i in range(iter + 1):
         traj = dict()
-        with open(f"{save_dir}/args/args_{i}.json","r") as f:
+        with open(f"{save_dir}/args/args_{i}.json", "r") as f:
             j = json.load(f)
             traj["iter"] = i
             traj["action"] = j["action"]
             traj["ideas"] = j["ideas"]
-        with open(f"{save_dir}/pipeline/metric_{i}.json","r") as f:
+        with open(f"{save_dir}/pipeline/metric_{i}.json", "r") as f:
             j = json.load(f)
             traj["results"] = dict()
-            traj["results"]["GPT score (0-10, higher is better)"] = j["GPT score (0-10, higher is better)"]
+            traj["results"]["GPT score (0-10, higher is better)"] = j[
+                "GPT score (0-10, higher is better)"
+            ]
             traj["results"]["Object Difference"] = j["Object Difference"]
 
-        with open(
-            f"{save_dir}/record_files/metric_{iter}.json", "r"
-        ) as f:
+        with open(f"{save_dir}/record_files/metric_{iter}.json", "r") as f:
             j = json.load(f)
             traj["results"]["Physics score"] = {
                 "object number": j["Nobj"],
@@ -61,22 +59,18 @@ def statistic_traj(iter):
 
         trajs[i] = traj
 
+    with open(f"{save_dir}/pipeline/trajs_{iter}.json", "w") as f:
+        json.dump(trajs, f, indent=4)
 
-    with open(f"{save_dir}/pipeline/trajs_{iter}.json","w") as f:
-        json.dump(trajs,f,indent=4)
-        
     return trajs
 
-        
 
 def eval_scene(iter, user_demand):
     grades, grading = eval_general_score(iter, user_demand)
     obj_diff = diff_objects(iter)
 
     save_dir = os.getenv("save_dir")
-    with open(
-        f"{save_dir}/record_files/metric_{iter}.json", "r"
-    ) as f:
+    with open(f"{save_dir}/record_files/metric_{iter}.json", "r") as f:
         results = json.load(f)
 
     metric = dict()
@@ -89,7 +83,7 @@ def eval_scene(iter, user_demand):
         "object not inside the room (lower is better)": results["OOB Objects"],
         "object has collision (lower is better)": results["BBL objects"],
     }
-    
+
     save_dir = os.getenv("save_dir")
     json_name = f"{save_dir}/pipeline/metric_{iter}.json"
     with open(json_name, "w") as f:
@@ -203,7 +197,9 @@ You are working in a 3D scene environment with the following conventions:
 
 """
 
-    prompt_payload = gpt.get_payload_eval(prompting_text_user=prompting_text_user,render_path=image_path_1)
+    prompt_payload = gpt.get_payload_eval(
+        prompting_text_user=prompting_text_user, render_path=image_path_1
+    )
 
     grades = {"realism": [], "functionality": [], "layout": [], "completion": []}
     for _ in range(1):
@@ -240,7 +236,9 @@ You are working in a 3D scene environment with the following conventions:
 
 
 if __name__ == "__main__":
-    os.environ["save_dir"] = "/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_gym/"
+    os.environ["save_dir"] = (
+        "/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_gym/"
+    )
     eval_scene(
         17,
         "Design me a gym.",

@@ -1,19 +1,18 @@
-import sys
-from typing import Dict
-
-from app.tool.base import BaseTool
 import json
 import os
 import random
+import sys
+from typing import Dict
+
 import numpy as np
-from gpt import GPT4 
-from app.utils import extract_json, dict2str, lst2str
-import json
+from gpt import GPT4
 
+from app.prompt.gpt.update_size import system_prompt, user_prompt
+from app.tool.base import BaseTool
 from app.tool.update_infinigen import update_infinigen
-from app.prompt.gpt.update_size import system_prompt,user_prompt
+from app.utils import dict2str, extract_json, lst2str
 
-DESCRIPTION="""
+DESCRIPTION = """
 Modify Object Sizes with GPT.
 Works with all room types. Best suited for significant size adjustments rather than minor refinements.
 
@@ -28,7 +27,6 @@ Limitations: Cannot modify overall room dimensions. Should only be used when nec
 
 
 class UpdateSizeExecute(BaseTool):
-    
     name: str = "update_size"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -48,10 +46,10 @@ class UpdateSizeExecute(BaseTool):
         roomtype = os.getenv("roomtype")
         action = self.name
         try:
-            #find scene
+            # find scene
             json_name = self.update_scene_gpt(user_demand, ideas, iter, roomtype)
             # json_name = update_ds(user_demand,ideas,iter,roomtype)
-            success = update_infinigen(action, iter, json_name,ideas=ideas)
+            success = update_infinigen(action, iter, json_name, ideas=ideas)
             assert success
             return f"Successfully Modify sizes with GPT."
         except Exception as e:
@@ -60,9 +58,7 @@ class UpdateSizeExecute(BaseTool):
     def update_scene_gpt(self, user_demand, ideas, iter, roomtype):
         save_dir = os.getenv("save_dir")
         render_path = f"{save_dir}/record_scene/render_{iter-1}.jpg"
-        with open(
-            f"{save_dir}/record_scene/layout_{iter-1}.json", "r"
-        ) as f:
+        with open(f"{save_dir}/record_scene/layout_{iter-1}.json", "r") as f:
             layout = json.load(f)
 
         roomsize = layout["roomsize"]

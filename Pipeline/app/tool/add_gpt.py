@@ -1,23 +1,21 @@
-import sys
-from typing import Dict
-
-from app.tool.base import BaseTool
 import json
 import os
 import random
+import sys
+from typing import Dict
+
 import numpy as np
-from gpt import GPT4 
-from app.utils import extract_json, dict2str, lst2str
-import json
+from gpt import GPT4
 
-from app.tool.update_infinigen import update_infinigen
-from app.tool.add_relation import add_relation
-from app.tool.init_gpt import InitGPTExecute
-import app.prompt.gpt.init_gpt as prompts0
 import app.prompt.gpt.add_gpt as prompts1
-from app.utils import extract_json, dict2str, lst2str
+import app.prompt.gpt.init_gpt as prompts0
+from app.tool.add_relation import add_relation
+from app.tool.base import BaseTool
+from app.tool.init_gpt import InitGPTExecute
+from app.tool.update_infinigen import update_infinigen
+from app.utils import dict2str, extract_json, lst2str
 
-DESCRIPTION="""
+DESCRIPTION = """
 Using GPT to add additional objects into the current scene.
 
 Use Case 1: Add large objects in the current scene.
@@ -38,7 +36,7 @@ Weaknesses: **Can not add objects on the ceiling.** The rotation of asset is not
 
 class AddGPTExecute(InitGPTExecute):
     """A tool for executing Python code with timeout and safety restrictions."""
-    
+
     name: str = "add_gpt"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -52,36 +50,28 @@ class AddGPTExecute(InitGPTExecute):
         "required": ["ideas"],
     }
 
-
     def execute(self, ideas: str) -> str:
-
         user_demand = os.getenv("UserDemand")
         iter = int(os.getenv("iter"))
         roomtype = os.getenv("roomtype")
         action = self.name
         try:
-            #find scene
-            json_name = self.add_gpt(user_demand, ideas, iter,roomtype)
-            
-          
-            success = update_infinigen(
-                action, iter, json_name, ideas=ideas
-            )
+            # find scene
+            json_name = self.add_gpt(user_demand, ideas, iter, roomtype)
+
+            success = update_infinigen(action, iter, json_name, ideas=ideas)
             assert success
 
             return f"Successfully add objects with GPT."
         except Exception as e:
             return f"Error adding objects with GPT"
 
- 
-    def add_gpt(self,user_demand, ideas, iter,roomtype):
-        json_name = self.generate_scene_iter1_gpt(user_demand, ideas, iter,roomtype)
+    def add_gpt(self, user_demand, ideas, iter, roomtype):
+        json_name = self.generate_scene_iter1_gpt(user_demand, ideas, iter, roomtype)
 
         return json_name
-    
 
-    def generate_scene_iter1_gpt(self,user_demand,ideas,iter,roomtype):
-
+    def generate_scene_iter1_gpt(self, user_demand, ideas, iter, roomtype):
         gpt = GPT4(version="4.1")
 
         results = dict()
@@ -91,18 +81,22 @@ class AddGPTExecute(InitGPTExecute):
             layout = json.load(f)
 
         roomsize = layout["roomsize"]
-        
+
         roomsize_str = f"[{roomsize[0]},{roomsize[1]}]"
-        step_1_big_object_prompt_user = prompts1.step_1_big_object_prompt_user.format(demand=user_demand, 
-                                                                                    roomtype = roomtype,
-                                                                                    ideas = ideas,
-                                                                                    roomsize = roomsize_str,
-                                                                                    scene_layout=layout["objects"],
-                                                                                    structure = layout["structure"])
-        
-        prompt_payload = gpt.get_payload_scene_image(prompts1.step_1_big_object_prompt_system, 
-                                                    step_1_big_object_prompt_user,
-                                                    render_path)
+        step_1_big_object_prompt_user = prompts1.step_1_big_object_prompt_user.format(
+            demand=user_demand,
+            roomtype=roomtype,
+            ideas=ideas,
+            roomsize=roomsize_str,
+            scene_layout=layout["objects"],
+            structure=layout["structure"],
+        )
+
+        prompt_payload = gpt.get_payload_scene_image(
+            prompts1.step_1_big_object_prompt_system,
+            step_1_big_object_prompt_user,
+            render_path,
+        )
         gpt_text_response = gpt(payload=prompt_payload, verbose=True)
         print(gpt_text_response)
 
@@ -111,7 +105,7 @@ class AddGPTExecute(InitGPTExecute):
 
         # #### 2. get object class name in infinigen
         category_list = gpt_dict_response["Number of new furniture"]
-        if len(category_list.keys())==0:
+        if len(category_list.keys()) == 0:
             return "Nothing"
         s = lst2str(list(category_list.keys()))
         user_prompt = prompts0.step_3_class_name_prompt_user.format(

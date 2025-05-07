@@ -34,11 +34,15 @@ from infinigen.core import tags as t
 from infinigen.core.constraints import checks
 from infinigen.core.constraints import constraint_language as cl
 from infinigen.core.constraints import reasoning as r
+from infinigen.core.constraints.constraint_language.util import delete_obj_with_children
 from infinigen.core.constraints.example_solver import (
     Solver,
     greedy,
     populate,
     state_def,
+)
+from infinigen.core.constraints.example_solver.geometry.validity import (
+    all_relations_valid,
 )
 from infinigen.core.constraints.example_solver.room import constants
 from infinigen.core.constraints.example_solver.room import decorate as room_dec
@@ -57,6 +61,7 @@ from infinigen_examples.steps import (
     basic_scene,
     camera,
     complete_structure,
+    evaluate,
     init_graph,
     light,
     populate_placeholder,
@@ -64,7 +69,6 @@ from infinigen_examples.steps import (
     room_structure,
     solve_objects,
     update_graph,
-    evaluate
 )
 from infinigen_examples.util import constraint_util as cu
 from infinigen_examples.util.generate_indoors_util import (
@@ -74,21 +78,26 @@ from infinigen_examples.util.generate_indoors_util import (
     place_cam_overhead,
     restrict_solving,
 )
-from infinigen_examples.util.visible import invisible_others, visible_others,invisible_wall
-from infinigen.core.constraints.example_solver.geometry.validity import all_relations_valid
-from infinigen.core.constraints.constraint_language.util import delete_obj_with_children
+from infinigen_examples.util.visible import (
+    invisible_others,
+    invisible_wall,
+    visible_others,
+)
 
 logger = logging.getLogger(__name__)
 
 all_vars = [cu.variable_room, cu.variable_obj]
+
+
 def view_all():
     if not bpy.app.background:
         for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 for region in area.regions:
-                    if region.type == 'WINDOW':
-                        override = {'area': area, 'region': region}
+                    if region.type == "WINDOW":
+                        override = {"area": area, "region": region}
                         bpy.ops.view3d.view_all(override, center=True)
+
 
 @gin.configurable
 def compose_indoors(
@@ -103,7 +112,6 @@ def compose_indoors(
 ):
     height = 1
 
-  
     consgraph = home_constraints()
     stages = basic_scene.default_greedy_stages()
     checks.check_all(consgraph, stages, all_vars)
@@ -130,16 +138,12 @@ def compose_indoors(
         )
         view_all()
         state.__post_init__()
-        if action== "init_physcene":
-            state, solver = init_graph.init_physcene(
-                stages, limits, solver, state, p
-            )
+        if action == "init_physcene":
+            state, solver = init_graph.init_physcene(stages, limits, solver, state, p)
 
-        elif action== "init_metascene":
-            state, solver = init_graph.init_metascene(
-                stages, limits, solver, state, p
-            )
-        elif action== "init_gpt":
+        elif action == "init_metascene":
+            state, solver = init_graph.init_metascene(stages, limits, solver, state, p)
+        elif action == "init_gpt":
             solver.load_gpt_results()
             state, solver = init_graph.init_gpt(stages, limits, solver, state, p)
         else:
@@ -147,18 +151,42 @@ def compose_indoors(
     else:
         if inplace:
             load_iter = iter
-            os.system(f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_inplaced.jpg")
-            os.system(f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_inplaced.jpg")
-            os.system(f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_inplaced.json")
-            os.system(f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_inplaced.blend")
-            os.system(f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_inplaced.pkl")
-            os.system(f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_inplaced.json")
+            os.system(
+                f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_inplaced.jpg"
+            )
+            os.system(
+                f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_inplaced.jpg"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_inplaced.json"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_inplaced.blend"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_inplaced.pkl"
+            )
+            os.system(
+                f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_inplaced.json"
+            )
         else:
             load_iter = iter - 1
         p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
@@ -169,7 +197,7 @@ def compose_indoors(
         save_path = "debug1.blend"
         bpy.ops.wm.save_as_mainfile(filepath=save_path)
         camera_rigs = [bpy.data.objects.get("CameraRigs/0")]
-        if action=="add_relation":
+        if action == "add_relation":
             state, solver = update_graph.add_new_relation(solver, state, p)
             # case "solve_large":
             #     state, solver = solve_objects.solve_large_object(
@@ -187,30 +215,31 @@ def compose_indoors(
         #     state, solver = solve_objects.solve_small_object(
         #         stages, limits, solver, state, p, consgraph, overrides
         #     )
-        elif action=="remove_object":
+        elif action == "remove_object":
             state = update_graph.remove_object(solver, state, p)
-        elif action=="add_gpt":
+        elif action == "add_gpt":
             state, solver = update_graph.add_gpt(stages, limits, solver, state, p)
-        elif action=="add_acdc":
+        elif action == "add_acdc":
             state, solver = update_graph.add_acdc(solver, state, p, description)
-        elif action=="add_rule":
+        elif action == "add_rule":
             state, solver = update_graph.add_rule(stages, limits, solver, state, p)
-        elif action=="export_supporter":
+        elif action == "export_supporter":
             record.export_supporter(
-                state, obj_name=description, export_path=f"{save_dir}/record_files/obj.blend"
+                state,
+                obj_name=description,
+                export_path=f"{save_dir}/record_files/obj.blend",
             )
             record_success()
             sys.exit()
-        elif action=="update":
+        elif action == "update":
             state, solver = update_graph.update(solver, state, p)
-        elif action=="update_size":
+        elif action == "update_size":
             state, solver = update_graph.update_size(solver, state, p)
         # case "modify":
         #     state, solver = update_graph.modify(stages, limits, solver, p)
-        elif action=="finalize_scene":
+        elif action == "finalize_scene":
             solved_rooms = [bpy.data.objects["newroom_0-0"]]
-            
-  
+
             height = complete_structure.finalize_scene(
                 overrides,
                 stages,
@@ -236,33 +265,35 @@ def compose_indoors(
     # state, solver = solve_objects.solve_large_object(
     #             stages, limits, solver, state, p, consgraph, overrides
     #         )
-                
-    if action not in ["init_physcene","init_metascene","finalize_scene","add_acdc"]:
+
+    if action not in ["init_physcene", "init_metascene", "finalize_scene", "add_acdc"]:
         p.run_stage(
-                "populate_assets",
-                populate.populate_state_placeholders_mid,
-                state,
-                use_chance=False,
-            )
-        if action=="add_relation":
+            "populate_assets",
+            populate.populate_state_placeholders_mid,
+            state,
+            use_chance=False,
+        )
+        if action == "add_relation":
             state, solver = solve_objects.solve_large_object(
-                        stages, limits, solver, state, p, consgraph, overrides
-                    )
+                stages, limits, solver, state, p, consgraph, overrides
+            )
         else:
             stop = False
-            while(not stop):
+            while not stop:
                 state, solver = solve_objects.solve_large_object(
-                        stages, limits, solver, state, p, consgraph, overrides
-                    )
-                for k,objinfo in state.objs.items():
-                    if hasattr(objinfo,"populate_obj"):
+                    stages, limits, solver, state, p, consgraph, overrides
+                )
+                for k, objinfo in state.objs.items():
+                    if hasattr(objinfo, "populate_obj"):
                         asset_obj = bpy.data.objects.get(objinfo.populate_obj)
                         place_obj = objinfo.obj
-                        if not np.allclose(asset_obj.location,place_obj.location):
+                        if not np.allclose(asset_obj.location, place_obj.location):
                             a = 1
-                        asset_obj.rotation_mode = 'XYZ'
-                        place_obj.rotation_mode = 'XYZ'
-                        if not np.allclose(asset_obj.rotation_euler,place_obj.rotation_euler):
+                        asset_obj.rotation_mode = "XYZ"
+                        place_obj.rotation_mode = "XYZ"
+                        if not np.allclose(
+                            asset_obj.rotation_euler, place_obj.rotation_euler
+                        ):
                             a = 1
                 p.run_stage(
                     "populate_assets",
@@ -274,41 +305,47 @@ def compose_indoors(
                 solver.del_no_relation_objects()
                 # save_path = "debug3.blend"
                 # bpy.ops.twm.save_as_mainfile(filepath=save_path)
-                stop = evaluate.del_top_collide_obj(state,iter)
+                stop = evaluate.del_top_collide_obj(state, iter)
 
                 solver.del_no_relation_objects()
-                                
+
                 if not bpy.app.background:
                     invisible_others()
-                    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                    bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
                     visible_others()
-                
 
             for name in list(state.objs.keys())[::-1]:
                 if name in state.objs.keys():
                     if name != "newroom_0-0":
                         if "couch" in name:
                             a = 1
-                        if not all_relations_valid(state, name, use_initial=True,fix_pos=True):
-                            if check_support(state,name,ratio=0.6): 
-                                #continue if children object is supported > 60%
+                        if not all_relations_valid(
+                            state, name, use_initial=True, fix_pos=True
+                        ):
+                            if check_support(state, name, ratio=0.6):
+                                # continue if children object is supported > 60%
                                 continue
                             print("all_relations_valid not valid ", name)
                             objname = state.objs[name].obj.name
-                            delete_obj_with_children(state.trimesh_scene,objname,delete_blender=True, delete_asset=True)
+                            delete_obj_with_children(
+                                state.trimesh_scene,
+                                objname,
+                                delete_blender=True,
+                                delete_asset=True,
+                            )
                             state.objs.pop(name)
                 if not bpy.app.background:
                     invisible_others()
-                    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                    bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
                     visible_others()
-           
+
     # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
     # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
     record.record_scene(
         state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p
     )
 
-    evaluate.eval_metric(state,iter,remove_bad=True)
+    evaluate.eval_metric(state, iter, remove_bad=True)
 
     record_success()
 
@@ -319,11 +356,13 @@ def compose_indoors(
         "whole_bbox": house_bbox,
     }
 
-def check_support(state,child_name,ratio=0.6):
-    from infinigen_examples.steps.tools import export_relation
-    from infinigen.core.constraints.constraint_language import util as iu
+
+def check_support(state, child_name, ratio=0.6):
     import trimesh
-    
+
+    from infinigen.core.constraints.constraint_language import util as iu
+    from infinigen_examples.steps.tools import export_relation
+
     parent_relations = [
         [rel.target_name, export_relation(rel.relation)]
         for rel in state.objs[child_name].relations
@@ -332,14 +371,14 @@ def check_support(state,child_name,ratio=0.6):
     for rel in parent_relations:
         if rel[0] == "newroom_0-0":
             return False
-        if rel[1] not in ["on","ontop"]:
+        if rel[1] not in ["on", "ontop"]:
             return False
         parent_names.append(rel[0])
-    if len(parent_names)==0:
+    if len(parent_names) == 0:
         return False
-    if len(parent_names)>1:
+    if len(parent_names) > 1:
         return False
-    
+
     scene = state.trimesh_scene
     sa = state.objs[child_name]
     sb = state.objs[parent_names[0]]
@@ -347,19 +386,19 @@ def check_support(state,child_name,ratio=0.6):
     a_trimesh = iu.meshes_from_names(scene, sa.obj.name)[0]
     b_trimesh = iu.meshes_from_names(scene, sb.obj.name)[0]
 
-    normal_b = [0,0,1]
-    origin_b = [0,0,0]
+    normal_b = [0, 0, 1]
+    origin_b = [0, 0, 0]
     projected_a = trimesh.path.polygons.projected(a_trimesh, normal_b, origin_b)
     projected_b = trimesh.path.polygons.projected(b_trimesh, normal_b, origin_b)
 
     intersection = projected_a.intersection(projected_b)
-    if intersection.area / projected_a.area  > ratio:
+    if intersection.area / projected_a.area > ratio:
         return True
     else:
         return False
-    
 
-def has_relation_with_obj(state,child_name):
+
+def has_relation_with_obj(state, child_name):
     from infinigen_examples.steps.tools import export_relation
 
     parent_relations = [
@@ -370,24 +409,24 @@ def has_relation_with_obj(state,child_name):
     for rel in parent_relations:
         if rel[0] == "newroom_0-0":
             continue
-        if rel[1] not in ["on","ontop"]:
+        if rel[1] not in ["on", "ontop"]:
             continue
         parent_names.append(rel[0])
-    if len(parent_names)==0:
+    if len(parent_names) == 0:
         return False
     else:
         return True
-    
-    
+
 
 def record_success():
     with open("args.json", "r") as f:
         j = json.load(f)
-    
+
     with open("args.json", "w") as f:
         j["success"] = True
-        json.dump(j,f,indent=4)
+        json.dump(j, f, indent=4)
     return
+
 
 def main(args):
     scene_seed = init.apply_scene_seed(args.seed)
@@ -488,17 +527,19 @@ if __name__ == "__main__":
         args.inplace = j["inplace"]
         args.json_name = j["json_name"]
 
-    with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
+    with open("/home/yandan/workspace/infinigen/roominfo.json", "r") as f:
         j = json.load(f)
         save_dir = j["save_dir"]
         os.environ["save_dir"] = save_dir
-  
+
     if not os.path.exists(f"{save_dir}/args"):
         os.system(f"mkdir {save_dir}/args")
         os.system(f"mkdir {save_dir}/record_files")
         os.system(f"mkdir {save_dir}/record_scene")
     if args.inplace:
-        os.system(f"cp {save_dir}/args/args_{args.iter}.json {save_dir}/args/args_{args.iter}_inplaced.json")
+        os.system(
+            f"cp {save_dir}/args/args_{args.iter}.json {save_dir}/args/args_{args.iter}_inplaced.json"
+        )
     os.system(f"cp args.json {save_dir}/args/args_{args.iter}.json")
-  
+
     main(args)

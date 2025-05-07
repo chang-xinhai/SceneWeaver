@@ -78,7 +78,6 @@ Here is the example:
 """
 
 
-
 step_1_big_object_prompt_user = """
 Here is the information you receive:
 1.User demand for the entire scene: {demand}
@@ -95,4 +94,3 @@ Here is the information you receive:
 "on" here means inside. "ontop" means on the supporter. Do not use "on" to represent the supporting relationship.
 Here is your response, return a json format like the given example:
 """
-

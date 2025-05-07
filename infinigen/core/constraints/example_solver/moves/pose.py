@@ -64,23 +64,22 @@ class TranslateMove(moves.Move):
         (target_name,) = self.names
         restore_pose_backup(state, target_name, self._backup_pose)
 
-    def update_asset_loc(self,state):
+    def update_asset_loc(self, state):
         for objname in state.objs.keys():
             placeholder = state.objs[objname].obj
             try:
                 asset = bpy.data.objects.get(state.objs[objname].populate_obj)
                 asset.location = placeholder.location
-                asset.rotation_mode = 'XYZ'
+                asset.rotation_mode = "XYZ"
                 asset.rotation_euler = placeholder.rotation_euler
                 asset.scale = placeholder.scale
             except:
                 continue
-        return 
-    
+        return
+
     def apply_gradient(self, state: State, temperature=None, expand_collision=False):
-        
         # self.update_asset_loc(state)
-        
+
         (target_name,) = self.names
         # if target_name=='4061705_TVFactory':
         #     print(state.objs[target_name].obj.location)
@@ -95,7 +94,10 @@ class TranslateMove(moves.Move):
         if "3164690_Bench" in target_name:
             import pdb
         parent_planes = apply_relations_surfacesample(
-            state, target_name, use_initial=True, closest_surface=True ##TODO YYD closest_surface
+            state,
+            target_name,
+            use_initial=True,
+            closest_surface=True,  ##TODO YYD closest_surface
         )
         # print("222",state.objs["5865980_BookStackFactory"].obj.location)
         obj_state.dof_matrix_translation = combined_stability_matrix(
@@ -123,7 +125,7 @@ class TranslateMove(moves.Move):
 
         if not bpy.app.background:
             invisible_others()
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
             visible_others()
         # import pdb
         # pdb.set_trace()
@@ -148,12 +150,12 @@ class TranslateMove(moves.Move):
 
         #     self.translation = obj_state.dof_matrix_translation @ random_vector
         # else:
-        
-        translation1,TRANS_MULT = self.calc_gradient_depth(
+
+        translation1, TRANS_MULT = self.calc_gradient_depth(
             state.trimesh_scene, state, target_name, touch
         )
         translation2 = self.calc_gradient_bbox(
-            state.trimesh_scene, state, target_name, touch, TRANS_MULT/2
+            state.trimesh_scene, state, target_name, touch, TRANS_MULT / 2
         )
         translation = translation1 + translation2
         # if target_name=='4061705_TVFactory':
@@ -165,7 +167,7 @@ class TranslateMove(moves.Move):
         # print("555",state.objs["5865980_BookStackFactory"].obj.location)
         # print(target_name, "4 ",obj_state.obj.location)
         # print(target_name,self.translation)
-        
+
         self._backup_pose = pose_backup(os, dof=False)
         # invisible_others()
         # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -176,7 +178,7 @@ class TranslateMove(moves.Move):
     def calc_gradient_depth(self, scene, state, name, touch):
         # # usd collision normal as gradient direction
         obj_state = state.objs[name]
-        if name=="5603344_nightstand":
+        if name == "5603344_nightstand":
             a = 1
 
         # record top children
@@ -210,36 +212,38 @@ class TranslateMove(moves.Move):
             # if b not in b_names:
             b_names.append(b)
             gradient += normal * depth
-                # print(depth,b,name)
+            # print(depth,b,name)
 
         gradient = obj_state.dof_matrix_translation @ gradient
-        
+
         # gradient[2] = 0
         gradient_norm = np.linalg.norm(gradient)
         if len(b_names) == 0 or gradient_norm == 0:
             TRANS_MULT = 0.05
             translation = np.zeros(3)
         else:
-            TRANS_MULT = min(0.05,gradient_norm)
+            TRANS_MULT = min(0.05, gradient_norm)
             translation = TRANS_MULT * gradient / gradient_norm
         print(translation)
-        
+
         # translation = TRANS_MULT * obj_state.dof_matrix_translation @ gradient
 
-        return translation,TRANS_MULT
+        return translation, TRANS_MULT
 
     def calc_gradient_bbox(self, scene, state, name, touch, TRANS_MULT):
-    # usd object centroid as gradient direction
-        
+        # usd object centroid as gradient direction
+
         #     pdb.set_trace()
         obj_state = state.objs[name]
 
         # record top children
         childnames = set()
-        for k,os in state.objs.items():
+        for k, os in state.objs.items():
             for rel in os.relations:
-                if rel.target_name==name and \
-                    (Subpart.SupportSurface in rel.relation.parent_tags or Subpart.Top in rel.relation.parent_tags):
+                if rel.target_name == name and (
+                    Subpart.SupportSurface in rel.relation.parent_tags
+                    or Subpart.Top in rel.relation.parent_tags
+                ):
                     childnames.add(os.obj.name)
 
         a = obj_state.obj.name
@@ -255,7 +259,9 @@ class TranslateMove(moves.Move):
         # for _, b in touch.names:
         for i in range(len(touch.names)):
             b = touch.names[i]
-            if b in childnames or b==state.objs[name].obj.name: # remove top children's collision
+            if (
+                b in childnames or b == state.objs[name].obj.name
+            ):  # remove top children's collision
                 continue
             if b.startswith("window"):
                 continue
@@ -288,6 +294,7 @@ class TranslateMove(moves.Move):
         translation = TRANS_MULT * obj_state.dof_matrix_translation @ gradient
         if "SingleCabinet" in name:
             import pdb
+
             print(state.objs[name].obj.location)
         return translation
 

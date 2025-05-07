@@ -1,21 +1,18 @@
-import sys
-from typing import Dict
-
-from app.tool.base import BaseTool
 import json
 import os
 import random
+import sys
+from typing import Dict
+
 import numpy as np
-from gpt import GPT4 
-from app.utils import extract_json, dict2str, lst2str
-
-import json
-
-from app.tool.update_infinigen import update_infinigen
+from gpt import GPT4
 
 import app.prompt.gpt.init_gpt as prompts
+from app.tool.base import BaseTool
+from app.tool.update_infinigen import update_infinigen
+from app.utils import dict2str, extract_json, lst2str
 
-DESCRIPTION="""
+DESCRIPTION = """
 Using GPT to generate the foundamental scene.
 
 Supported Room Types: any room type.
@@ -29,7 +26,7 @@ Weaknesses: May not be as real as data-driven methods.
 
 class InitGPTExecute(BaseTool):
     """A tool for executing Python code with timeout and safety restrictions."""
-    
+
     name: str = "init_gpt"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -47,7 +44,6 @@ class InitGPTExecute(BaseTool):
         "required": ["ideas", "roomtype"],
     }
 
-
     def execute(self, ideas: str, roomtype: str) -> str:
         """
         Save content to a file at the specified path.
@@ -63,10 +59,10 @@ class InitGPTExecute(BaseTool):
         user_demand = os.getenv("UserDemand")
         iter = int(os.getenv("iter"))
         os.environ["roomtype"] = roomtype
-        
+
         action = self.name
         try:
-            #init scene
+            # init scene
             json_name, roomsize = self.gen_gpt_scene(user_demand, ideas, roomtype)
             save_dir = os.getenv("save_dir")
             with open(f"/home/yandan/workspace/infinigen/roominfo.json", "w") as f:
@@ -75,36 +71,39 @@ class InitGPTExecute(BaseTool):
                     "ideas": ideas,
                     "roomtype": roomtype,
                     "roomsize": roomsize,
-                    "save_dir":os.getenv("save_dir")
+                    "save_dir": os.getenv("save_dir"),
                 }
                 json.dump(info, f, indent=4)
-            os.system(f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json")
-                
-            success = update_infinigen(action, iter, json_name,ideas=ideas)
+            os.system(
+                f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json"
+            )
+
+            success = update_infinigen(action, iter, json_name, ideas=ideas)
             assert success
 
             return f"Successfully initialize scene with GPT."
         except Exception as e:
             return f"Error initializing scene with GPT."
 
- 
-    def gen_gpt_scene(self,user_demand, ideas, roomtype):
+    def gen_gpt_scene(self, user_demand, ideas, roomtype):
         json_name = self.generate_scene_iter0(user_demand, ideas, roomtype)
         with open(json_name, "r") as f:
             j = json.load(f)
         roomsize = j["roomsize"]
         return json_name, roomsize
-    
 
-    def generate_scene_iter0(self,user_demand,ideas,roomtype):
-
+    def generate_scene_iter0(self, user_demand, ideas, roomtype):
         gpt = GPT4("4.1")
 
         results = dict()
 
         ### 1. get big object, count, and relation
-        user_prompt = prompts.step_1_big_object_prompt_user.format(demand=user_demand,ideas=ideas,roomtype=roomtype)
-        prompt_payload = gpt.get_payload(prompts.step_1_big_object_prompt_system, user_prompt)
+        user_prompt = prompts.step_1_big_object_prompt_user.format(
+            demand=user_demand, ideas=ideas, roomtype=roomtype
+        )
+        prompt_payload = gpt.get_payload(
+            prompts.step_1_big_object_prompt_system, user_prompt
+        )
         gpt_text_response = gpt(payload=prompt_payload, verbose=True)
         print(gpt_text_response)
 
@@ -118,11 +117,9 @@ class InitGPTExecute(BaseTool):
         category_against_wall = gpt_dict_response["Object against the wall"]
         relation_big_object = gpt_dict_response["Relation between big objects"]
 
-
         # # Category list of big objects: [1 checkout counter, 5 bookshelves, 2 reading tables, 8 chairs]
         # # Object against the wall: [bookshelves]
         # # Relation between big objects: [chair, reading table, front_against]
-
 
         ##### 5  generate position big
         big_category_dict_str = dict2str(big_category_dict)
@@ -137,7 +134,9 @@ class InitGPTExecute(BaseTool):
             demand=user_demand,
             roomsize=roomsize_str,
         )
-        prompt_payload = gpt.get_payload(prompts.step_5_position_prompt_system, user_prompt)
+        prompt_payload = gpt.get_payload(
+            prompts.step_5_position_prompt_system, user_prompt
+        )
         success = False
         iter = 0
         while not success and iter < 5:
@@ -158,7 +157,6 @@ class InitGPTExecute(BaseTool):
         small_category_list = []
         relation_small_object = []
         Placement_small = []
-        
 
         # #### 3. get object class name in infinigen
         category_list = big_category_list + small_category_list
@@ -172,7 +170,6 @@ class InitGPTExecute(BaseTool):
         prompt_payload = gpt.get_payload(system_prompt, user_prompt)
         gpt_text_response = gpt(payload=prompt_payload, verbose=True)
         print(gpt_text_response)
-
 
         gpt_dict_response = extract_json(
             gpt_text_response.replace("'", '"').replace("None", "null")
@@ -190,7 +187,7 @@ class InitGPTExecute(BaseTool):
         results["gpt_text_response"] = gpt_text_response
         results["Placement_big"] = Placement_big
         results["Placement_small"] = Placement_small
-        
+
         save_dir = os.getenv("save_dir")
         json_name = f"{save_dir}/pipeline/init_gpt_results.json"
         with open(json_name, "w") as f:

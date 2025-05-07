@@ -16,7 +16,7 @@ import trimesh
 from mathutils import Vector
 from shapely import MultiPolygon, Polygon
 from shapely.affinity import rotate
-from shapely.geometry import Point
+from shapely.geometry import MultiPolygon, Point, Polygon
 
 from infinigen.core import tagging
 from infinigen.core.constraints import constraint_language as cl
@@ -25,12 +25,11 @@ from infinigen.core.constraints.example_solver import state_def
 
 # from infinigen.core.util import blender as butil
 from infinigen.core.constraints.example_solver.geometry import planes as planes
+from infinigen.core.tags import Subpart
 from infinigen.core.util import blender as butil
 
 # import fcl
 from infinigen_examples.util.visible import invisible_others, visible_others
-from infinigen.core.tags import Subpart
-from shapely.geometry import Polygon, MultiPolygon
 
 logger = logging.getLogger(__name__)
 
@@ -86,10 +85,10 @@ def is_vertically_contained(poly_a, poly_b, return_diff=False):
     # Check vertical containment along the Y-axis
     min_a, max_a = min(y_coords_a), max(y_coords_a)
     min_b, max_b = min(y_coords_b), max(y_coords_b)
-    
+
     is_contained = min_b <= min_a and max_a <= max_b
     if return_diff:
-        vertical_diff = (min_b + max_b)/2 - (min_a + max_a)/2
+        vertical_diff = (min_b + max_b) / 2 - (min_a + max_a) / 2
         return is_contained, vertical_diff
     else:
         return is_contained
@@ -105,16 +104,15 @@ def project_vector(vector, origin, normal):
 
 
 @gin.configurable
-def  stable_against(
+def stable_against(
     state: state_def.State,
     obj_name: str,
     relation_state: state_def.RelationState,
     visualize=False,
     allow_overhangs=False,
-    use_initial = False,
-    fix_pos=False
+    use_initial=False,
+    fix_pos=False,
 ):
-
     # 这个函数stable_against主要用于检查两个对象在三维空间中的稳定性。
     # 首先，它获取相关的对象和它们的平面表示。
     # 然后，函数检查两个对象的法向量是否平行，以确保它们是稳定的。
@@ -133,16 +131,21 @@ def  stable_against(
     relation = StableAgainst({Subpart.Bottom, -Subpart.Top, -Subpart.Back, -Subpart.Front}, {Subpart.Visible, Subpart.SupportSurface, -Subpart.Ceiling, -Subpart.Wall})
 
     """
-    if obj_name=="5048934_BookStackFactory": 
-        a =1 
+    if obj_name == "5048934_BookStackFactory":
+        a = 1
     assert isinstance(relation, cl.StableAgainst)
 
     logger.debug(f"stable against {obj_name=} {relation_state=}")
     a_blender_obj = state.objs[obj_name].obj
 
-    if  Subpart.SupportSurface in relation_state.relation.parent_tags and \
-        relation_state.target_name!='newroom_0-0' and hasattr(state.objs[relation_state.target_name],"populate_obj"):  #TODO YYD
-        b_blender_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+    if (
+        Subpart.SupportSurface in relation_state.relation.parent_tags
+        and relation_state.target_name != "newroom_0-0"
+        and hasattr(state.objs[relation_state.target_name], "populate_obj")
+    ):  # TODO YYD
+        b_blender_obj = bpy.data.objects.get(
+            state.objs[relation_state.target_name].populate_obj
+        )
     else:
         b_blender_obj = state.objs[relation_state.target_name].obj
 
@@ -167,10 +170,15 @@ def  stable_against(
     )
 
     scene = state.trimesh_scene
-    
-    if Subpart.SupportSurface in relation_state.relation.parent_tags and relation_state.target_name!='newroom_0-0' \
-        and hasattr(state.objs[relation_state.target_name],"populate_obj"): #TODO YYD
-        sb_obj = bpy.data.objects.get(state.objs[relation_state.target_name].populate_obj)
+
+    if (
+        Subpart.SupportSurface in relation_state.relation.parent_tags
+        and relation_state.target_name != "newroom_0-0"
+        and hasattr(state.objs[relation_state.target_name], "populate_obj")
+    ):  # TODO YYD
+        sb_obj = bpy.data.objects.get(
+            state.objs[relation_state.target_name].populate_obj
+        )
     else:
         sb_obj = state.objs[relation_state.target_name].obj
 
@@ -203,7 +211,7 @@ def  stable_against(
             for point in vertices:
                 p = Point(point)
 
-                if projected_b.geom_type == 'MultiPolygon':
+                if projected_b.geom_type == "MultiPolygon":
                     flag_contains = False
                     for poly in projected_b.geoms:
                         if poly.contains(p):
@@ -213,60 +221,71 @@ def  stable_against(
                         continue
                 elif projected_b.contains(p):
                     continue
-                
-                if projected_b.geom_type == 'MultiPolygon':
-                    closest_points = [poly.exterior.interpolate(poly.exterior.project(p)) for poly in projected_b.geoms]
-                    closest_point = min(closest_points, key=lambda pt: pt.distance(p))  # Find the nearest one
+
+                if projected_b.geom_type == "MultiPolygon":
+                    closest_points = [
+                        poly.exterior.interpolate(poly.exterior.project(p))
+                        for poly in projected_b.geoms
+                    ]
+                    closest_point = min(
+                        closest_points, key=lambda pt: pt.distance(p)
+                    )  # Find the nearest one
                 else:
-                    closest_point = projected_b.exterior.interpolate(projected_b.exterior.project(p))
+                    closest_point = projected_b.exterior.interpolate(
+                        projected_b.exterior.project(p)
+                    )
                 move_vector = [closest_point.x - p.x, closest_point.y - p.y]
-                move_vectors.append(np.array(move_vector)[None,:]/np.linalg.norm(np.array(move_vector)))
-                
+                move_vectors.append(
+                    np.array(move_vector)[None, :]
+                    / np.linalg.norm(np.array(move_vector))
+                )
+
             gradient = np.mean(np.concatenate(move_vectors, axis=0), axis=0)
-            if obj_name=="60910_nightstand":
+            if obj_name == "60910_nightstand":
                 a = 1
-            gradient = anti_project_to_3d(gradient,normal_b)
+            gradient = anti_project_to_3d(gradient, normal_b)
             gradient = sa.dof_matrix_translation @ gradient
             gradient_norm = np.linalg.norm(gradient)
             if gradient_norm == 0:
                 translation = np.zeros(3)
             else:
-                TRANS_MULT = 0.05 #min(0.05,gradient_norm)
+                TRANS_MULT = 0.05  # min(0.05,gradient_norm)
                 translation = TRANS_MULT * gradient / gradient_norm
             # gradient = [gradient[0],gradient[1],0]
             # TRANS_MULT = 0.05
             # translation = TRANS_MULT * sa.dof_matrix_translation @ gradient
             iu.translate(state.trimesh_scene, sa.obj.name, translation)
             print(obj_name, bpy.data.objects[sa.obj.name].location)
- 
+
     else:
-        if obj_name=='6569851_FloorLampFactory':
+        if obj_name == "6569851_FloorLampFactory":
             a = 1
         z_proj = project_vector(np.array([0, 0, 1]), origin_b, normal_b)
         projected_a_rotated, projected_b_rotated = project_and_align_z_with_x(
             [projected_a, projected_b], z_proj
         )
-        res,vertical_diff = is_vertically_contained(projected_a_rotated, projected_b_rotated, return_diff=True)
+        res, vertical_diff = is_vertically_contained(
+            projected_a_rotated, projected_b_rotated, return_diff=True
+        )
         if use_initial and not res and not fix_pos:
             tangent_1 = [0, 0, 1]
             tangent_2 = np.cross(normal_b, tangent_1)
             tangent_2 = tangent_2 / np.linalg.norm(tangent_2)
             gradient = vertical_diff * tangent_2
-            
+
             gradient = sa.dof_matrix_translation @ gradient
             # gradient[2] = 0
             gradient_norm = np.linalg.norm(gradient)
             if gradient_norm == 0:
                 translation = np.zeros(3)
             else:
-                TRANS_MULT = 0.05 # #min(0.05,gradient_norm)
+                TRANS_MULT = 0.05  # #min(0.05,gradient_norm)
                 translation = TRANS_MULT * gradient / gradient_norm
 
             # TRANS_MULT = 0.1
             # translation = TRANS_MULT * sa.dof_matrix_translation @ gradient
-            
+
             iu.translate(state.trimesh_scene, sa.obj.name, translation)
-            
 
     if visualize:
         fig, ax = plt.subplots()
@@ -290,29 +309,28 @@ def  stable_against(
 
     return True
 
-def anti_project_to_3d(point_2D,normal_b,origin_b=[0,0,0]):
-   
+
+def anti_project_to_3d(point_2D, normal_b, origin_b=[0, 0, 0]):
     normal_b = np.array(normal_b)
     # Find two vectors that lie on the plane, perpendicular to the normal vector
     # Using cross products to find perpendicular vectors
     # tangent_1 = np.cross(normal_b, [1, 0, 0]) if normal_b[0] != 0 else np.cross(normal_b, [0, -1, 0])
-    
-    if normal_b[1] not in [1,-1]:
+
+    if normal_b[1] not in [1, -1]:
         tangent_1 = np.cross(normal_b, [0, -1, 0])
-    elif normal_b[1] not in [1,-1]:
+    elif normal_b[1] not in [1, -1]:
         tangent_1 = np.cross(normal_b, [0, 1, 0])
     # # else:
     # tangent_1 = np.cross(normal_b, [1, 0, 0]) if normal_b != [1,0,0] else np.cross(normal_b, [0, -1, 0])
     # tangent_1 = tangent_1 / np.linalg.norm(tangent_1)
 
-    if normal_b[1] not in [1,-1]:
+    if normal_b[1] not in [1, -1]:
         # If normal is vertical (aligned with Y-axis), use X and Z
         tangent_1 = np.array([1, 0, 0], dtype=np.float64)
     else:
         # Otherwise, cross with world Y axis
         tangent_1 = np.cross(normal_b, [0, 1, 0])
         tangent_1 /= np.linalg.norm(tangent_1)
-    
 
     # Find another tangent vector
     tangent_2 = np.cross(normal_b, tangent_1)

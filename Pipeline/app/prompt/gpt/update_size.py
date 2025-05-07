@@ -1,4 +1,3 @@
-
 system_prompt = """
 You are given a list of objects in a 3D room scene, including their positions, rotations, sizes, and types (e.g., bed, desk, chair).
 The unit is meters. The scene is also rendered from a top-down view.

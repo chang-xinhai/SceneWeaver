@@ -15,7 +15,6 @@ from inspect import signature
 import bpy
 import gin
 import numpy as np
-
 from tqdm import trange
 
 from infinigen.core import tags as t
@@ -240,6 +239,7 @@ def attribute_to_vertex_group(obj, attr, name=None, min_thresh=0, binary=False):
 
 def eval_argument(nw, argument, default_value=1.0, **kwargs):
     from mathutils import Vector
+
     if argument is None:
         # return selection encompassing everything
         v = nw.new_node(Nodes.Value)

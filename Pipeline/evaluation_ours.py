@@ -1,12 +1,13 @@
-
 import json
+import os
 import re
 import time
-import os
+
 import numpy as np
 import requests
-from gpt import GPT4
 from app.utils import dict2str
+from gpt import GPT4
+
 
 def diff_objects(iter):
     save_dir = os.getenv("save_dir")
@@ -17,9 +18,7 @@ def diff_objects(iter):
         objs_now = layout.keys()
 
     if iter == 0:
-        return {"newly added objects":list(objs_now),
-                "removed objects":[]}
-    
+        return {"newly added objects": list(objs_now), "removed objects": []}
 
     with open(f"{save_dir}/record_scene/layout_{iter-1}.json", "r") as f:
         layout = json.load(f)
@@ -28,17 +27,15 @@ def diff_objects(iter):
 
     new_objs = list(set(objs_now) - set(objs_past))
     remove_obs = list(set(objs_past) - set(objs_now))
-    return {"newly added objects":new_objs,
-            "removed objects":remove_obs}
-
+    return {"newly added objects": new_objs, "removed objects": remove_obs}
 
 
 def statistic_traj(iter):
     save_dir = os.getenv("save_dir")
     trajs = dict()
-    for i in range(iter+1):
+    for i in range(iter + 1):
         traj = dict()
-        with open(f"{save_dir}/args/args_{i}.json","r") as f:
+        with open(f"{save_dir}/args/args_{i}.json", "r") as f:
             j = json.load(f)
             traj["iter"] = i
             traj["action"] = j["action"]
@@ -46,18 +43,18 @@ def statistic_traj(iter):
                 traj["ideas"] = j["ideas"]
             except:
                 a = 1
-        with open(f"{save_dir}/pipeline/metric_{i}.json","r") as f:
+        with open(f"{save_dir}/pipeline/metric_{i}.json", "r") as f:
             j = json.load(f)
             traj["results"] = dict()
-            traj["results"]["GPT score (0-10, higher is better)"] = j["GPT score (0-10, higher is better)"]
+            traj["results"]["GPT score (0-10, higher is better)"] = j[
+                "GPT score (0-10, higher is better)"
+            ]
             try:
                 traj["results"]["Object Difference"] = j["Object Difference"]
             except:
                 a = 1
 
-        with open(
-            f"{save_dir}/record_files/metric_{iter}.json", "r"
-        ) as f:
+        with open(f"{save_dir}/record_files/metric_{iter}.json", "r") as f:
             j = json.load(f)
             traj["results"]["Physics score"] = {
                 "object number": j["Nobj"],
@@ -67,13 +64,11 @@ def statistic_traj(iter):
 
         trajs[i] = traj
 
+    with open(f"{save_dir}/pipeline/trajs_{iter}.json", "w") as f:
+        json.dump(trajs, f, indent=4)
 
-    with open(f"{save_dir}/pipeline/trajs_{iter}.json","w") as f:
-        json.dump(trajs,f,indent=4)
-        
     return trajs
 
-        
 
 def eval_scene(iter, user_demand):
     # grades, grading = eval_general_score(iter, user_demand)
@@ -95,7 +90,7 @@ def eval_scene(iter, user_demand):
     # #     # "object not inside the room (lower is better)": results["OOB Objects"],
     # #     # "object has collision (lower is better)": results["BBL objects"],
     # # }
-    
+
     # save_dir = os.getenv("save_dir")
     # json_name = f"{save_dir}/pipeline/metric_{iter}.json"
     # with open(json_name, "w") as f:
@@ -103,7 +98,7 @@ def eval_scene(iter, user_demand):
 
     action_trajs = statistic_traj(iter)
 
-    return 
+    return
 
 
 def eval_general_score(iter, user_demand):
@@ -210,7 +205,9 @@ You are working in a 3D scene environment with the following conventions:
 
 """
 
-    prompt_payload = gpt.get_payload_eval(prompting_text_user=prompting_text_user,render_path=image_path_1)
+    prompt_payload = gpt.get_payload_eval(
+        prompting_text_user=prompting_text_user, render_path=image_path_1
+    )
 
     grades = {"realism": [], "functionality": [], "layout": [], "completion": []}
     for _ in range(1):
@@ -247,7 +244,6 @@ You are working in a 3D scene environment with the following conventions:
 
 
 if __name__ == "__main__":
-    
     roomtype = "living_room"
     # for i in range(10):
     #     save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_{roomtype}_{i}"
@@ -259,32 +255,33 @@ if __name__ == "__main__":
     #             max_iter = max(max_iter,iter)
     #     os.environ["save_dir"] = save_dir
     #     print(f"evaluating ours Design_me_a_{roomtype}_{i} in iter {max_iter}")
-        
+
     #     eval_scene(
     #         max_iter,
     #         f"Design me a {roomtype}.",
     #     )
 
+    score = {
+        "gpt_real": [],
+        "gpt_function": [],
+        "gpt_layout": [],
+        "gpt_complet": [],
+        "NObj": [],
+        "BBO": [],
+        "BBL": [],
+    }
 
-    score = {"gpt_real":[],
-             "gpt_function":[],
-             "gpt_layout":[],
-             "gpt_complet":[],
-             "NObj":[],
-             "BBO":[],
-             "BBL":[]}
-    
     # for i in [10,12,14,15,16,17,19]:
     for i in range(10):
         save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_{roomtype}_{i}"
         img_dir = f"{save_dir}/record_scene"
         max_iter = 0
         for file in os.listdir(img_dir):
-            if file.endswith(".jpg") and len(file.split("_"))==2:
+            if file.endswith(".jpg") and len(file.split("_")) == 2:
                 iter = int(file.split("_")[1].split(".")[0])
-                max_iter = max(max_iter,iter)
+                max_iter = max(max_iter, iter)
 
-        with open(f"{save_dir}/pipeline/trajs_{max_iter}.json","r") as f: 
+        with open(f"{save_dir}/pipeline/trajs_{max_iter}.json", "r") as f:
             j = json.load(f)
 
         gptscore = j[str(max_iter)]["results"]["GPT score (0-10, higher is better)"]
@@ -299,7 +296,7 @@ if __name__ == "__main__":
         score["BBL"].append(len(physcore["object has collision"]))
 
     score_mean = dict()
-    for key,value in score.items():
-        score_mean[key] = round(np.mean(value),3)
+    for key, value in score.items():
+        score_mean[key] = round(np.mean(value), 3)
 
     print(score_mean)

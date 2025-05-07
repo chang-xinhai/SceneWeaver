@@ -1,20 +1,19 @@
-import sys
-from typing import Dict
-
-from app.tool.base import BaseTool
 import json
 import os
 import random
+import sys
+from typing import Dict
+
 import numpy as np
-from gpt import GPT4 
-from app.utils import extract_json, dict2str
-import json
+from gpt import GPT4
 
-from app.tool.update_infinigen import update_infinigen
 from app.tool.add_relation import add_relation
+from app.tool.base import BaseTool
 from app.tool.get_roomsize import get_roomsize
+from app.tool.update_infinigen import update_infinigen
+from app.utils import dict2str, extract_json
 
-DESCRIPTION="""
+DESCRIPTION = """
 Using neural network to generate a scene as the basic scene.
 The neural network is trained on the 3D Front indoor dataset.
 
@@ -28,7 +27,7 @@ Weaknesses: Fixed layout, less details. Need to modify with other methods to mee
 
 class InitPhySceneExecute(BaseTool):
     """A tool for executing Python code with timeout and safety restrictions."""
-    
+
     name: str = "init_physcene"
     description: str = DESCRIPTION
     parameters: dict = {
@@ -46,7 +45,6 @@ class InitPhySceneExecute(BaseTool):
         "required": ["ideas", "roomtype"],
     }
 
-
     def execute(self, ideas: str, roomtype: str) -> str:
         """
         Save content to a file at the specified path.
@@ -62,14 +60,14 @@ class InitPhySceneExecute(BaseTool):
         user_demand = os.getenv("UserDemand")
         iter = int(os.getenv("iter"))
         os.environ["roomtype"] = roomtype
-        
+
         action = self.name
         try:
             # #find scene
             save_dir = os.getenv("save_dir")
             json_name, roomsize = self.find_physcene(user_demand, ideas, roomtype)
             roomsize = get_roomsize(user_demand, ideas, roomsize, roomtype)
-            
+
             with open("/home/yandan/workspace/infinigen/roominfo.json", "w") as f:
                 info = {
                     "action": action,
@@ -77,18 +75,20 @@ class InitPhySceneExecute(BaseTool):
                     "roomtype": roomtype,
                     "roomsize": roomsize,
                     "scene_id": json_name,
-                    "save_dir": save_dir
+                    "save_dir": save_dir,
                 }
                 json.dump(info, f, indent=4)
-            os.system(f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json")
+            os.system(
+                f"cp /home/yandan/workspace/infinigen/roominfo.json {save_dir}/roominfo.json"
+            )
             success = update_infinigen(action, iter, json_name, ideas=ideas)
             assert success
 
-            #add relation
+            # add relation
             action = "add_relation"
             json_name = add_relation(user_demand, ideas, iter, roomtype)
             success = update_infinigen(
-                action, iter, json_name, inplace=True, invisible=True,ideas=ideas
+                action, iter, json_name, inplace=True, invisible=True, ideas=ideas
             )
             assert success
 
@@ -96,7 +96,6 @@ class InitPhySceneExecute(BaseTool):
         except Exception as e:
             return f"Error generating a scene by neural network."
 
- 
     def find_physcene(self, user_demand, ideas, roomtype):
         roomtype = roomtype.lower()
         if roomtype.endswith("room"):
@@ -117,7 +116,9 @@ class InitPhySceneExecute(BaseTool):
             for objects in data["ThreedFront"].values():
                 for obj in objects:
                     position = np.array(obj["position"])  # Object's position
-                    size = np.array(obj["size"])  # Half-size for bounding box calculation
+                    size = np.array(
+                        obj["size"]
+                    )  # Half-size for bounding box calculation
 
                     # Compute object's bounding box min and max coordinates
                     obj_min = position - size

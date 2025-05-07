@@ -11,7 +11,13 @@ import bpy
 import mathutils
 import numpy as np
 from scipy.spatial.transform import Rotation
-from infinigen.assets.objaverse_assets.place_in_blender import select_meshes_under_empty,get_highest_parent_objects,delete_empty_object,delete_object_with_children
+
+from infinigen.assets.objaverse_assets.place_in_blender import (
+    delete_empty_object,
+    delete_object_with_children,
+    get_highest_parent_objects,
+    select_meshes_under_empty,
+)
 
 
 def set_origin(imported_obj):
@@ -27,7 +33,7 @@ def set_origin(imported_obj):
     imported_obj.location.y -= mean_y
 
     pos_bias = [mean_x, mean_y, min_z]
-    bpy.context.scene.cursor.location = [0,0,0]
+    bpy.context.scene.cursor.location = [0, 0, 0]
 
     bpy.ops.object.origin_set(type="ORIGIN_CURSOR", center="BOUNDS")
     return imported_obj, pos_bias
@@ -389,58 +395,57 @@ def merge_obj_from_blend(filename):
 
 
 def load_glb(mesh_path):
-
     bpy.ops.import_scene.gltf(filepath=mesh_path)
-    
-    #preprocess directary
+
+    # preprocess directary
     parent_obj = bpy.context.selected_objects[0]
-    # parents = get_highest_parent_objects()      
-    
-    bpy.ops.object.select_all(action='DESELECT')
+    # parents = get_highest_parent_objects()
+
+    bpy.ops.object.select_all(action="DESELECT")
     obj = select_meshes_under_empty(parent_obj.name)
 
     bpy.ops.object.join()
-    bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
-    
+    bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
+
     joined_object = bpy.context.view_layer.objects.active
     if joined_object is not None:
         joined_object.name = parent_obj.name + "-joined"
-        joined_object.location = (0,0,0)
-        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
-        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
-        joined_object.location = (0,0,0)
+        joined_object.location = (0, 0, 0)
+        bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
+        bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+        joined_object.location = (0, 0, 0)
         bpy.context.view_layer.objects.active = joined_object
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
         joined_object.select_set(True)
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
-            
-    bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
+
+    bpy.ops.object.select_all(action="DESELECT")
     delete_object_with_children(parent_obj)
 
     imported_obj = joined_object
-    
+
     imported_obj.location = [0, 0, 0]
     # imported_obj.rotation_euler = [0,0,0]
     bpy.context.view_layer.objects.active = imported_obj
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     imported_obj.select_set(True)
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=False)
-    imported_obj.rotation_mode = 'XYZ'
+    imported_obj.rotation_mode = "XYZ"
 
     m = max(imported_obj.dimensions)
-    scale = 1/m
+    scale = 1 / m
 
-    imported_obj.scale = (scale,scale,scale)
+    imported_obj.scale = (scale, scale, scale)
     bpy.context.view_layer.objects.active = imported_obj  # Set as active object
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     imported_obj.select_set(True)  # Select the object
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     set_origin(imported_obj)
     return imported_obj
 
+
 if __name__ == "__main__":
-    
     bpy.ops.object.select_all(action="SELECT")
     # Delete all selected objects
     bpy.ops.object.delete()
@@ -448,13 +453,11 @@ if __name__ == "__main__":
     bpy.context.scene.render.resolution_x = 512  # Width in pixels
     bpy.context.scene.render.resolution_y = 512
 
-   
     # mesh_path = "/home/yandan/.objaverse/hf-objaverse-v1/glbs/000-088/70e32260ba8a4c7aa8f3a230f5fccabd.glb"
     mesh_path = sys.argv[1]
     imported_obj = load_glb(mesh_path)
     print(f"Rendering objaverse assets {mesh_path} 90 degrees ...")
-    save_dir = mesh_path.replace(".glb","")
+    save_dir = mesh_path.replace(".glb", "")
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
         render_90degree(imported_obj, save_dir)
-

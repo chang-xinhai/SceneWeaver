@@ -1,35 +1,53 @@
-import openshape
-from huggingface_hub import hf_hub_download
-import torch
 import json
-import numpy as np
-import transformers
-import threading
 import multiprocessing
-import sys, os, shutil
-import objaverse
-from torch.nn import functional as F
+import os
 import re
+import shutil
 import subprocess
+import sys
+import threading
 
+import numpy as np
+import objaverse
+import openshape
+import torch
+import transformers
+from huggingface_hub import hf_hub_download
+from torch.nn import functional as F
 
-#Print device
+# Print device
 print("Device: ", torch.cuda.get_device_name(0))
 
 # Load the Pointcloud Encoder
-pc_encoder = openshape.load_pc_encoder('openshape-pointbert-vitg14-rgb')
+pc_encoder = openshape.load_pc_encoder("openshape-pointbert-vitg14-rgb")
 
 # Get the pre-computed embeddings
 meta = json.load(
-    open(hf_hub_download("OpenShape/openshape-objaverse-embeddings", "objaverse_meta.json", token=True, repo_type='dataset', local_dir = "OpenShape-Embeddings"))
+    open(
+        hf_hub_download(
+            "OpenShape/openshape-objaverse-embeddings",
+            "objaverse_meta.json",
+            token=True,
+            repo_type="dataset",
+            local_dir="OpenShape-Embeddings",
+        )
+    )
 )
 
-meta = {x['u']: x for x in meta['entries']}
+meta = {x["u"]: x for x in meta["entries"]}
 deser = torch.load(
-    hf_hub_download("OpenShape/openshape-objaverse-embeddings", "objaverse.pt", token=True, repo_type='dataset', local_dir = "OpenShape-Embeddings"), map_location='cpu'
+    hf_hub_download(
+        "OpenShape/openshape-objaverse-embeddings",
+        "objaverse.pt",
+        token=True,
+        repo_type="dataset",
+        local_dir="OpenShape-Embeddings",
+    ),
+    map_location="cpu",
 )
-us = deser['us']
-feats = deser['feats']
+us = deser["us"]
+feats = deser["feats"]
+
 
 def move_files(file_dict, destination_folder, id):
     os.makedirs(destination_folder, exist_ok=True)
@@ -44,15 +62,22 @@ def load_openclip():
     print("Locking...")
     sys.clip_move_lock = threading.Lock()
     print("Locked.")
-    clip_model, clip_prep = transformers.CLIPModel.from_pretrained(
-        "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k",
-        low_cpu_mem_usage=True, torch_dtype=half,
-        offload_state_dict=True,
-    ), transformers.CLIPProcessor.from_pretrained("laion/CLIP-ViT-bigG-14-laion2B-39B-b160k")
+    clip_model, clip_prep = (
+        transformers.CLIPModel.from_pretrained(
+            "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k",
+            low_cpu_mem_usage=True,
+            torch_dtype=half,
+            offload_state_dict=True,
+        ),
+        transformers.CLIPProcessor.from_pretrained(
+            "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k"
+        ),
+    )
     if torch.cuda.is_available():
         with sys.clip_move_lock:
             clip_model.cuda()
     return clip_model, clip_prep
+
 
 def retrieve(embedding, top, sim_th=0.0, filter_fn=None):
     sims = []
@@ -73,6 +98,7 @@ def retrieve(embedding, top, sim_th=0.0, filter_fn=None):
                     break
     return results
 
+
 def get_filter_fn():
     face_min = 0
     face_max = 34985808
@@ -81,15 +107,17 @@ def get_filter_fn():
     anim_n = not (anim_min > 0 or anim_max < 563)
     face_n = not (face_min > 0 or face_max < 34985808)
     filter_fn = lambda x: (
-        (anim_n or anim_min <= x['anims'] <= anim_max)
-        and (face_n or face_min <= x['faces'] <= face_max)
+        (anim_n or anim_min <= x["anims"] <= anim_max)
+        and (face_n or face_min <= x["faces"] <= face_max)
     )
     return filter_fn
 
+
 def preprocess(input_string):
-    wo_numericals = re.sub(r'\d', '', input_string)
+    wo_numericals = re.sub(r"\d", "", input_string)
     output = wo_numericals.replace("_", " ")
     return output
+
 
 f32 = np.float32
 half = torch.float16 if torch.cuda.is_available() else torch.bfloat16
@@ -102,16 +130,16 @@ if __name__ == "__main__":
     #     j = json.load(f)
     #     roomtype = j["roomtype"]
 
-    with open(f"/home/yandan/workspace/infinigen/objav_cnts.json","r") as f:
+    with open(f"/home/yandan/workspace/infinigen/objav_cnts.json", "r") as f:
         LoadObjavCnts = json.load(f)
-    
+
     LoadObjavFiles = dict()
-    for category,cnt in LoadObjavCnts.items():
+    for category, cnt in LoadObjavCnts.items():
         # text = preprocess(f"A high-poly {roomtype} {category} in high quality")
         text = preprocess(f"A high-poly {category} in high quality")
         device = clip_model.device
         tn = clip_prep(
-            text=[text], return_tensors='pt', truncation=True, max_length=76
+            text=[text], return_tensors="pt", truncation=True, max_length=76
         ).to(device)
         LoadObjavFiles[category] = []
         enc = clip_model.get_text_features(**tn).float().cpu()
@@ -122,18 +150,17 @@ if __name__ == "__main__":
             retrieved_obj = retrieved_objs[i]
             print("Retrieved object: ", retrieved_obj["u"])
             processes = multiprocessing.cpu_count()
-            
+
             objaverse_objects = objaverse.load_objects(
-                uids=[retrieved_obj['u']],
-                download_processes=processes
+                uids=[retrieved_obj["u"]], download_processes=processes
             )
             file_path = list(objaverse_objects.values())[0]
-            render_folder = file_path.replace(".glb","")
+            render_folder = file_path.replace(".glb", "")
             if os.path.exists(f"{render_folder}/metadata.json"):
                 LoadObjavFiles[category].append(file_path)
                 break
 
-            #render
+            # render
             cmd = f"""
             source ~/anaconda3/etc/profile.d/conda.sh
             conda activate infinigen_python
@@ -141,8 +168,8 @@ if __name__ == "__main__":
             """
             subprocess.run(["bash", "-c", cmd])
 
-            #front view
-            
+            # front view
+
             cmd = f"""
             source ~/anaconda3/etc/profile.d/conda.sh
             conda activate layoutgpt
@@ -154,8 +181,6 @@ if __name__ == "__main__":
                 break
             else:
                 print(f"failed in processing {file_path}")
-            
-    
-    with open(f"/home/yandan/workspace/infinigen/objav_files.json","w") as f:
-        json.dump(LoadObjavFiles,f,indent=4)
-            
+
+    with open(f"/home/yandan/workspace/infinigen/objav_files.json", "w") as f:
+        json.dump(LoadObjavFiles, f, indent=4)

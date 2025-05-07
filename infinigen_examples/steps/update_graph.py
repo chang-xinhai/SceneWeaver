@@ -54,6 +54,7 @@ def remove_object(solver, state, p):
     state = p.run_stage("remove_object", remove_obj, use_chance=False, default=state)
     return state
 
+
 def add_new_relation(solver, state, p):
     def add_relation():
         solver.add_relation()
@@ -71,12 +72,15 @@ def update(solver, state, p):
     state = p.run_stage("update_graph", update_graph, use_chance=False, default=state)
     return state, solver
 
+
 def update_size(solver, state, p):
     def update_graph_size():
         solver.update_graph_size()
         return solver.state
 
-    state = p.run_stage("update_graph", update_graph_size, use_chance=False, default=state)
+    state = p.run_stage(
+        "update_graph", update_graph_size, use_chance=False, default=state
+    )
     return state, solver
 
 
