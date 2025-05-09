@@ -11,21 +11,24 @@ You will receive:
 You need to return a dict including:
 1. Room size, including length and width in meters. Make the room a little bit bigger than the regular size.
 2. A list of large-furniture categories that stand on the floor, marked with count. 
-    You can refer but not limited to this category list: ['BeverageFridge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink', 'StandingSink', 'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack',  'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'KitchenCabinet', 'KitchenIsland', 'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase',  'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror']
     Do not use quota in name, such as baby's or teacher's.
+    Do not add door. 
+    Not all the objects are on the floor, such as TV, mirror, and painting.
     Enhance the immersion of the scene by incorporating more categories.
     Do not add too few or too many objects to make the scene empty or crowded.
-3. An object list that stand with back against the wall.
+3. An object list that stand with back against the wall. Against wall may include objects placed on the floor (sofa) as well as hanging on the wall (picture).
 4. Relation between different categories when they have a subordinate relationship and stay very close(less than 5 cm).
 The former object is smaller than the latter object, such as chair and table, nightstand and bed. 
 
+You can refer but not limited to this category list: 
+['BeverageFridge', 'Dishwasher', 'Microwave', 'Oven', 'Monitor', 'TV', 'BathroomSink',  'Bathtub', 'Hardware', 'Toilet', 'AquariumTank', 'DoorCasing', 'GlassPanelDoor', 'LiteDoor', 'LouverDoor', 'PanelDoor', 'NatureShelfTrinkets', 'Pillar', 'CantileverStaircase', 'CurvedStaircase', 'LShapedStaircase', 'SpiralStaircase', 'StraightStaircase', 'UShapedStaircase', 'Pallet', 'Rack',  'DeskLamp', 'FloorLamp', 'Lamp', 'Bed', 'BedFrame', 'BarChair', 'Chair', 'OfficeChair', 'Mattress', 'Pillow', 'ArmChair', 'Sofa', 'CellShelf', 'TVStand', 'KitchenCabinet',  'KitchenSpace', 'LargeShelf', 'SimpleBookcase', 'SidetableDesk', 'SimpleDesk', 'SingleCabinet', 'TriangleShelf', 'BookColumn', 'BookStack', 'Sink', 'Tap', 'Vase',  'CoffeeTable', 'SideTable', 'TableDining', 'TableTop', 'Bottle', 'Bowl', 'Can', 'Chopsticks', 'Cup', 'FoodBag', 'FoodBox', 'Fork', 'Spatula', 'FruitContainer', 'Jar', 'Knife', 'Lid', 'Pan', 'LargePlantContainer', 'PlantContainer', 'Plate', 'Pot', 'Spoon', 'Wineglass', 'Balloon', 'RangeHood', 'Mirror']
 
 The optional relation is : 
-1.front_against: obj1's front faces to obj2, and stand very close. (obj1 **MUST** not stand against the wall.)
-2.front_to_front: obj1's  front faces to obj2's front, and stand very close.
-3.leftright_leftright: obj1's left or right faces to obj2's left or right, and stand very close. 
-4.side_by_side: obj1's side(left, right , or front) faces to obj2's side(left, right , or front), and stand very close. 
-5.back_to_back: obj1's back faces to obj2's back, and stand very close. 
+1.front_against: obj1's front faces to obj2, and stand very close (less than 5 cm). Such as chair and table. (obj1 **MUST** not stand against the wall.)
+2.front_to_front: obj1's front faces to obj2's front, and stand very close (less than 5 cm). Such as chair and desk, coffee table and sofa.
+3.leftright_leftright: obj1's left or right faces to obj2's left or right, and stand very close (less than 5 cm). Such as side_table and sofa.
+4.side_by_side: obj1's side(left, right , or front) faces to obj2's side(left, right , or front), and stand very close (less than 5 cm).
+5.back_to_back: obj1's back faces to obj2's back, and stand very close (less than 5 cm).
 Note obj1 is usually smaller than obj2, or obj1 belongs to obj2.
 
 Failure case of relation:
@@ -109,7 +112,7 @@ You need to return a dict including:
 
 
 *** Important ***
-The standard category list: ['appliances.BeverageFridgeFactory', 'appliances.DishwasherFactory', 'appliances.MicrowaveFactory', 'appliances.OvenFactory', 'appliances.MonitorFactory', 'appliances.TVFactory', 'bathroom.BathroomSinkFactory', 'bathroom.StandingSinkFactory', 'bathroom.BathtubFactory', 'bathroom.HardwareFactory', 'bathroom.ToiletFactory', 'decor.AquariumTankFactory', 'elements.DoorCasingFactory',  'elements.LiteDoorFactory', 'elements.LouverDoorFactory', 'elements.PanelDoorFactory', 'elements.NatureShelfTrinketsFactory', 'elements.PillarFactory', 'elements.RugFactory', 'elements.CantileverStaircaseFactory', 'elements.CurvedStaircaseFactory', 'elements.LShapedStaircaseFactory', 'elements.SpiralStaircaseFactory', 'elements.StraightStaircaseFactory', 'elements.UShapedStaircaseFactory', 'elements.PalletFactory', 'lamp.DeskLampFactory', 'lamp.FloorLampFactory', 'lamp.LampFactory', 'seating.BedFactory', 'seating.BedFrameFactory', 'seating.BarChairFactory', 'seating.ChairFactory', 'seating.OfficeChairFactory', 'seating.MattressFactory', 'seating.PillowFactory', 'seating.ArmChairFactory', 'seating.SofaFactory', 'shelves.CellShelfFactory', 'shelves.TVStandFactory', 'shelves.KitchenCabinetFactory', 'shelves.KitchenIslandFactory', 'shelves.KitchenSpaceFactory', 'shelves.LargeShelfFactory', 'shelves.SimpleBookcaseFactory', 'shelves.SidetableDeskFactory', 'shelves.SimpleDeskFactory', 'shelves.SingleCabinetFactory', 'shelves.TriangleShelfFactory', 'table_decorations.BookColumnFactory', 'table_decorations.BookStackFactory', 'table_decorations.TapFactory', 'table_decorations.VaseFactory', 'tables.CoffeeTableFactory', 'tables.SideTableFactory', 'tables.TableDiningFactory', 'tableware.BottleFactory', 'tableware.BowlFactory', 'tableware.CanFactory', 'tableware.ChopsticksFactory', 'tableware.CupFactory', 'tableware.FoodBagFactory', 'tableware.FoodBoxFactory', 'tableware.ForkFactory', 'tableware.SpatulaFactory', 'tableware.FruitContainerFactory', 'tableware.JarFactory', 'tableware.KnifeFactory', 'tableware.LidFactory', 'tableware.PanFactory', 'tableware.LargePlantContainerFactory', 'tableware.PlantContainerFactory', 'tableware.PlateFactory', 'tableware.PotFactory', 'tableware.SpoonFactory', 'tableware.WineglassFactory', 'wall_decorations.BalloonFactory', 'wall_decorations.RangeHoodFactory', 'wall_decorations.MirrorFactory', 'wall_decorations.WallArtFactory', 'wall_decorations.WallShelfFactory']
+The standard category list: ['appliances.BeverageFridgeFactory', 'appliances.DishwasherFactory', 'appliances.MicrowaveFactory', 'appliances.OvenFactory', 'appliances.MonitorFactory', 'appliances.TVFactory', 'bathroom.BathroomSinkFactory', 'bathroom.BathtubFactory', 'bathroom.HardwareFactory', 'bathroom.ToiletFactory', 'decor.AquariumTankFactory', 'elements.DoorCasingFactory',  'elements.LiteDoorFactory', 'elements.LouverDoorFactory', 'elements.NatureShelfTrinketsFactory', 'elements.PillarFactory', 'elements.RugFactory', 'elements.CantileverStaircaseFactory', 'elements.CurvedStaircaseFactory', 'elements.LShapedStaircaseFactory', 'elements.SpiralStaircaseFactory', 'elements.StraightStaircaseFactory', 'elements.UShapedStaircaseFactory', 'elements.PalletFactory', 'lamp.DeskLampFactory', 'lamp.FloorLampFactory', 'lamp.LampFactory', 'seating.BedFactory', 'seating.BedFrameFactory', 'seating.BarChairFactory', 'seating.ChairFactory', 'seating.OfficeChairFactory', 'seating.MattressFactory', 'seating.PillowFactory', 'seating.ArmChairFactory', 'seating.SofaFactory', 'shelves.CellShelfFactory', 'shelves.TVStandFactory', 'shelves.KitchenCabinetFactory', 'shelves.KitchenSpaceFactory', 'shelves.LargeShelfFactory', 'shelves.SimpleBookcaseFactory', 'shelves.SidetableDeskFactory', 'shelves.SimpleDeskFactory', 'shelves.SingleCabinetFactory', 'shelves.TriangleShelfFactory', 'table_decorations.BookColumnFactory', 'table_decorations.BookStackFactory', 'table_decorations.TapFactory', 'table_decorations.VaseFactory', 'tables.CoffeeTableFactory', 'tables.SideTableFactory', 'tables.TableDiningFactory', 'tableware.BottleFactory', 'tableware.BowlFactory', 'tableware.CanFactory', 'tableware.ChopsticksFactory', 'tableware.CupFactory', 'tableware.FoodBagFactory', 'tableware.FoodBoxFactory', 'tableware.ForkFactory', 'tableware.SpatulaFactory', 'tableware.FruitContainerFactory', 'tableware.JarFactory', 'tableware.KnifeFactory', 'tableware.LidFactory', 'tableware.PanFactory', 'tableware.LargePlantContainerFactory', 'tableware.PlantContainerFactory', 'tableware.PlateFactory', 'tableware.PotFactory', 'tableware.SpoonFactory', 'tableware.WineglassFactory', 'wall_decorations.BalloonFactory', 'wall_decorations.RangeHoodFactory', 'wall_decorations.MirrorFactory', 'wall_decorations.WallArtFactory', 'wall_decorations.WallShelfFactory']
 You can only use category name from the standard list. If no standard category is matched, return null.
 The name must be strictly matched. SIgnificant mismatches are not allowed. For example, do not match bench with "seating.SofaFactory".
 
@@ -129,15 +132,15 @@ Here is your response (do not use "//" for comment):
 """
 
 # ['BeverageFridgeFactory', 'DishwasherFactory', 'MicrowaveFactory', 'OvenFactory', 'MonitorFactory', 'TVFactory',
-#  'BathroomSinkFactory', 'StandingSinkFactory', 'BathtubFactory', 'HardwareFactory', 'ToiletFactory',
-#  'AquariumTankFactory', 'DoorCasingFactory', 'GlassPanelDoorFactory', 'LiteDoorFactory', 'LouverDoorFactory',
-#  'PanelDoorFactory', 'NatureShelfTrinketsFactory', 'PillarFactory', 'RugFactory', 'CantileverStaircaseFactory',
+#  'BathroomSinkFactory',  'BathtubFactory', 'HardwareFactory', 'ToiletFactory',
+#  'AquariumTankFactory', 'DoorCasingFactory', 'LiteDoorFactory', 'LouverDoorFactory',
+#  'NatureShelfTrinketsFactory', 'PillarFactory', 'RugFactory', 'CantileverStaircaseFactory',
 #  'CurvedStaircaseFactory', 'LShapedStaircaseFactory', 'SpiralStaircaseFactory', 'StraightStaircaseFactory',
 #  'UShapedStaircaseFactory', 'PalletFactory', 'CeilingClassicLampFactory', 'CeilingLightFactory',
 #  'DeskLampFactory', 'FloorLampFactory', 'LampFactory', 'BedFactory', 'BedFrameFactory', 'BarChairFactory',
 #  'ChairFactory', 'OfficeChairFactory', 'MattressFactory', 'PillowFactory', 'ArmChairFactory', 'SofaFactory',
 #  'CellShelfFactory', 'TVStandFactory',  'CabinetDoorBaseFactory', 'KitchenCabinetFactory',
-#  'KitchenIslandFactory', 'KitchenSpaceFactory', 'LargeShelfFactory', 'SimpleBookcaseFactory', 'SidetableDeskFactory',
+#   'KitchenSpaceFactory', 'LargeShelfFactory', 'SimpleBookcaseFactory', 'SidetableDeskFactory',
 #  'SimpleDeskFactory', 'SingleCabinetFactory', 'TriangleShelfFactory', 'BookColumnFactory', 'BookFactory',
 #  'BookStackFactory',  'TapFactory', 'VaseFactory',
 #  'CoffeeTableFactory', 'SideTableFactory', 'TableDiningFactory',  'BottleFactory', 'BowlFactory',

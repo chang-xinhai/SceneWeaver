@@ -64,12 +64,12 @@ class SceneDesigner:
     duplicate_threshold: int = 2
 
     # Add general-purpose tools to the tool collection
-    available_tools0 = ToolCollection(
-        InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
-    )
     # available_tools0 = ToolCollection(
-    #         InitGPTExecute()
-    #     )
+    #     InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
+    # )
+    available_tools0 = ToolCollection(
+            InitGPTExecute()
+        )
     available_tools1 = ToolCollection(
         AddAcdcExecute(),
         AddGPTExecute(),
@@ -105,7 +105,6 @@ class SceneDesigner:
     def step(self) -> str:
         if self.current_step != 0:
             eval_results = self.eval(iter=self.current_step - 1)
-        if self.current_step > 1:
             isvalid = self.check_valid(self.current_step - 1)
             if not isvalid:
                 save_dir = os.getenv("save_dir")
@@ -182,19 +181,25 @@ class SceneDesigner:
             ]
             score_new = sum(score_new)
 
-        json_name = f"{save_dir}/pipeline/metric_{iter-1}.json"
-        with open(json_name, "r") as f:
-            grades_old = json.load(f)
-            score_old = [
-                v["grade"]
-                for k, v in grades_old["GPT score (0-10, higher is better)"].items()
-            ]
-            score_old = sum(score_old)
-
-        if score_old - score_new >= 5:
-            return False
+        if iter==0:
+            if score_new>=24:
+                return True
+            else:
+                return False
         else:
-            return True
+            json_name = f"{save_dir}/pipeline/metric_{iter-1}.json"
+            with open(json_name, "r") as f:
+                grades_old = json.load(f)
+                score_old = [
+                    v["grade"]
+                    for k, v in grades_old["GPT score (0-10, higher is better)"].items()
+                ]
+                score_old = sum(score_old)
+
+            if score_old - score_new >= 5:
+                return False
+            else:
+                return True
 
     def eval(self, iter):
         user_demand = os.getenv("UserDemand")
@@ -482,7 +487,7 @@ class SceneDesigner:
 
         results: List[str] = []
 
-        self.current_step = 0
+        self.current_step = 1
         save_dir = os.getenv("save_dir")
 
         while self.current_step < self.max_steps and self.state != AgentState.FINISHED:

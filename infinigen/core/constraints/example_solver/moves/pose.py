@@ -87,11 +87,11 @@ class TranslateMove(moves.Move):
         os = state.objs[target_name]
 
         obj_state = state.objs[target_name]
-        if "Book" in target_name:
+        if "bathtub" in target_name.lower():
             import pdb
         # print("111",state.objs["5865980_BookStackFactory"].obj.location)
         # print(target_name,s "1 ",obj_state.obj.location)
-        if "3164690_Bench" in target_name:
+        if "3841869_SimpleBookcaseFactory" in target_name:
             import pdb
         parent_planes = apply_relations_surfacesample(
             state,
@@ -155,7 +155,7 @@ class TranslateMove(moves.Move):
             state.trimesh_scene, state, target_name, touch
         )
         translation2 = self.calc_gradient_bbox(
-            state.trimesh_scene, state, target_name, touch, TRANS_MULT / 2
+            state.trimesh_scene, state, target_name, touch, TRANS_MULT 
         )
         translation = translation1 + translation2
         # if target_name=='4061705_TVFactory':

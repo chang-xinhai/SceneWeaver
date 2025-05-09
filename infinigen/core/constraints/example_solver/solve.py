@@ -463,13 +463,13 @@ class Solver:
         with open(f"/home/yandan/workspace/infinigen/objav_cnts.json", "w") as f:
             json.dump(self.LoadObjavCnts, f, indent=4)
 
-        cmd = f"""
-        source ~/anaconda3/etc/profile.d/conda.sh
-        conda activate idesign
-        python /home/yandan/workspace/infinigen/infinigen/assets/objaverse_assets/retrieve_idesign.py > run.log 2>&1
-        """
-        subprocess.run(["bash", "-c", cmd])
-
+        # cmd = """
+        # source ~/anaconda3/etc/profile.d/conda.sh
+        # conda activate idesign
+        # python /home/yandan/workspace/infinigen/infinigen/assets/objaverse_assets/retrieve_idesign.py > run.log 2>&1
+        # """
+        # subprocess.run(["bash", "-c", cmd])
+        os.system("env -i bash --norc --noprofile -c ./retrieve.sh > run.log 2>&1")
         with open(f"/home/yandan/workspace/infinigen/objav_files.json", "r") as f:
             self.LoadObjavFiles = json.load(f)
         return
@@ -1001,133 +1001,170 @@ class Solver:
 
         return
 
+    def get_ordered_objects(self,placement_dict):
+        # Collect all object types
+        object_types = list(placement_dict.keys())
+        
+        # Build dependency graph and in-degree map
+        graph = {ot: [] for ot in object_types}
+        in_degree = {ot: 0 for ot in object_types}
+        
+        for obj_type in object_types:
+            instances = placement_dict[obj_type]
+            for instance_id, instance in instances.items():
+                if 'parent' in instance:
+                    parent_type = instance['parent'][0]
+                    if parent_type in graph:
+                        graph[parent_type].append(obj_type)
+                        in_degree[obj_type] += 1
+        
+        # Kahn's algorithm for topological sort
+        queue = [ot for ot in object_types if in_degree[ot] == 0]
+        ordered = []
+        
+        while queue:
+            node = queue.pop(0)
+            ordered.append(node)
+            for neighbor in graph[node]:
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+        
+        # Check for cycles (unlikely here)
+        if len(ordered) != len(object_types):
+            raise ValueError("Cycle detected in dependencies")
+        
+        return ordered
+
+
     @gin.configurable
     def init_graph_gpt(
         self,
-        # filter_domain: r.Domain,
         var_assignments: dict[str, str],
-        stage="large",  # large, medium, small
     ):
-        if stage == "small":
-            Placement = self.Placement_small
-        else:
-            Placement = self.Placement_big
-
-        for key, value in Placement.items():
-            for num in value.keys():
-                position = value[num]["position"]
-                if len(value[num]["position"]) == 2:
-                    position += [0]
-                rotation = value[num]["rotation"] * math.pi / 180
-                size = value[num]["size"]
-                name = key
-                if name not in self.name_mapping:
-                    name = name.lower()
-                module_and_class = self.name_mapping[name]
-                if stage == "small":
-                    this_stage = "small"
-                    parent_key, parent_num, relation = value[num]["parent"]
-                    parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
-                    against_wall = False
-                    on_floor = False
-                    size = [-1, -1, -1]
-                else:
-                    if (
-                        "parent" in value[num]
-                        and value[num]["parent"] is not None
-                        and value[num]["parent"] != []
-                    ):
-                        this_stage = "medium"
-                        if this_stage != stage:
-                            continue
-                        parent_key, parent_num, relation = value[num]["parent"]
-                        parent_obj_name = self.Placement_big[parent_key][parent_num][
-                            "name"
-                        ]
-                    else:
-                        this_stage = "large"
-                        if this_stage != stage:
-                            continue
-                        parent_obj_name = None
-
-                    against_wall = True if key in self.category_against_wall else False
-                    on_floor = True
-
-                filter_domain = self.calc_filter_domain(
-                    value, num, on_floor=on_floor, against_wall=against_wall
-                )
-
-                if module_and_class is None:
-                    gen_class = GeneralObjavFactory
-                    size = value[num]["size"]
-                    x_dim, y_dim, z_dim = size
-                    category = name
-                    gen_class._x_dim = x_dim
-                    gen_class._y_dim = y_dim
-                    gen_class._z_dim = z_dim
-                    gen_class._category = category
-
-                    class_name = category
-                else:
-                    module_name, class_name = module_and_class.rsplit(".", 1)
-                    module = importlib.import_module(
-                        "infinigen.assets.objects." + module_name
-                    )
-                    class_obj = getattr(module, class_name)
-                    gen_class = class_obj
-                search_rels = filter_domain.relations
-                # 筛选出有效的关系，只选择非否定关系
-                search_rels = [
-                    rd
-                    for rd in search_rels
-                    if not isinstance(rd[0], cl.NegatedRelation)
-                ]
-                if parent_obj_name == "1607620_RackFactory":
+        
+        Placement = self.Placement_big
+        ordered_names = self.get_ordered_objects(Placement)
+            # for key, value in Placement.items():
+        for stage in ["large", "medium"]:
+            for key in ordered_names:   
+                value = Placement[key]
+                if key=="coffeeTable":
                     a = 1
-                assign = propose_relations.find_given_assignments(
-                    self.state, search_rels, parent_obj_name=parent_obj_name
-                )
-                for i, assignments in enumerate(assign):
-                    found_tags = usage_lookup.usages_of_factory(gen_class)
-                    move = moves.Addition(
-                        names=[
-                            f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
-                        ],  # decided later # 随机生成一个名称，基于生成器类的名称
-                        gen_class=gen_class,  # 使用传入的生成器类
-                        relation_assignments=assignments,  # 传入分配的关系
-                        temp_force_tags=found_tags,  # 临时强制标签
+                for num in value.keys():
+                    position = value[num]["position"]
+                    if len(value[num]["position"]) == 2:
+                        position += [0.14]
+                    rotation = value[num]["rotation"] * math.pi / 180
+                    size = value[num]["size"]
+                    name = key
+                    if name not in self.name_mapping:
+                        name = name.lower()
+                    module_and_class = self.name_mapping[name]
+                    if stage == "small":
+                        pass 
+                    #     this_stage = "small"
+                    #     parent_key, parent_num, relation = value[num]["parent"]
+                    #     parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
+                    #     against_wall = False
+                    #     on_floor = False
+                    #     size = [-1, -1, -1]
+                    else:
+                        if (
+                            "parent" in value[num]
+                            and value[num]["parent"] is not None
+                            and value[num]["parent"] != []
+                        ):
+                            this_stage = "medium"
+                            if this_stage != stage:
+                                continue
+                            parent_key, parent_num, relation = value[num]["parent"]
+                            parent_obj_name = self.Placement_big[parent_key][parent_num][
+                                "name"
+                            ]
+                        else:
+                            this_stage = "large"
+                            if this_stage != stage:
+                                continue
+                            parent_obj_name = None
+
+                        against_wall = True if key in self.category_against_wall else False
+                        on_floor = True
+
+                    filter_domain = self.calc_filter_domain(
+                        value, num, on_floor=on_floor, against_wall=against_wall
                     )
 
-                    target_name = class_name.lower()
-                    if target_name.endswith("factory"):
-                        target_name = target_name[:-7]
+                    if module_and_class is None:
+                        gen_class = GeneralObjavFactory
+                        size = value[num]["size"]
+                        x_dim, y_dim, z_dim = size
+                        category = name
+                        gen_class._x_dim = x_dim
+                        gen_class._y_dim = y_dim
+                        gen_class._z_dim = z_dim
+                        gen_class._category = category
 
-                    target_name = f"{np.random.randint(1e7)}_{class_name}"
-                    # target_name = np.random.randint(1e7)+"_SofaFactory"
-                    if target_name == "758351_WeightBench":
+                        class_name = category
+                    else:
+                        module_name, class_name = module_and_class.rsplit(".", 1)
+                        module = importlib.import_module(
+                            "infinigen.assets.objects." + module_name
+                        )
+                        class_obj = getattr(module, class_name)
+                        gen_class = class_obj
+                    search_rels = filter_domain.relations
+                    # 筛选出有效的关系，只选择非否定关系
+                    search_rels = [
+                        rd
+                        for rd in search_rels
+                        if not isinstance(rd[0], cl.NegatedRelation)
+                    ]
+                    if parent_obj_name == "1607620_RackFactory":
                         a = 1
-                    if "WeightBench" in target_name:
-                        a = 1
-                    meshpath = None
-
-                    success = move.apply_init(
-                        self.state,
-                        target_name,
-                        size,
-                        position,
-                        rotation,
-                        gen_class,
-                        meshpath,
+                    assign = propose_relations.find_given_assignments(
+                        self.state, search_rels, parent_obj_name=parent_obj_name
                     )
-                    if not success:
-                        self.delete_object(target_name)
+                    assignments = list(assign)[0]
+                    for i in range(2):
+                    # for i, assignments in enumerate(assign):
+                        found_tags = usage_lookup.usages_of_factory(gen_class)
+                        move = moves.Addition(
+                            names=[
+                                f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
+                            ],  # decided later # 随机生成一个名称，基于生成器类的名称
+                            gen_class=gen_class,  # 使用传入的生成器类
+                            relation_assignments=assignments,  # 传入分配的关系
+                            temp_force_tags=found_tags,  # 临时强制标签
+                        )
+                        target_name = class_name.lower()
+                        if target_name.endswith("factory") or target_name.endswith("Factory"):
+                            target_name = target_name[:-7]
 
-                    Placement[key][num]["name"] = target_name
-
-                    break
-                # invisible_others()
-                # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-                # visible_others()
+                        target_name = f"{np.random.randint(1e7)}_{class_name}"
+                        meshpath = None
+                        success = move.apply_init(
+                            self.state,
+                            target_name,
+                            size,
+                            position,
+                            rotation,
+                            gen_class,
+                            meshpath,
+                        )
+                        if not success:
+                            self.delete_object(target_name)
+                            if i==1:
+                                break
+                            else:
+                                assignments = [rel for rel in assignments if rel.target_name=='newroom_0-0']
+                                continue
+                        else:
+                            Placement[key][num]["name"] = target_name
+                            break
+                    # invisible_others()
+                    # bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+                    # visible_others()
 
         return self.state
 
@@ -1928,7 +1965,7 @@ class Solver:
                     continue
 
                 position = obj_info["position"]
-                position = [position[0], position[2], position[1]]
+                position = [position[0]+0.14, position[2]+0.14, position[1]+0.14]
                 radians = math.radians(90)
                 rotation = radians - obj_info["theta"]
                 scale = obj_info["scale"]

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import json
 import multiprocessing
 import os
@@ -148,13 +150,18 @@ if __name__ == "__main__":
         # pdb.set_trace()
         for i in range(len(retrieved_objs)):
             retrieved_obj = retrieved_objs[i]
+            if retrieved_obj["u"] == "90aae32de40c458e846a3705105e5cad":
+                continue
             print("Retrieved object: ", retrieved_obj["u"])
             processes = multiprocessing.cpu_count()
-
-            objaverse_objects = objaverse.load_objects(
-                uids=[retrieved_obj["u"]], download_processes=processes
-            )
+            try:
+                objaverse_objects = objaverse.load_objects(
+                    uids=[retrieved_obj["u"]], download_processes=processes
+                )
+            except:
+                continue
             file_path = list(objaverse_objects.values())[0]
+            
             render_folder = file_path.replace(".glb", "")
             if os.path.exists(f"{render_folder}/metadata.json"):
                 LoadObjavFiles[category].append(file_path)
@@ -173,12 +180,12 @@ if __name__ == "__main__":
             cmd = f"""
             source ~/anaconda3/etc/profile.d/conda.sh
             conda activate layoutgpt
-            python /home/yandan/workspace/infinigen/Pipeline/app/tool/objaverse_frontview.py {render_folder} {category} > run1.log 2>&1
+            python /home/yandan/workspace/infinigen/Pipeline/app/tool/objaverse_frontview.py {render_folder} {category} > run2.log 2>&1
             """
             subprocess.run(["bash", "-c", cmd])
             if os.path.exists(f"{render_folder}/metadata.json"):
                 LoadObjavFiles[category].append(file_path)
-                break
+                # break
             else:
                 print(f"failed in processing {file_path}")
 

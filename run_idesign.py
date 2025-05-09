@@ -33,7 +33,7 @@ room_sizes = [
 args_path = "args_idesign.json"
 roominfo_path = "roominfo_idesign.json"
 
-for i in range(1, 20):
+for i in range(20):
     # for i in [11,13,18]:
     print(f"\n=== Running Task {i} ===")
 

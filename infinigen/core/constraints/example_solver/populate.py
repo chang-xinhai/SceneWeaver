@@ -236,7 +236,10 @@ def populate_state_placeholders_mid(
             obj.scale = (scale_x, scale_y, scale_z)
             bpy.context.view_layer.objects.active = obj  # Set as active object
             obj.select_set(True)  # Select the object
+            # 更新当前视图层，以反映对对象的修改
+            bpy.context.view_layer.update()
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            
         else:
             if inst_seed == "9128922":
                 a = 1
@@ -343,7 +346,10 @@ def populate_state_placeholders_mid(
                 continue
             os = state.objs[objkey]
             obj = bpy.data.objects.get(os.populate_obj)
-            parse_scene.preprocess_obj(obj)
+           
+            bpy.context.view_layer.update()
+            # 应用变换，只对对象的缩放进行应用，不改变位置和旋转
+            butil.apply_transform(obj, loc=False, rot=False, scale=True)
             sync_trimesh(state.trimesh_scene, obj.name)
 
 

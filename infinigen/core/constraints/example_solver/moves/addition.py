@@ -208,8 +208,9 @@ class Addition(moves.Move):
         )
 
         state.objs[target_name] = objstate
-        dof.apply_relations_surfacesample(state, target_name, closest_surface=True)
-
+        parent_planes = dof.apply_relations_surfacesample(state, target_name, closest_surface=True)
+        if parent_planes is None:
+            return False
         # name = "SofaFactory(1351066).bbox_placeholder(2179127)"
         name = self._new_obj.name
 

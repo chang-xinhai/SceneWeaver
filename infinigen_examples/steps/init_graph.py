@@ -61,38 +61,19 @@ def init_holodeck(stages, limits, solver, state, p):
 
 def init_gpt(stages, limits, solver, state, p):
     # region init large physcene
-    def init_graph_gpt(this_stage):
-        assignments = greedy.iterate_assignments(
-            stages["on_floor"], state, all_vars, limits, nonempty=True
+    def init_graph_gpt():  
+        solver.init_graph_gpt(
+            var_assignments=vars,
         )
-        for i, vars in enumerate(assignments):
-            solver.init_graph_gpt(
-                # solver.init_graph_gpt(
-                # stages["on_floor"],
-                var_assignments=vars,
-                stage=this_stage,
-            )
         return solver.state
 
     state = p.run_stage(
         "init_graph_gpt",
         init_graph_gpt,
-        this_stage="large",
         use_chance=False,
         default=state,
     )
-    state = p.run_stage(
-        "init_graph_gpt",
-        init_graph_gpt,
-        this_stage="medium",
-        use_chance=False,
-        default=state,
-    )
-
-    # state = p.run_stage(
-    #     "init_graph", init_graph, this_stage="small", use_chance=False, default=state
-    # )
-    # endregion
+   
     return state, solver
 
 

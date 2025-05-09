@@ -324,7 +324,7 @@ def calc_position_bias(obj):
     return offset_vector
 
 
-def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg"):
+def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg",transparent=False):
     rooms_meshed = butil.get_collection("placeholders:room_meshes")
     rooms_split = room_dec.split_rooms(list(rooms_meshed.objects))
 
@@ -354,9 +354,13 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     invisible_others(hide_placeholder=True)
     bpy.context.scene.render.resolution_x = 1920
     bpy.context.scene.render.resolution_y = 1080
-    bpy.context.scene.render.image_settings.file_format = "JPEG"
-    # bpy.context.scene.render.image_settings.color_mode = 'RGBA'  # Include alpha channel
-    # bpy.context.scene.render.film_transparent = True  # For Cycles
+    
+    if transparent:
+        bpy.context.scene.render.image_settings.file_format = "PNG"
+        bpy.context.scene.render.image_settings.color_mode = 'RGBA'  # Include alpha channel
+        bpy.context.scene.render.film_transparent = True  # For Cycles
+    else:
+        bpy.context.scene.render.image_settings.file_format = "JPEG"
     bpy.context.scene.render.filepath = os.path.join(filename)
     bpy.ops.render.render(write_still=True)
     visible_others()
@@ -374,12 +378,15 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     bpy.context.scene.render.image_settings.color_mode = "RGBA"  # Include alpha channel
     # Enable transparency
     bpy.context.scene.render.film_transparent = True  # For Cycles
-    filename_bbox = filename.replace(".jpg", "_bbox.png")
+    if transparent:
+        filename_bbox = filename.replace(".png", "_bbox.png")
+    else:
+        filename_bbox = filename.replace(".jpg", "_bbox.png")
     bpy.context.scene.render.filepath = os.path.join(filename_bbox)
     bpy.ops.render.render(write_still=True)
     visible_others(view_all=True)
 
-    merge_two_image(filename, filename_bbox)
+    merge_two_image(filename, filename_bbox, transparent=transparent)
 
     # modified_output_path = bpy.path.abspath("render_8_coord.jpg")
     # world_to_image(filename, modified_output_path)
@@ -388,28 +395,34 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     return
 
 
-def merge_two_image(background_imgfile, foregroung_imgfile):
+def merge_two_image(background_imgfile, foregroung_imgfile,transparent=False):
     from PIL import Image
-
-    # Load base JPEG image
-    jpeg_image = Image.open(background_imgfile).convert("RGB")
+    if transparent:
+        bg_image = Image.open(background_imgfile).convert("RGBA")
+    else:
+        # Load base JPEG image
+        bg_image = Image.open(background_imgfile).convert("RGB")
+        bg_image = bg_image.convert("RGBA")
 
     # Load PNG with transparency
-    png_image = Image.open(foregroung_imgfile).convert("RGBA")
+    fg_image = Image.open(foregroung_imgfile).convert("RGBA")
 
     # Ensure both images are the same size (optional: resize PNG)
-    png_image = png_image.resize(jpeg_image.size)
+    fg_image = fg_image.resize(bg_image.size)
 
     # Convert JPEG to RGBA so it can handle alpha
-    jpeg_rgba = jpeg_image.convert("RGBA")
 
-    # Paste PNG on top with transparency
-    combined = Image.alpha_composite(jpeg_rgba, png_image)
+    # Paste fg_image on top with transparency
+    combined = Image.alpha_composite(bg_image, fg_image)
 
     # Save result
-    filename = background_imgfile.replace(".jpg", "_marked.jpg")
-    # combined.save("combined_image.png")  # Save as PNG to preserve transparency
-    combined.convert("RGB").save(filename, "JPEG", quality=95)
+    if transparent:
+        filename = background_imgfile.replace(".png", "_marked.png")
+        combined.convert("RGBA").save(filename, "PNG", quality=95)
+    else:
+        filename = background_imgfile.replace(".jpg", "_marked.jpg")
+        # combined.save("combined_image.png")  # Save as PNG to preserve transparency
+        combined.convert("RGB").save(filename, "JPEG", quality=95)
 
     return
 
@@ -487,7 +500,8 @@ def save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p):
     save_dir = os.getenv("save_dir")
     save_path = f"{save_dir}/record_files/scene_{iter}.blend"
     bpy.ops.file.make_paths_absolute()
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    bpy.ops.file.pack_all()
+    bpy.ops.wm.save_as_mainfile(filepath=save_path, check_existing=False)
 
     # COMBINED_ATTR_NAME = "MaskTag"
     # obj = bpy.data.objects.get("MetaCategoryFactory(8823346).spawn_asset(6550758)")

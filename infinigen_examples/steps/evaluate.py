@@ -1,6 +1,13 @@
 import json
 import os
+import argparse
+import base64
+import json
+import re
 
+import numpy as np
+import requests
+import copy
 import bpy
 import trimesh
 from shapely.geometry import Polygon
@@ -220,7 +227,8 @@ def eval_physics_score(state, remove_bad=False):
     # collide_pairs = [[max(name1,name2),min(name1,name2)] for name1,name2 in touch.names if name1!=name2]
     # collide_pairs = set(collide_pairs)
     BBL = len(collide_names)
-    print("BBL: ", BBL, collide_names)
+    print("BBL: ", BBL)
+    # print("BBL: ", BBL, collide_names)
     # import pdb
     # pdb.set_trace()
 
@@ -243,13 +251,7 @@ def eval_general_score(image_path_1, layout, image_path_2=None):
 
     # return real, func, complet
 
-    import argparse
-    import base64
-    import json
-    import re
-
-    import numpy as np
-    import requests
+    
 
     # TODO : OpenAI API Key
     api_key = "YOUR_API_KEY"
@@ -385,6 +387,58 @@ def get_relation_mapping(state):
     return map_cp
 
 
+# def del_top_collide_obj(state, iter):
+#     # got children-parent pair
+#     map_cp = get_relation_mapping(state)
+
+#     stop = True
+
+#     results = eval_metric(state, iter, save=False)
+#     collide_pairs = results["BBL objects"]
+#     if len(collide_pairs) == 0:
+#         return stop
+#     vol = results["collide volume"]
+#     record = dict()
+#     for pair, v in zip(collide_pairs, vol):
+#         obj1, obj2 = pair
+#         if obj2 in map_cp[obj1]["child"]:
+#             pair.remove(obj1)
+#         elif obj2 in map_cp[obj1]["parent"]:
+#             pair.remove(obj2)
+#         for objname in pair:
+#             if objname not in record:
+#                 record[objname] = 0
+#             record[objname] += v
+#     # max_key = max(record, key=record.get)
+#     max_value = max(record.values())
+#     max_keys = [k for k, v in record.items() if v == max_value]
+#     obj_volumes = [
+#         state.trimesh_scene.geometry[state.objs[max_key].obj.name + "_mesh"].volume
+#         for max_key in max_keys
+#     ]
+#     index = obj_volumes.index(min(obj_volumes))
+#     max_key = max_keys[index]
+#     if "nightstand" in max_key:
+#         AssertionError
+
+#     print(
+#         f"### Object {max_key} has biggest collision volume: {record[max_key]}, remove it !"
+#     )
+
+#     objname = state.objs[max_key].obj.name
+#     delete_obj_with_children(
+#         state.trimesh_scene, objname, delete_blender=True, delete_asset=True
+#     )
+#     state.objs.pop(max_key)
+
+#     # for pair in collide_pairs:
+#     #     if max_key not in pair:
+#     #         stop = False
+#     stop = False
+#     return stop
+
+
+
 def del_top_collide_obj(state, iter):
     # got children-parent pair
     map_cp = get_relation_mapping(state)
@@ -397,7 +451,8 @@ def del_top_collide_obj(state, iter):
         return stop
     vol = results["collide volume"]
     record = dict()
-    for pair, v in zip(collide_pairs, vol):
+    cp = copy.deepcopy(collide_pairs)
+    for pair, v in zip(cp, vol):
         obj1, obj2 = pair
         if obj2 in map_cp[obj1]["child"]:
             pair.remove(obj1)
@@ -407,30 +462,68 @@ def del_top_collide_obj(state, iter):
             if objname not in record:
                 record[objname] = 0
             record[objname] += v
-    # max_key = max(record, key=record.get)
-    max_value = max(record.values())
-    max_keys = [k for k, v in record.items() if v == max_value]
-    obj_volumes = [
-        state.trimesh_scene.geometry[state.objs[max_key].obj.name + "_mesh"].volume
-        for max_key in max_keys
-    ]
-    index = obj_volumes.index(min(obj_volumes))
-    max_key = max_keys[index]
-    if "nightstand" in max_key:
-        AssertionError
 
-    print(
-        f"### Object {max_key} has biggest collision volume: {record[max_key]}, remove it !"
-    )
 
-    objname = state.objs[max_key].obj.name
-    delete_obj_with_children(
-        state.trimesh_scene, objname, delete_blender=True, delete_asset=True
-    )
-    state.objs.pop(max_key)
+    groups = find_connected_components(collide_pairs)
+    for group in groups:
+        print("##### grouped collision objects:",group)
+        record_group = {key: record[key] for key in group if key in record}
+        # max_key = max(record, key=record.get)
+        max_value = max(record_group.values())
+        max_keys = [k for k, v in record_group.items() if v == max_value]
+        obj_volumes = [
+            state.trimesh_scene.geometry[state.objs[max_key].obj.name + "_mesh"].volume
+            for max_key in max_keys
+        ]
+        index = obj_volumes.index(min(obj_volumes))
+        max_key = max_keys[index]
+        if "nightstand" in max_key:
+            AssertionError
 
-    # for pair in collide_pairs:
-    #     if max_key not in pair:
-    #         stop = False
+        print(
+            f"### Object {max_key} has biggest collision volume: {record_group[max_key]}, remove it !"
+        )
+        objname = state.objs[max_key].obj.name
+        delete_obj_with_children(
+            state.trimesh_scene, objname, delete_blender=True, delete_asset=True
+        )
+        state.objs.pop(max_key)
+
+   
     stop = False
     return stop
+
+def find_connected_components(edges):
+    # 收集所有唯一节点
+    nodes = set()
+    for u, v in edges:
+        nodes.add(u)
+        nodes.add(v)
+    nodes = list(nodes)
+    
+    # 构建邻接表
+    adj = {node: [] for node in nodes}
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    
+    visited = set()
+    components = []
+    
+    for node in nodes:
+        if node not in visited:
+            # DFS遍历
+            stack = [node]
+            visited.add(node)
+            component = []
+            while stack:
+                current = stack.pop()
+                component.append(current)
+                for neighbor in adj[current]:
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        stack.append(neighbor)
+            # 按字母顺序排序节点（确保输出一致性）
+            components.append(sorted(component))
+    
+    return components

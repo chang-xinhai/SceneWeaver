@@ -35,65 +35,65 @@ method = "diffuscene"
 args_path = f"args_{method}.json"
 roominfo_path = f"roominfo_{method}.json"
 
-roomtype = "livingroom"
+# roomtype = "livingroom"
+for  roomtype in ["bedroom","livingroom"]:
+    basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean"
+    files = os.listdir(basedir)
+    files = [i for i in files if roomtype in i and i.endswith(".json")]
+    random.shuffle(files)
+    for i in range(10):
+        json_name = f"{basedir}/{files[i]}"
+        # json_name = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean/LivingDiningRoom-13061_livingroom.json"
+        print(f"\n=== Running Task {i} ===")
 
-basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean"
-files = os.listdir(basedir)
-files = [i for i in files if roomtype in i and i.endswith(".json")]
-random.shuffle(files)
-for i in [0, 1, 2, 3]:
-    json_name = f"{basedir}/{files[i]}"
-    # json_name = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean/LivingDiningRoom-13061_livingroom.json"
-    print(f"\n=== Running Task {i} ===")
+        # Edit args_idesign.json
+        with open(args_path, "r") as f:
+            args_data = json.load(f)
+            args_data["json_name"] = json_name
 
-    # Edit args_idesign.json
-    with open(args_path, "r") as f:
-        args_data = json.load(f)
-        args_data["json_name"] = json_name
+        with open(args_path, "w") as f:
+            json.dump(args_data, f, indent=4)
 
-    with open(args_path, "w") as f:
-        json.dump(args_data, f, indent=4)
+        # Edit roominfo_idesign.json
+        with open(roominfo_path, "r") as f:
+            roominfo_data = json.load(f)
 
-    # Edit roominfo_idesign.json
-    with open(roominfo_path, "r") as f:
-        roominfo_data = json.load(f)
+        with open(json_name, "r") as f:
+            data = json.load(f)
+            room_size = calculate_room_size(data)
 
-    with open(json_name, "r") as f:
-        data = json.load(f)
-        room_size = calculate_room_size(data)
+        room_size = [round(i + 0.28, 3) for i in room_size]
+        roominfo_data["roomsize"] = room_size
+        roominfo_data["save_dir"] = (
+            f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/{roomtype}_{i}"
+        )
+        with open(roominfo_path, "w") as f:
+            json.dump(roominfo_data, f, indent=4)
 
-    room_size = [round(i + 0.28, 3) for i in room_size]
-    roominfo_data["roomsize"] = room_size
-    roominfo_data["save_dir"] = (
-        f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/{roomtype}_{i}"
-    )
-    with open(roominfo_path, "w") as f:
-        json.dump(roominfo_data, f, indent=4)
+        # Run the Blender generation command
+        command = [
+            "python",
+            # "-m", "infinigen.launch_blender",
+            "-m",
+            "infinigen_examples.generate_indoors_idesign",
+            # "--",
+            "--seed",
+            "0",
+            "--task",
+            "coarse",
+            "--method",
+            f"{method}",
+            "--output_folder",
+            "outputs/indoors/coarse_expand_whole_nobedframe",
+            "-g",
+            "fast_solve.gin",
+            "overhead.gin",
+            "studio.gin",
+            "-p",
+            "compose_indoors.terrain_enabled=False",
+        ]
+        subprocess.run(command)
 
-    # Run the Blender generation command
-    command = [
-        "python",
-        # "-m", "infinigen.launch_blender",
-        "-m",
-        "infinigen_examples.generate_indoors_idesign",
-        # "--",
-        "--seed",
-        "0",
-        "--task",
-        "coarse",
-        "--method",
-        f"{method}",
-        "--output_folder",
-        "outputs/indoors/coarse_expand_whole_nobedframe",
-        "-g",
-        "fast_solve.gin",
-        "overhead.gin",
-        "studio.gin",
-        "-p",
-        "compose_indoors.terrain_enabled=False",
-    ]
-    subprocess.run(command)
-
-    time.sleep(2)  # Optional: wait a bit between tasks
+        time.sleep(2)  # Optional: wait a bit between tasks
 
 print("\n🎯 All tasks finished!")

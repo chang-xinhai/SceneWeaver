@@ -309,7 +309,7 @@ class Planes:
         # find closest parent plane
         min_d = 1000
         # state.planes.get_tagged_submesh_prefast(state.trimesh_scene, parent_obj.name, parent_tags, parent_all_planes)
-        print(
+        print(obj.name,
             "Getting the closest surface of ",
             parent_obj.name,
             "planes number: ",

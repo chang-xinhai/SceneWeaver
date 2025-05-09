@@ -14,7 +14,7 @@ from infinigen.core.constraints.example_solver import (
 from .tools import export_layout, load_record, render_scene, save_record
 
 
-def record_scene(state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p):
+def record_scene(state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p, transparent=False):
     save_dir = os.getenv("save_dir")
     export_layout(state, solver, f"{save_dir}/record_scene/layout_{iter}.json")
     p.run_stage(
@@ -27,13 +27,18 @@ def record_scene(state, solver, terrain, house_bbox, solved_bbox, camera_rigs, i
 
     save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p)
     save_dir = os.getenv("save_dir")
+    if transparent:
+        filename = f"{save_dir}/record_scene/render_{iter}.png"
+    else:
+        filename = f"{save_dir}/record_scene/render_{iter}.jpg"
     render_scene(
         p,
         solved_bbox,
         camera_rigs,
         state,
         solver,
-        filename=f"{save_dir}/record_scene/render_{iter}.jpg",
+        filename=filename,
+        transparent=transparent
     )
 
     return

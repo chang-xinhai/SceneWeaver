@@ -235,6 +235,35 @@ ROOM_WALLS = defaultdict(
     },
 )
 
+# ROOM_FLOORS = defaultdict(
+#     lambda: (
+#         "weighted_choice",
+#         (3, tiled_wood),
+#         (1, tile),
+#         (3, advanced_tiles),
+#         (1, rug),
+#     ),
+#     {
+#         RoomType.Garage: concrete,
+#         RoomType.Utility: (
+#             "weighted_choice",
+#             (1, concrete),
+#             (1, plaster),
+#             (1, tile),
+#             (3, advanced_tiles),
+#         ),
+#         RoomType.Bathroom: ("weighted_choice", (1, tile), (3, advanced_tiles)),
+#         RoomType.Balcony: ("weighted_choice", (1, tile), (3, advanced_tiles)),
+#         RoomType.NewRoom: (
+#             "weighted_choice",
+#             (3, tiled_wood),  # Professional and warm look
+#             (1, rug),  # Comfort and acoustic dampening
+#             (2, advanced_tiles),  # Durable and modern
+#         ),  # Added
+#     },
+# )
+
+
 ROOM_FLOORS = defaultdict(
     lambda: (
         "weighted_choice",
@@ -244,24 +273,16 @@ ROOM_FLOORS = defaultdict(
         (1, rug),
     ),
     {
-        RoomType.Garage: concrete,
-        RoomType.Utility: (
-            "weighted_choice",
-            (1, concrete),
-            (1, plaster),
-            (1, tile),
-            (3, advanced_tiles),
-        ),
-        RoomType.Bathroom: ("weighted_choice", (1, tile), (3, advanced_tiles)),
-        RoomType.Balcony: ("weighted_choice", (1, tile), (3, advanced_tiles)),
         RoomType.NewRoom: (
-            "weighted_choice",
+            "weighted_choice", #TODO YYD 111
             (3, tiled_wood),  # Professional and warm look
             (1, rug),  # Comfort and acoustic dampening
-            (2, advanced_tiles),  # Durable and modern
+            (2, advanced_tiles),  # Durable and modern GOOD
         ),  # Added
     },
 )
+
+
 
 PILLAR_ROOM_TYPES = [
     RoomType.Hallway,

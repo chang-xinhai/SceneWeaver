@@ -309,7 +309,7 @@ def project(points, plane_normal):
 def apply_relations_surfacesample(
     state: state_def.State, name: str, use_initial=False, closest_surface=False
 ):
-    if name == "1603808_dumbbell":
+    if name == "3841869_SimpleBookcaseFactory":
         a = 1
     obj_state = state.objs[name]  # 获取指定对象的状态
     obj_name = obj_state.obj.name
