@@ -80,9 +80,10 @@ class AddAcdcExecute(BaseTool):
                             j = json.load(f)
                             if j["success"]:
                                 save_dir = os.getenv("save_dir")
+                                newid = obj_id.replace(" ","_")
                                 # json_name = f"{save_dir}/pipeline/acdc_output/step_3_output/scene_0/scene_0_info.json"
                                 foldername_old = f"{save_dir}/pipeline/acdc_output/step_3_output/scene_0/"
-                                foldername_new = f"{save_dir}/pipeline/{obj_id}"
+                                foldername_new = f"{save_dir}/pipeline/{newid}"
                                 os.system(f"cp -r {foldername_old} {foldername_new}")
                                 json_name = f"{foldername_new}/scene_0_info.json"
                                 acdc_record[sd_prompt] = json_name

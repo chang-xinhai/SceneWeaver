@@ -488,6 +488,8 @@ def del_top_collide_obj(state, iter):
             state.trimesh_scene, objname, delete_blender=True, delete_asset=True
         )
         state.objs.pop(max_key)
+        
+
 
    
     stop = False

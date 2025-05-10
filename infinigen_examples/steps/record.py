@@ -23,7 +23,8 @@ def record_scene(state, solver, terrain, house_bbox, solved_bbox, camera_rigs, i
         state,
         # final=True,
         use_chance=False,
-    )
+    )   
+   
 
     save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p)
     save_dir = os.getenv("save_dir")

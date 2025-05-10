@@ -43,8 +43,8 @@ if __name__ == "__main__":
     #"Design me a clinic room."
     #"Design me an art studio."" 
     #"Design me a kitchen."
-    prompts = ["Design me a lobby."] #computer room
+    prompts = ["Design me a kitchen."] #computer room
 
     for i in range(1):
-        prompt = prompts[i]
-        main(prompt, 0)
+        prompt = prompts[0]
+        main(prompt, 2)

@@ -30,17 +30,18 @@ def global_vertex_coordinates(obj, local_vertex):
 
 
 def global_polygon_normal(obj, polygon):
+    
     loc, rot, scale = obj.matrix_world.decompose()
     rot = rot.to_matrix()
     normal = rot @ polygon.normal
     if polygon.normal[0] == 0 and polygon.normal[1] == 0 and polygon.normal[2] == 0:
-        bpy.data.meshes["raw_model.006"].calc_normals()
-        mesh = bpy.data.meshes["raw_model.006"]
-        coords = [mesh.vertices[i].co for i in polygon.vertices]
+        # print(f"Index: {polygon.index}, Vertices: {polygon.vertices[:]}, Area: {polygon.area}, Normal: {polygon.normal}")
+        # for vert_idx in polygon.vertices:
+        #     coord = obj.matrix_world @ obj.data.vertices[vert_idx].co  # Global/world coordinates
+        #     print(f"  Vertex {vert_idx}: {coord}")
+        return normal
 
-        import pdb
-
-        pdb.set_trace()
+        
     try:
         return normal / np.linalg.norm(normal)
     except ZeroDivisionError:
@@ -96,7 +97,10 @@ class Planes:
 
     @staticmethod
     def hash_plane(normal, point, tolerance=1e-4):
-        normal_normalized = normal / np.linalg.norm(normal)
+        if normal[0]==0 and normal[1]==0  and normal[2]==0 :
+            normal_normalized = normal #TODO YYD
+        else:
+            normal_normalized = normal / np.linalg.norm(normal)
         distance = np.dot(normal_normalized, point)
         return (
             tuple(np.round(normal_normalized / tolerance).astype(int)),
@@ -231,12 +235,18 @@ class Planes:
         if name == "1603808_dumbbell":
             a = 1
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
-        if obj.name == "CountertopFactory(378489).bbox_placeholder(6660430)":
-            a = 1
+        
         obj_all_planes = self.get_tagged_planes(
             obj, obj_tags
         )  # (obj.name, polygon.index)
 
+        if len(obj_all_planes)==0:
+            from infinigen.core.constraints.example_solver.geometry import parse_scene
+            parse_scene.preprocess_obj(obj) #TODO YYD
+            tagging.tag_canonical_surfaces(obj)
+            obj_all_planes = self.get_tagged_planes(
+                obj, obj_tags
+            )  
         # for i, p in enumerate(parent_all_planes):
         #    splitted_parent = planes.extract_tagged_plane(parent_obj, parent_tags, p)
         #    splitted_parent.name = f'parent_plane_{i}'
@@ -266,6 +276,7 @@ class Planes:
         if (
             closest_surface and obj_plane is not None and parent_plane is not None
         ):  # and len(parent_all_planes)<10000:
+           
             parent_plane_idx, child_plane_idx = self.get_closest_surface(
                 state,
                 relation_state,
@@ -298,6 +309,7 @@ class Planes:
 
         # calculate object's plane center
         centers = []
+
         for obj_plane in obj_all_planes:
             obj_plane_trimesh = state.planes.get_tagged_submesh(
                 state.trimesh_scene, obj.name, obj_tags, obj_plane

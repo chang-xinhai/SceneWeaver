@@ -461,8 +461,7 @@ def extract_mask(
                 f"extract_mask({obj.name=}) got {res=} with {len(res.data.polygons)=}"
             )
     elif res is None:
-        import pdb
-        pdb.set_trace()
+
         logger.warning(f"extract_mask({obj.name=}) failed to extract any faces")
         return butil.spawn_vert()
 

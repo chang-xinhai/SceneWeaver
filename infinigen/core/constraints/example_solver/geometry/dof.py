@@ -153,7 +153,8 @@ def check_init_valid(
     """
     # 检查 obj_planes 是否为空或超出限制（最大3个平面）。
     if len(obj_planes) == 0:
-        raise ValueError(f"{check_init_valid.__name__} for {name=} got {obj_planes=}")
+        return False, None, None #TODO YYD
+        # raise ValueError(f"{check_init_valid.__name__} for {name=} got {obj_planes=}")
     if len(obj_planes) > 3:
         raise ValueError(
             f"{check_init_valid.__name__} for {name=} got {len(obj_planes)=}"
@@ -360,6 +361,7 @@ def apply_relations_surfacesample(
         # visible_others()
         if name == "1980528_CountertopFactory":
             a = 1
+       
         obj_plane, parent_plane = state.planes.get_rel_state_planes(
             state, name, relation_state, closest_surface=closest_surface
         )

@@ -23,14 +23,10 @@ class Terminate(BaseTool):
 
     def execute(self, status: str) -> str:
         """Finish the current execution"""
-        user_demand = os.getenv("UserDemand")
         iter = int(os.getenv("iter"))
-        roomtype = os.getenv("roomtype")
-        action = self.name
         try:
             success = update_infinigen("finalize_scene", iter, "")
             assert success
             return f"Successfully terminate."
         except Exception as e:
             return f"Error terminate"
-        return f"The scene synthesis has been completed with status: {status}"

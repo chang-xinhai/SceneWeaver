@@ -152,7 +152,7 @@ Scoring must be strict. If any critical issue is found (such as missing key obje
     - **Note**: Even one missing critical item should lower the score below 6.
 
 3. **Layout**: Whether the furniture is arranged logically in good pose and aligns with the user’s preferences.
-    - **Good (8-10)**: Each objects is in **reasonable size**, neatly placed, objects of the same category are well aglined, relationships are reasonable (e.g., chairs face desks), sufficient space exists for walking, and **orientations must** be correct, no collision between objects. 
+    - **Good (8-10)**: Each objects is in **reasonable size**, neatly placed, objects of the same category are well aglined, relationships are reasonable (e.g., chairs face desks), sufficient space exists for walking, and **orientations must** be correct. 
     - **Bad (0-3)**: Floating objects, crowded floor, **abnormal size**, objects with collision, incorrect **orientation**, or large items placed oddly (e.g., sofa not against the wall). Large empty space. Blocker in front of furniture.
     - **Note**: If the room has layout issues that affect use, it should not score above 5.
 

@@ -561,6 +561,7 @@ class Solver:
                                 parent_obj_name = self.Placement[parent_key][
                                     parent_num
                                 ]["name"]
+                            
                             against_wall = False
                             on_floor = False
                             size = [-1, -1, -1]
@@ -842,6 +843,7 @@ class Solver:
         #         layouts[key] = value
 
         for name, info in layouts.items():
+           
             if name not in self.state.objs:
                 print(
                     f"Error: object {name} is not in the current scene, obmit this object !!"
@@ -863,15 +865,15 @@ class Solver:
             spawn_asset.rotation_euler = info["rotation"]
 
             size = info["size"]
-
+            
             scale_x = size[0] / obj.dimensions[0] if obj.dimensions[0] != 0 else 1
             scale_y = size[1] / obj.dimensions[1] if obj.dimensions[1] != 0 else 1
-            scale_z = size[2] / obj.dimensions[2] if obj.dimensions[2] != 0 else 1
+            scale_z = max(size[2],0.01) / obj.dimensions[2] if obj.dimensions[2] != 0 else 1
             obj.scale = (scale_x, scale_y, scale_z)
             bpy.context.view_layer.objects.active = obj  # Set as active object
             obj.select_set(True)  # Select the object
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-
+            
             parent_planes = apply_relations_surfacesample(
                 self.state, name, use_initial=True, closest_surface=True
             )
@@ -1718,6 +1720,9 @@ class Solver:
             # parent_Factory = self.state.objs[parent_obj_name].generator
 
             parent_domain = r.Domain(usage_lookup.usages_of_factory(parent_Factory))
+
+            if ("sink" in parent_obj_name.lower() or "vanity" in parent_obj_name.lower() or "rack" in parent_obj_name.lower()) and relation=="ontop":
+                relation = "on"
             relation_module = getattr(cu, relation)
             stage = secondary.with_relation(relation_module, parent_domain)
         else:

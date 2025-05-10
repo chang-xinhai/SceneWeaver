@@ -503,6 +503,7 @@ def save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p):
     bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=save_path, check_existing=False)
 
+
     # COMBINED_ATTR_NAME = "MaskTag"
     # obj = bpy.data.objects.get("MetaCategoryFactory(8823346).spawn_asset(6550758)")
     # masktag = surface.read_attr_data(obj, COMBINED_ATTR_NAME)
@@ -679,7 +680,7 @@ def load_record(iter):
 
     if not bpy.data.objects.get("newroom_0-0"):
         bpy.ops.wm.open_mainfile(filepath=save_path, load_ui=False, use_scripts=False)
-
+    
     with open(f"{save_dir}/record_files/state_{iter}.pkl", "rb") as file:
         state = dill.load(file)
     # print("\n".join(state.trimesh_scene.geometry.keys()))
@@ -742,9 +743,8 @@ def load_record(iter):
         #         params[mat] = m
         # except:
         #     pass
-
     state.__post_init__()
-
+    
     solver.state = state
 
     with open(f"{save_dir}/record_files/env_{iter}.pkl", "rb") as f:
