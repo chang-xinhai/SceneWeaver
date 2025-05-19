@@ -36,7 +36,7 @@ args_path = f"args_{method}.json"
 roominfo_path = f"roominfo_{method}.json"
 
 # roomtype = "livingroom"
-for  roomtype in ["bedroom","livingroom"]:
+for roomtype in ["bedroom", "livingroom"]:
     basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean"
     files = os.listdir(basedir)
     files = [i for i in files if roomtype in i and i.endswith(".json")]

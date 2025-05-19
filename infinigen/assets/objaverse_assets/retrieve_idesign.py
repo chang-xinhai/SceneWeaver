@@ -121,7 +121,6 @@ def preprocess(input_string):
     return output
 
 
-
 if __name__ == "__main__":
     # with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
     #     j = json.load(f)
@@ -138,13 +137,14 @@ if __name__ == "__main__":
         clip_model, clip_prep = load_openclip()
         torch.set_grad_enabled(False)
 
-
         LoadObjavFiles = dict()
         for category, cnt in LoadObjavCnts.items():
             if category.lower() == "meeting_table":
                 a = 1
             if category.lower() == "car":
-                LoadObjavFiles["car"]=["/home/yandan/.objaverse/hf-objaverse-v1/glbs/000-068/45840e2136c44080b4c1e7521cce8db3.glb"]
+                LoadObjavFiles["car"] = [
+                    "/home/yandan/.objaverse/hf-objaverse-v1/glbs/000-068/45840e2136c44080b4c1e7521cce8db3.glb"
+                ]
                 continue
             # text = preprocess(f"A high-poly {roomtype} {category} in high quality")
             text = preprocess(f"A high-poly realistic {category} in high quality")
@@ -154,18 +154,27 @@ if __name__ == "__main__":
             ).to(device)
             LoadObjavFiles[category] = []
             enc = clip_model.get_text_features(**tn).float().cpu()
-            retrieved_objs = retrieve(enc, top=100, sim_th=0.1, filter_fn=get_filter_fn())
+            retrieved_objs = retrieve(
+                enc, top=100, sim_th=0.1, filter_fn=get_filter_fn()
+            )
             # import pdb
             # pdb.set_trace()
             for i in range(len(retrieved_objs)):
                 retrieved_obj = retrieved_objs[i]
-                if retrieved_obj["u"] in ["df9af4b3c2ea40d89a736741e8c07bb1",
-                                          "75e4d132d8e5480e99f915f0464aeff0","45a2ad85a21d46fabfe38d492ed3ec04",\
-                                        "90aae32de40c458e846a3705105e5cad","9d2946e980354264bf6be4a41f21f81e",\
-                                        "d7403315f4934dbd913578dc32f1962f","6cbddf0c4c5a4cacad14c6a8fa94f22c",\
-                                        "907649f7c56e478dac505f91318f59cc","6bdcf3960b434396b5a194f6685e2cbc",\
-                                        "0d3dd9d37ada4153b82c92e1fb4d4c4f","f3d62c8081994608a8b25b6db083cb1c",\
-                                        "bf375674c14f4ab8a0a16aad8cc99bab"                               ]:
+                if retrieved_obj["u"] in [
+                    "df9af4b3c2ea40d89a736741e8c07bb1",
+                    "75e4d132d8e5480e99f915f0464aeff0",
+                    "45a2ad85a21d46fabfe38d492ed3ec04",
+                    "90aae32de40c458e846a3705105e5cad",
+                    "9d2946e980354264bf6be4a41f21f81e",
+                    "d7403315f4934dbd913578dc32f1962f",
+                    "6cbddf0c4c5a4cacad14c6a8fa94f22c",
+                    "907649f7c56e478dac505f91318f59cc",
+                    "6bdcf3960b434396b5a194f6685e2cbc",
+                    "0d3dd9d37ada4153b82c92e1fb4d4c4f",
+                    "f3d62c8081994608a8b25b6db083cb1c",
+                    "bf375674c14f4ab8a0a16aad8cc99bab",
+                ]:
                     continue
                 print("Retrieved object: ", retrieved_obj["u"])
                 processes = multiprocessing.cpu_count()
@@ -176,7 +185,7 @@ if __name__ == "__main__":
                 except:
                     continue
                 file_path = list(objaverse_objects.values())[0]
-                
+
                 render_folder = file_path.replace(".glb", "")
                 if os.path.exists(f"{render_folder}/metadata.json"):
                     LoadObjavFiles[category].append(file_path)

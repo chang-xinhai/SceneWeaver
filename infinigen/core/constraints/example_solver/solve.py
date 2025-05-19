@@ -453,7 +453,7 @@ class Solver:
         #     with open(f"{save_dir}/objav_files.json", "r") as f:
         #         self.LoadObjavFiles = json.load(f)
         #     return
-        
+
         def get_case_insensitive(dictionary, key):
             return next(
                 (v for k, v in dictionary.items() if k.lower() == key.lower()), None
@@ -466,7 +466,6 @@ class Solver:
                 name = name.lower()
             if name_mapping is None or name_mapping[name] is None:
                 self.LoadObjavCnts[name] = get_case_insensitive(category_cnt, name)
-        
 
         with open(f"{save_dir}/objav_cnts.json", "w") as f:
             json.dump(self.LoadObjavCnts, f, indent=4)
@@ -477,7 +476,9 @@ class Solver:
         # python /home/yandan/workspace/infinigen/infinigen/assets/objaverse_assets/retrieve_idesign.py > run.log 2>&1
         # """
         # subprocess.run(["bash", "-c", cmd])
-        os.system(f'env -i bash --norc --noprofile -c "./retrieve.sh {save_dir}" > run.log 2>&1')
+        os.system(
+            f'env -i bash --norc --noprofile -c "./retrieve.sh {save_dir}" > run.log 2>&1'
+        )
         with open(f"{save_dir}/objav_files.json", "r") as f:
             self.LoadObjavFiles = json.load(f)
         return
@@ -511,17 +512,15 @@ class Solver:
         # after loading name mapping, retrieve objects.
         self.retrieve_objav_assets(info["Number of new furniture"], self.name_mapping)
 
-
         ordered_names = self.get_ordered_objects(self.Placement)
-            # for key, value in Placement.items():
-        for step in ["large", "medium","small"]:
-            for key in ordered_names:   
+        # for key, value in Placement.items():
+        for step in ["large", "medium", "small"]:
+            for key in ordered_names:
                 value = self.Placement[key]
                 for num in value.keys():
-
-        # for step in ["large", "medium", "small"]:
-        #     for key, value in self.Placement.items():
-        #         for num in value.keys():
+                    # for step in ["large", "medium", "small"]:
+                    #     for key, value in self.Placement.items():
+                    #         for num in value.keys():
                     if not num.isdigit():
                         print(f"🎯 Error adding object {key}")
                         continue
@@ -574,12 +573,12 @@ class Solver:
                                 parent_obj_name, relation = value[num]["parent"]
                             except:
                                 parent_key, parent_num, relation = value[num]["parent"]
-                                if "name" not in self.Placement[parent_key][ parent_num]:
+                                if "name" not in self.Placement[parent_key][parent_num]:
                                     continue
                                 parent_obj_name = self.Placement[parent_key][
                                     parent_num
                                 ]["name"]
-                            
+
                             against_wall = False
                             on_floor = False
                             size = [-1, -1, -1]
@@ -861,7 +860,6 @@ class Solver:
         #         layouts[key] = value
 
         for name, info in layouts.items():
-           
             if name not in self.state.objs:
                 print(
                     f"Error: object {name} is not in the current scene, obmit this object !!"
@@ -883,15 +881,17 @@ class Solver:
             spawn_asset.rotation_euler = info["rotation"]
 
             size = info["size"]
-            
+
             scale_x = size[0] / obj.dimensions[0] if obj.dimensions[0] != 0 else 1
             scale_y = size[1] / obj.dimensions[1] if obj.dimensions[1] != 0 else 1
-            scale_z = max(size[2],0.01) / obj.dimensions[2] if obj.dimensions[2] != 0 else 1
+            scale_z = (
+                max(size[2], 0.01) / obj.dimensions[2] if obj.dimensions[2] != 0 else 1
+            )
             obj.scale = (scale_x, scale_y, scale_z)
             bpy.context.view_layer.objects.active = obj  # Set as active object
             obj.select_set(True)  # Select the object
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-            
+
             parent_planes = apply_relations_surfacesample(
                 self.state, name, use_initial=True, closest_surface=True
             )
@@ -1021,27 +1021,31 @@ class Solver:
 
         return
 
-    def get_ordered_objects(self,placement_dict):
+    def get_ordered_objects(self, placement_dict):
         # Collect all object types
         object_types = list(placement_dict.keys())
-        
+
         # Build dependency graph and in-degree map
         graph = {ot: [] for ot in object_types}
         in_degree = {ot: 0 for ot in object_types}
-        
+
         for obj_type in object_types:
             instances = placement_dict[obj_type]
             for instance_id, instance in instances.items():
-                if 'parent' in instance and instance['parent'] is not None and len(instance['parent'])>0:
-                    parent_type = instance['parent'][0]
+                if (
+                    "parent" in instance
+                    and instance["parent"] is not None
+                    and len(instance["parent"]) > 0
+                ):
+                    parent_type = instance["parent"][0]
                     if parent_type in graph:
                         graph[parent_type].append(obj_type)
                         in_degree[obj_type] += 1
-        
+
         # Kahn's algorithm for topological sort
         queue = [ot for ot in object_types if in_degree[ot] == 0]
         ordered = []
-        
+
         while queue:
             node = queue.pop(0)
             ordered.append(node)
@@ -1049,27 +1053,25 @@ class Solver:
                 in_degree[neighbor] -= 1
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
-        
+
         # Check for cycles (unlikely here)
         if len(ordered) != len(object_types):
             raise ValueError("Cycle detected in dependencies")
-        
-        return ordered
 
+        return ordered
 
     @gin.configurable
     def init_graph_gpt(
         self,
         var_assignments: dict[str, str],
     ):
-        
         Placement = self.Placement_big
         ordered_names = self.get_ordered_objects(Placement)
-            # for key, value in Placement.items():
+        # for key, value in Placement.items():
         for stage in ["large", "medium"]:
-            for key in ordered_names:   
+            for key in ordered_names:
                 value = Placement[key]
-                if key=="coffeeTable":
+                if key == "coffeeTable":
                     a = 1
                 for num in value.keys():
                     position = value[num]["position"]
@@ -1084,7 +1086,7 @@ class Solver:
                         continue
                     module_and_class = self.name_mapping[name]
                     if stage == "small":
-                        pass 
+                        pass
                     #     this_stage = "small"
                     #     parent_key, parent_num, relation = value[num]["parent"]
                     #     parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
@@ -1101,16 +1103,18 @@ class Solver:
                             if this_stage != stage:
                                 continue
                             parent_key, parent_num, relation = value[num]["parent"]
-                            parent_obj_name = self.Placement_big[parent_key][parent_num][
-                                "name"
-                            ]
+                            parent_obj_name = self.Placement_big[parent_key][
+                                parent_num
+                            ]["name"]
                         else:
                             this_stage = "large"
                             if this_stage != stage:
                                 continue
                             parent_obj_name = None
 
-                        against_wall = True if key in self.category_against_wall else False
+                        against_wall = (
+                            True if key in self.category_against_wall else False
+                        )
                         on_floor = True
 
                     filter_domain = self.calc_filter_domain(
@@ -1149,7 +1153,7 @@ class Solver:
                     )
                     assignments = list(assign)[0]
                     for i in range(2):
-                    # for i, assignments in enumerate(assign):
+                        # for i, assignments in enumerate(assign):
                         found_tags = usage_lookup.usages_of_factory(gen_class)
                         move = moves.Addition(
                             names=[
@@ -1160,7 +1164,9 @@ class Solver:
                             temp_force_tags=found_tags,  # 临时强制标签
                         )
                         target_name = class_name.lower()
-                        if target_name.endswith("factory") or target_name.endswith("Factory"):
+                        if target_name.endswith("factory") or target_name.endswith(
+                            "Factory"
+                        ):
                             target_name = target_name[:-7]
 
                         target_name = f"{np.random.randint(1e7)}_{class_name}"
@@ -1176,10 +1182,14 @@ class Solver:
                         )
                         if not success:
                             self.delete_object(target_name)
-                            if i==1:
+                            if i == 1:
                                 break
                             else:
-                                assignments = [rel for rel in assignments if rel.target_name=='newroom_0-0']
+                                assignments = [
+                                    rel
+                                    for rel in assignments
+                                    if rel.target_name == "newroom_0-0"
+                                ]
                                 continue
                         else:
                             Placement[key][num]["name"] = target_name
@@ -1741,7 +1751,11 @@ class Solver:
 
             parent_domain = r.Domain(usage_lookup.usages_of_factory(parent_Factory))
 
-            if ("sink" in parent_obj_name.lower() or "vanity" in parent_obj_name.lower() or "rack" in parent_obj_name.lower()) and relation=="ontop":
+            if (
+                "sink" in parent_obj_name.lower()
+                or "vanity" in parent_obj_name.lower()
+                or "rack" in parent_obj_name.lower()
+            ) and relation == "ontop":
                 relation = "on"
             relation_module = getattr(cu, relation)
             stage = secondary.with_relation(relation_module, parent_domain)
@@ -1760,7 +1774,6 @@ class Solver:
         self,
     ):
         metadata = os.getenv("JSON_RESULTS")
-        
 
         def get_obj_cnt(data):
             # Count types
@@ -1780,7 +1793,7 @@ class Solver:
                         big_category_dict[obj_type] = 0
                     big_category_dict[obj_type] += 1
             return big_category_dict
-        
+
         with open(metadata, "r") as f:
             data = json.load(f)
             category_dict = get_obj_cnt(data)
@@ -1797,9 +1810,6 @@ class Solver:
                 ]:
                     Placement[item["new_object_id"]] = item
 
-        
-
-        
         # asset_dir = f"/mnt/fillipo/yandan/scenesage/idesign/scene_sage/assets_retrieve_by_IDesign/scene_{scene_idx}"
         for key, value in Placement.items():
             # name = key
@@ -1902,8 +1912,8 @@ class Solver:
                 try:
                     obj_type = obj["type"]
                 except:
-                    obj_type = re.sub(r'[_]*\d+$', '', obj["new_object_id"]) 
-                
+                    obj_type = re.sub(r"[_]*\d+$", "", obj["new_object_id"])
+
                 if obj_type not in big_category_dict:
                     big_category_dict[obj_type] = 0
                 big_category_dict[obj_type] += 1
@@ -1926,7 +1936,7 @@ class Solver:
             on_floor = False
             relation = None
 
-            category = re.sub(r'[_]*\d+$', '', key) 
+            category = re.sub(r"[_]*\d+$", "", key)
 
             filter_domain = self.calc_filter_domain(
                 category,
@@ -2020,7 +2030,7 @@ class Solver:
                     continue
 
                 position = obj_info["position"]
-                position = [position[0]+0.14, position[2]+0.14, position[1]+0.14]
+                position = [position[0] + 0.14, position[2] + 0.14, position[1] + 0.14]
                 radians = math.radians(90)
                 rotation = radians - obj_info["theta"]
                 scale = obj_info["scale"]
@@ -2212,7 +2222,9 @@ class Solver:
             big_category_dict = {}
 
             for obj in data["objects"]:
-                obj_type = obj["new_object_id"].split("-")[0].split("|")[0].replace(" ","_")
+                obj_type = (
+                    obj["new_object_id"].split("-")[0].split("|")[0].replace(" ", "_")
+                )
                 if obj_type in ["window", "door"]:
                     continue
                 if obj_type not in big_category_dict:
@@ -2237,7 +2249,9 @@ class Solver:
             on_floor = False
             relation = None
 
-            category = value["new_object_id"].split("-")[0].split("|")[0].replace(" ","_")
+            category = (
+                value["new_object_id"].split("-")[0].split("|")[0].replace(" ", "_")
+            )
             if category in ["window", "door"]:
                 continue
             filter_domain = self.calc_filter_domain(

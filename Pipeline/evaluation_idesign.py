@@ -64,7 +64,7 @@ def statistic_traj(iter):
     return trajs
 
 
-def eval_scene(iter, user_demand,verbo = True):
+def eval_scene(iter, user_demand, verbo=True):
     grades, grading = eval_general_score(iter, user_demand, verbo)
     obj_diff = diff_objects(iter)
 
@@ -93,7 +93,7 @@ def eval_scene(iter, user_demand,verbo = True):
     return metric
 
 
-def eval_general_score(iter, user_demand,verbo=True):
+def eval_general_score(iter, user_demand, verbo=True):
     save_dir = os.getenv("save_dir")
     if not os.path.exists(f"{save_dir}/pipeline/"):
         os.mkdir(f"{save_dir}/pipeline/")
@@ -237,10 +237,9 @@ You are working in a 3D scene environment with the following conventions:
 
 
 if __name__ == "__main__":
-    method = "idesign" #"classroom","grameroom", \
+    method = "idesign"  # "classroom","grameroom", \
     # roomtype = "bedroom" #idesign bathroom [7.4, 7.2, 7.4, 5.4, 9.6, 0.0, 0.0] #"childrenroom"
-    for roomtype in [ "bookstore"]:
-        
+    for roomtype in ["bookstore"]:
         for i in range(5):
             try:
                 save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/{roomtype}/scene_{i}"
@@ -250,11 +249,7 @@ if __name__ == "__main__":
                     continue
                 if os.path.exists(f"{save_dir}/pipeline/trajs_0.json"):
                     continue
-                metric = eval_scene(
-                    0,
-                    f"Design me a {roomtype}.",
-                    verbo = False
-                )
+                metric = eval_scene(0, f"Design me a {roomtype}.", verbo=False)
             except:
                 continue
         score = {
@@ -270,7 +265,6 @@ if __name__ == "__main__":
         # for i in [10,12,14,15,16,17,19]:
         try:
             for i in range(5):
-                
                 save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/{method}/{roomtype}/scene_{i}"
                 if not os.path.exists(f"{save_dir}/pipeline/trajs_0.json"):
                     continue
@@ -292,7 +286,6 @@ if __name__ == "__main__":
             for key, value in score.items():
                 score_mean[key] = round(np.mean(value), 3)
 
-            print(method,roomtype,list(score_mean.values()))
+            print(method, roomtype, list(score_mean.values()))
         except:
             continue
-        

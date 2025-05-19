@@ -246,7 +246,6 @@ You are working in a 3D scene environment with the following conventions:
 if __name__ == "__main__":
     # roomtype = "bathroom"
     for roomtype in ["kitchen"]:
-    
         # for i in range(10):
         #     save_dir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/Design_me_a_{roomtype}_{i}"
         #     img_dir = f"{save_dir}/record_scene"
@@ -274,10 +273,12 @@ if __name__ == "__main__":
         }
 
         # for i in [10,12,14,15,16,17,19]:
-        basedir = f"/mnt/fillipo/yandan/scenesage/record_scene/manus/0_{roomtype}_nophy/"
+        basedir = (
+            f"/mnt/fillipo/yandan/scenesage/record_scene/manus/0_{roomtype}_nophy/"
+        )
         for file in os.listdir(basedir):
-        # for i in range(10):
-            
+            # for i in range(10):
+
             save_dir = f"{basedir}/{file}"
             img_dir = f"{save_dir}/record_scene"
             max_iter = 0
@@ -289,7 +290,7 @@ if __name__ == "__main__":
                         continue
                     if os.path.exists(f"{save_dir}/pipeline/trajs_{iter}.json"):
                         max_iter = max(max_iter, iter)
-            if max_iter==0:
+            if max_iter == 0:
                 continue
             with open(f"{save_dir}/pipeline/trajs_{max_iter}.json", "r") as f:
                 j = json.load(f)
@@ -305,11 +306,10 @@ if __name__ == "__main__":
             score["NObj"].append(physcore["object number"])
             score["BBO"].append(len(physcore["object not inside the room"]))
             score["BBL"].append(len(physcore["object has collision"]))
-        
 
         score_mean = dict()
         for key, value in score.items():
             score_mean[key] = round(np.mean(value), 3)
 
         # print(score_mean)
-        print("ours",roomtype,list(score_mean.values()))
+        print("ours", roomtype, list(score_mean.values()))

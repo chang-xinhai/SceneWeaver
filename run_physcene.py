@@ -37,11 +37,19 @@ roominfo_path = f"roominfo_{method}.json"
 
 # roomtype = "livingroom"
 lst = {
-    "livingroom":["LivingDiningRoom-2954_livingroom.json","LivingDiningRoom-1344_livingroom.json","LivingDiningRoom-2917_livingroom.json"],
-    "bedroom":["Bedroom-1861_bedroom.json","Bedroom-5666_bedroom.json","Bedroom-74627_bedroom.json"]
+    "livingroom": [
+        "LivingDiningRoom-2954_livingroom.json",
+        "LivingDiningRoom-1344_livingroom.json",
+        "LivingDiningRoom-2917_livingroom.json",
+    ],
+    "bedroom": [
+        "Bedroom-1861_bedroom.json",
+        "Bedroom-5666_bedroom.json",
+        "Bedroom-74627_bedroom.json",
+    ],
 }
 basedir = "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean"
-for  roomtype in ["livingroom","bedroom"]:
+for roomtype in ["livingroom", "bedroom"]:
     for i in range(len(lst[roomtype])):
         file = lst[roomtype][i]
         json_name = f"{basedir}/{file}"

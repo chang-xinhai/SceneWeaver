@@ -63,9 +63,8 @@ class SceneDesigner:
     max_steps: int = 20
     duplicate_threshold: int = 2
 
-
     available_tools = ToolCollection(
-        InitGPTExecute(),# InitMetaSceneExecute(), InitPhySceneExecute(),
+        InitGPTExecute(),  # InitMetaSceneExecute(), InitPhySceneExecute(),
         # AddAcdcExecute(),
         AddGPTExecute(),
         AddRelationExecute(),
@@ -172,8 +171,8 @@ class SceneDesigner:
             ]
             score_new = sum(score_new)
 
-        if iter==0:
-            if score_new>=20:
+        if iter == 0:
+            if score_new >= 20:
                 return True
             else:
                 return False
@@ -270,24 +269,24 @@ class SceneDesigner:
         #             10:"Terminate the scene synthesis if the kitchen is neither crowded nor empty and all functional and spatial requirements are met."
         # }
         ideas_lst = {
-                 1:"Initialize the Scene (init_gpt)",
-                 2:"Add Relations (add_relation)",
-                 3:"Add Large Supporting Objects (add_gpt)",
-                 4:"Add any missing large supportingobjects such as a kitchen island, pantry cabinet, or bar stools, if space allows, to enhance functionality without crowding.",
-                 4:"Add Small Functional Objects (add_gpt)",
-                 5:"Add Objects Inside Cabinets/Shelves (add_gpt)",
-                 6:"Add Wall-Mounted Functional/Decorative Objects (add_gpt)",
-                 7: "Adjust Layout if Needed (update_layout)",
-                 8:"Adjust Rotations if Needed (update_rotation)",
-                 9:"Adjust Sizes if Needed (update_size)",
-                 10:"Remove Redundant or Crowded Objects (remove_object)",
-                 11:"Terminate (terminate)"}
-                
+            1: "Initialize the Scene (init_gpt)",
+            2: "Add Relations (add_relation)",
+            3: "Add Large Supporting Objects (add_gpt)",
+            4: "Add any missing large supportingobjects such as a kitchen island, pantry cabinet, or bar stools, if space allows, to enhance functionality without crowding.",
+            4: "Add Small Functional Objects (add_gpt)",
+            5: "Add Objects Inside Cabinets/Shelves (add_gpt)",
+            6: "Add Wall-Mounted Functional/Decorative Objects (add_gpt)",
+            7: "Adjust Layout if Needed (update_layout)",
+            8: "Adjust Rotations if Needed (update_rotation)",
+            9: "Adjust Sizes if Needed (update_size)",
+            10: "Remove Redundant or Crowded Objects (remove_object)",
+            11: "Terminate (terminate)",
+        }
 
-        idea_this_step = ideas_lst[self.current_step+1]
+        idea_this_step = ideas_lst[self.current_step + 1]
         user_msg = Message.user_message(idea_this_step)
         self.messages.append(user_msg)
-        #scene0149_00
+        # scene0149_00
         retry = 0
         while True and retry < 3:
             try:
@@ -437,9 +436,9 @@ class SceneDesigner:
 
         try:
             # Parse arguments
-            
+
             args = json.loads(command.function.arguments or "{}")
-            
+
             # Execute the tool
             logger.info(f"🔧 Activating tool: '{name}'...")
             result = self.available_tools.execute(name=name, tool_input=args)
@@ -529,10 +528,8 @@ class SceneDesigner:
         #     memory_path = f"{save_dir}/pipeline/memory_{self.current_step}.pkl"
         # if os.path.exists(f"{save_dir}/pipeline/memory_{self.current_step}.pkl"):
         #     self.current_step += 1
-            
-        
+
         while self.current_step < self.max_steps and self.state != AgentState.FINISHED:
-            
             if self.current_step > 0:
                 with open(
                     f"{save_dir}/pipeline/memory_{self.current_step-1}.pkl", "rb"
@@ -545,7 +542,9 @@ class SceneDesigner:
 
             os.environ["iter"] = str(self.current_step)
 
-            logger.info(f"Executing step {self.current_step}/{self.max_steps} for {save_dir}")
+            logger.info(
+                f"Executing step {self.current_step}/{self.max_steps} for {save_dir}"
+            )
             step_result = self.step()
             if step_result == "Failed":
                 self.current_step -= 1

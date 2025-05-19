@@ -67,9 +67,7 @@ class SceneDesigner:
     # available_tools0 = ToolCollection(
     #     InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
     # )
-    available_tools0 = ToolCollection(
-            InitGPTExecute()
-        )
+    available_tools0 = ToolCollection(InitGPTExecute())
     available_tools1 = ToolCollection(
         # AddAcdcExecute(),
         AddGPTExecute(),
@@ -180,8 +178,8 @@ class SceneDesigner:
             ]
             score_new = sum(score_new)
 
-        if iter==0:
-            if score_new>=20:
+        if iter == 0:
+            if score_new >= 20:
                 return True
             else:
                 return False
@@ -259,7 +257,11 @@ class SceneDesigner:
         while True and retry < 3:
             try:
                 self.messages[3].content = "success"
-                messages = [self.messages[0]]+[i for i in self.messages if i.role in ["tool","assistant"]]+[self.messages[-1]]
+                messages = (
+                    [self.messages[0]]
+                    + [i for i in self.messages if i.role in ["tool", "assistant"]]
+                    + [self.messages[-1]]
+                )
                 # messages = [self.messages[0]] + self.messages[-1:]
                 # if len(self.messages) >= 7:
                 #     messages = [self.messages[0]] + self.messages[-1:]
@@ -492,16 +494,16 @@ class SceneDesigner:
         self.current_step = 1
         save_dir = os.getenv("save_dir")
         memory_path = f"{save_dir}/pipeline/memory_{self.current_step}.pkl"
-        while(os.path.exists(memory_path)):
-            os.system(f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json")
+        while os.path.exists(memory_path):
+            os.system(
+                f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json"
+            )
             self.current_step += 1
             memory_path = f"{save_dir}/pipeline/memory_{self.current_step}.pkl"
         # if os.path.exists(f"{save_dir}/pipeline/memory_{self.current_step}.pkl"):
         #     self.current_step += 1
-            
-        
+
         while self.current_step < self.max_steps and self.state != AgentState.FINISHED:
-            
             if self.current_step > 0:
                 with open(
                     f"{save_dir}/pipeline/memory_{self.current_step-1}.pkl", "rb"
@@ -526,7 +528,9 @@ class SceneDesigner:
             else:
                 self.available_tools = self.available_tools2
 
-            logger.info(f"Executing step {self.current_step}/{self.max_steps} for {save_dir}")
+            logger.info(
+                f"Executing step {self.current_step}/{self.max_steps} for {save_dir}"
+            )
             step_result = self.step()
             if step_result == "Failed":
                 self.current_step -= 1

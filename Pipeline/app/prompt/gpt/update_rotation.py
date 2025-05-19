@@ -1,4 +1,3 @@
-
 system_prompt = """
 You are given a list of objects in a 3D room scene, including their positions, rotations, size, and types (e.g., bed, desk, chair). The scenen is rendered from the top-down view.
 Your task is to identify incorrect or suboptimal rotations and provide corrected rotations that improve the room’s usability and organization.

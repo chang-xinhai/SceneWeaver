@@ -157,7 +157,7 @@ class TranslateMove(moves.Move):
             state.trimesh_scene, state, target_name, touch
         )
         translation2 = self.calc_gradient_bbox(
-            state.trimesh_scene, state, target_name, touch, TRANS_MULT 
+            state.trimesh_scene, state, target_name, touch, TRANS_MULT
         )
         translation = translation1 + translation2
         # if target_name=='4061705_TVFactory':

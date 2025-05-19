@@ -28,19 +28,19 @@ import time
 #     [3.2, 4.2, 2.8],
 #     [6.0, 8.0, 3.0],
 # ]
-with open("run_idesign_roomsize.json","r") as f:
+with open("run_idesign_roomsize.json", "r") as f:
     roomsizes = json.load(f)
 # Paths
 args_path = "args_idesign.json"
 roominfo_path = "roominfo_idesign.json"
 basedir = "/mnt/fillipo/yandan/scenesage/idesign0509/"
-outdir="/mnt/fillipo/yandan/scenesage/record_scene/idesign"
+outdir = "/mnt/fillipo/yandan/scenesage/record_scene/idesign"
 for roomtype in ["classroom"]:
-    os.makedirs(f"{outdir}/{roomtype}/",exist_ok=True)
-    for i in range(1,5):
+    os.makedirs(f"{outdir}/{roomtype}/", exist_ok=True)
+    for i in range(1, 5):
         # for i in [11,13,18]:
         print(f"\n=== Running Task {i} ===")
-        
+
         # Edit args_idesign.json
         with open(args_path, "r") as f:
             args_data = json.load(f)
@@ -53,7 +53,7 @@ for roomtype in ["classroom"]:
             )
         if not os.path.exists(args_data["json_name"]):
             continue
-        
+
         with open(args_path, "w") as f:
             json.dump(args_data, f, indent=4)
 
@@ -64,9 +64,7 @@ for roomtype in ["classroom"]:
         room_size = roomsizes[roomtype][i][:2]
         room_size = [i + 0.28 for i in room_size]
         roominfo_data["roomsize"] = room_size
-        roominfo_data["save_dir"] = (
-            f"{outdir}/{roomtype}/scene_{i}"
-        )
+        roominfo_data["save_dir"] = f"{outdir}/{roomtype}/scene_{i}"
         if os.path.exists(roominfo_data["save_dir"]):
             continue
         with open(roominfo_path, "w") as f:

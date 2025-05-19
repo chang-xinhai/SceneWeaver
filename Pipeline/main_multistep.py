@@ -36,23 +36,24 @@ if __name__ == "__main__":
     # prompts = ["Design me a small shop."] #
     # prompts = ["Design me a laundromat."]
     # prompts = ["Design me a single room of restaurant."]
-    # prompts = ["Design me a bookstore."] 
-    #"Design me a meeting room."
-    #"Design me a classroom."
-    #"Design me a waiting room."
-    #"Design me a clinic room."
-    #"Design me an art studio."" 
-    #"Design me a kitchen."
-    #"Design me a children room.", "Design me a game room.", "Design me a laboratory.","Design me a small bookstore.", 
-    #"Design me a waiting room.","Design me a laundry room."
-    #"Design me a restaurant room.",
-    #"Design me an office."
-    prompts = [
-               "Design me a kitchen room."] #computer room
+    # prompts = ["Design me a bookstore."]
+    # "Design me a meeting room."
+    # "Design me a classroom."
+    # "Design me a waiting room."
+    # "Design me a clinic room."
+    # "Design me an art studio.""
+    # "Design me a kitchen."
+    # "Design me a children room.", "Design me a game room.", "Design me a laboratory.","Design me a small bookstore.",
+    # "Design me a waiting room.","Design me a laundry room."
+    # "Design me a restaurant room.",
+    # "Design me an office."
+    # prompts = ["Design me a small bookstore with 4 reading tables with lamps and books on it. Shelfs are placed aroung the room, full will books inside. Add some decorations on the wall."]  # computer room
+    prompts = ["Design me an small indoor basketball court. Add two basketbal hoop on the side. Add some basketballs and rest bench "]  # computer room
+
     for p in prompts:
         for i in range(1):
             prompt = p
-            main(prompt, 2+i)
+            main(prompt, 2 + i)
             # try:
             #     prompt = p
             #     main(prompt, i+2)

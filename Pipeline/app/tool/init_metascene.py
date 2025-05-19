@@ -26,6 +26,7 @@ Weaknesses: Fixed layout, need to modify with other methods to meet user demand.
 """
 # The layout is in low quality. Assets' quality is unstable.
 
+
 class InitMetaSceneExecute(BaseTool):
     """A tool for executing Python code with timeout and safety restrictions."""
 
@@ -148,8 +149,8 @@ class InitMetaSceneExecute(BaseTool):
 
         scenes = j["scenes"]
 
-        # scene_id = find_scene_id()
-        scene_id = "scene0653_00"
+        scene_id = find_scene_id()
+        # scene_id = "scene0653_00"
         json_name = scene_id
 
         with open(

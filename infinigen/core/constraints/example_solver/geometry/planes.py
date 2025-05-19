@@ -30,7 +30,6 @@ def global_vertex_coordinates(obj, local_vertex):
 
 
 def global_polygon_normal(obj, polygon):
-    
     loc, rot, scale = obj.matrix_world.decompose()
     rot = rot.to_matrix()
     normal = rot @ polygon.normal
@@ -41,7 +40,6 @@ def global_polygon_normal(obj, polygon):
         #     print(f"  Vertex {vert_idx}: {coord}")
         return normal
 
-        
     try:
         return normal / np.linalg.norm(normal)
     except ZeroDivisionError:
@@ -97,8 +95,8 @@ class Planes:
 
     @staticmethod
     def hash_plane(normal, point, tolerance=1e-4):
-        if normal[0]==0 and normal[1]==0  and normal[2]==0 :
-            normal_normalized = normal #TODO YYD
+        if normal[0] == 0 and normal[1] == 0 and normal[2] == 0:
+            normal_normalized = normal  # TODO YYD
         else:
             normal_normalized = normal / np.linalg.norm(normal)
         distance = np.dot(normal_normalized, point)
@@ -235,18 +233,17 @@ class Planes:
         if name == "1603808_dumbbell":
             a = 1
         parent_all_planes = self.get_tagged_planes(parent_obj, parent_tags)
-        
+
         obj_all_planes = self.get_tagged_planes(
             obj, obj_tags
         )  # (obj.name, polygon.index)
 
-        if len(obj_all_planes)==0:
+        if len(obj_all_planes) == 0:
             from infinigen.core.constraints.example_solver.geometry import parse_scene
-            parse_scene.preprocess_obj(obj) #TODO YYD
+
+            parse_scene.preprocess_obj(obj)  # TODO YYD
             tagging.tag_canonical_surfaces(obj)
-            obj_all_planes = self.get_tagged_planes(
-                obj, obj_tags
-            )  
+            obj_all_planes = self.get_tagged_planes(obj, obj_tags)
         # for i, p in enumerate(parent_all_planes):
         #    splitted_parent = planes.extract_tagged_plane(parent_obj, parent_tags, p)
         #    splitted_parent.name = f'parent_plane_{i}'
@@ -276,7 +273,6 @@ class Planes:
         if (
             closest_surface and obj_plane is not None and parent_plane is not None
         ):  # and len(parent_all_planes)<10000:
-           
             parent_plane_idx, child_plane_idx = self.get_closest_surface(
                 state,
                 relation_state,
@@ -321,7 +317,8 @@ class Planes:
         # find closest parent plane
         min_d = 1000
         # state.planes.get_tagged_submesh_prefast(state.trimesh_scene, parent_obj.name, parent_tags, parent_all_planes)
-        print(obj.name,
+        print(
+            obj.name,
             "Getting the closest surface of ",
             parent_obj.name,
             "planes number: ",
@@ -334,9 +331,10 @@ class Planes:
                 )
             else:
                 # if object has too many planes, obmit some of them
-                if len(parent_all_planes) > 1000 and \
-                    (parent_obj.name.startswith("MetaCategoryFactory") \
-                     or parent_obj.name.startswith("ObjaverseCategoryFactory")):
+                if len(parent_all_planes) > 1000 and (
+                    parent_obj.name.startswith("MetaCategoryFactory")
+                    or parent_obj.name.startswith("ObjaverseCategoryFactory")
+                ):
                     ratio = len(parent_all_planes) // 1000 + 1
                     if idx % ratio != 0:
                         continue

@@ -26,7 +26,9 @@ def update_infinigen(
     argsfile = f"{save_dir}/args.json"
     with open(argsfile, "w") as f:
         json.dump(j, f, indent=4)
-    os.system(f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json")
+    os.system(
+        f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json"
+    )
     # if invisible:
     if True:
         cmd = f"""

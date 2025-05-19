@@ -12,11 +12,11 @@ roominfo_path = f"roominfo_{method}.json"
 basedir = "/mnt/fillipo/yandan/scenesage/Holodeck0509/"
 outdir = "/mnt/fillipo/yandan/scenesage/record_scene/holodeck/"
 roomtypes = os.listdir(basedir)
-for  roomtype in roomtypes:
+for roomtype in roomtypes:
     if roomtype not in ["office"]:
-    # if roomtype not in ["bathroom","children_room","classroom","gameroom","gym","kitchen","laundromat","meetingroom","office","restaurant","waitingroom"]:
+        # if roomtype not in ["bathroom","children_room","classroom","gameroom","gym","kitchen","laundromat","meetingroom","office","restaurant","waitingroom"]:
         continue
-    os.makedirs(f"{outdir}/{roomtype}/",exist_ok=True)
+    os.makedirs(f"{outdir}/{roomtype}/", exist_ok=True)
     for idx in range(3):
         # for idx in [11,13,18]:
         print(f"\n=== Running Task {idx} ===")
@@ -33,9 +33,7 @@ for  roomtype in roomtypes:
         room_size = [roomsize["length"], roomsize["width"]]
         room_size = [i + 0.28 for i in room_size]
         roominfo_data["roomsize"] = room_size
-        roominfo_data["save_dir"] = (
-            f"{outdir}/{roomtype}/{roomtype}_{idx}"
-        )
+        roominfo_data["save_dir"] = f"{outdir}/{roomtype}/{roomtype}_{idx}"
         if os.path.exists(roominfo_data["save_dir"]):
             continue
         with open(roominfo_path, "w") as f:

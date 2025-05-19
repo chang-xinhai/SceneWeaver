@@ -193,7 +193,7 @@ def compose_indoors(
         state, solver, terrain, house_bbox, solved_bbox, _ = record.load_scene(
             load_iter
         )
-   
+
         view_all()
         save_path = "debug1.blend"
         bpy.ops.wm.save_as_mainfile(filepath=save_path)
@@ -258,15 +258,19 @@ def compose_indoors(
             raise ValueError(f"Action is wrong: {action}")
 
     if "nophy" not in save_dir:
-                
-        if action not in ["init_physcene", "init_metascene", "finalize_scene", "add_acdc"]:
+        if action not in [
+            "init_physcene",
+            "init_metascene",
+            "finalize_scene",
+            "add_acdc",
+        ]:
             p.run_stage(
                 "populate_assets",
                 populate.populate_state_placeholders_mid,
                 state,
                 use_chance=False,
             )
-            
+
             if action == "add_relation":
                 state, solver = solve_objects.solve_large_object(
                     stages, limits, solver, state, p, consgraph, overrides
@@ -296,7 +300,7 @@ def compose_indoors(
                         update_trimesh=False,
                         use_chance=False,
                     )
-            
+
                     solver.del_no_relation_objects()
                     # save_path = "debug3.blend"
                     # bpy.ops.twm.save_as_mainfile(filepath=save_path)
@@ -308,7 +312,7 @@ def compose_indoors(
                         invisible_others()
                         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
                         visible_others()
-            
+
                 for name in list(state.objs.keys())[::-1]:
                     if name in state.objs.keys():
                         if name != "newroom_0-0":
@@ -332,14 +336,6 @@ def compose_indoors(
                         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
                         visible_others()
                 solver.del_no_relation_objects()
-
-
-
-
-
-
-
-
 
         # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
         # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
@@ -522,8 +518,6 @@ if __name__ == "__main__":
                 logging.getLogger(name).setLevel(logging.DEBUG)
 
     import json
-
-    
 
     # with open("/home/yandan/workspace/infinigen/roominfo.json", "r") as f:
     #     j = json.load(f)

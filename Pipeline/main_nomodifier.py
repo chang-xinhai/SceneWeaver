@@ -8,15 +8,21 @@ def main(prompt, i):
     agent = SceneDesigner()
     try:
         # prompt = "Design me a bedroom."
-        save_dir = "/mnt/fillipo/yandan/scenesage/record_scene/manus/0_kitchen_nomodifier/" + prompt[
-            :30
-        ].replace(" ", "_").replace(".", "").replace(",", "_").replace("[", "").replace(
-            "]", ""
+        save_dir = (
+            "/mnt/fillipo/yandan/scenesage/record_scene/manus/0_kitchen_nomodifier/"
+            + prompt[:30]
+            .replace(" ", "_")
+            .replace(".", "")
+            .replace(",", "_")
+            .replace("[", "")
+            .replace("]", "")
         )
-        
+
         save_dir = save_dir + "_" + str(i)
-        os.system(f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json")
-        
+        os.system(
+            f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json"
+        )
+
         if not os.path.exists(save_dir):
             os.system(f"mkdir {save_dir}")
             os.system(f"mkdir {save_dir}/pipeline")
@@ -39,19 +45,18 @@ if __name__ == "__main__":
     # prompts = ["Design me a small shop."] #
     # prompts = ["Design me a laundromat."]
     # prompts = ["Design me a single room of restaurant."]
-    # prompts = ["Design me a bookstore."] 
-    #"Design me a meeting room."
-    #"Design me a classroom."
-    #"Design me a waiting room."
-    #"Design me a clinic room."
-    #"Design me an art studio."" 
-    #"Design me a kitchen."
-    #"Design me a children room.", "Design me a game room.", "Design me a laboratory.","Design me a small bookstore.", 
-    #"Design me a waiting room.","Design me a laundry room."
-    #"Design me a restaurant room.",
-    #"Design me an office."
-    prompts = [
-               "Design me a kitchen."] #computer room
+    # prompts = ["Design me a bookstore."]
+    # "Design me a meeting room."
+    # "Design me a classroom."
+    # "Design me a waiting room."
+    # "Design me a clinic room."
+    # "Design me an art studio.""
+    # "Design me a kitchen."
+    # "Design me a children room.", "Design me a game room.", "Design me a laboratory.","Design me a small bookstore.",
+    # "Design me a waiting room.","Design me a laundry room."
+    # "Design me a restaurant room.",
+    # "Design me an office."
+    prompts = ["Design me a kitchen."]  # computer room
     for p in prompts:
         for i in range(3):
             prompt = p

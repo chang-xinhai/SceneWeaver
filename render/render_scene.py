@@ -9,3 +9,5 @@ for roomtype in roomtypes:
         os.system(f'{blend} {blendfile} --background --python /home/yandan/workspace/infinigen/render/render_scene.py')
         break
     break
+
+

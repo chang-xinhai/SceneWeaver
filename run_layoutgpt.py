@@ -11,15 +11,23 @@ basedir = "/mnt/fillipo/yandan/scenesage/LayoutGPT05133/"
 outdir = "/mnt/fillipo/yandan/scenesage/record_scene/layoutgpt/"
 # roomtype = "livingroom"
 roomtypes = os.listdir(basedir)
-for  roomtype in roomtypes: # ["bedroom","livingroom"]:
-    if roomtype not in ["meetingroom","office","restaurant","waitingroom","bathroom","children_room","gym","kitchen"]:
+for roomtype in roomtypes:  # ["bedroom","livingroom"]:
+    if roomtype not in [
+        "meetingroom",
+        "office",
+        "restaurant",
+        "waitingroom",
+        "bathroom",
+        "children_room",
+        "gym",
+        "kitchen",
+    ]:
         continue
     # if roomtype not in ["garage"]:
     #     continue
-    os.makedirs(f"{outdir}/{roomtype}/",exist_ok=True)
-    for i in range(1,4):
+    os.makedirs(f"{outdir}/{roomtype}/", exist_ok=True)
+    for i in range(1, 4):
         # for i in [11,13,18]:
-        
 
         # Edit args_idesign.json
         with open(args_path, "r") as f:
@@ -27,7 +35,7 @@ for  roomtype in roomtypes: # ["bedroom","livingroom"]:
         # args_data["json_name"] = (
         #     f"/mnt/fillipo/yandan/scenesage/LayoutGPT/{roomtype}_scene_graph/layoutgpt_{roomtype}_{i}.json"
         # )
-        args_data["json_name"] = f"{basedir}/{roomtype}/{roomtype}_%02d.json"  % i
+        args_data["json_name"] = f"{basedir}/{roomtype}/{roomtype}_%02d.json" % i
         json_name = args_data["json_name"]
         print(f"\n=== Running Task {json_name}===")
         with open(args_path, "w") as f:
@@ -45,9 +53,7 @@ for  roomtype in roomtypes: # ["bedroom","livingroom"]:
         room_size = [roomsize["width"], roomsize["length"]]
         room_size = [i + 0.28 for i in room_size]
         roominfo_data["roomsize"] = room_size
-        roominfo_data["save_dir"] = (
-            f"{outdir}/{roomtype}/{roomtype}_{i}"
-        )
+        roominfo_data["save_dir"] = f"{outdir}/{roomtype}/{roomtype}_{i}"
         if os.path.exists(roominfo_data["save_dir"]):
             continue
         with open(roominfo_path, "w") as f:
