@@ -33,14 +33,19 @@ blender.dmg
 screenlog.*
 
 dev_install.sh
-
+*.log
+*/logs/
 dev.py
-
+*copy*
+*.zip
 cache
 Blender-FLIP-Fluids
 *.mp4
+*.png
+*.jpg
 
 *.npz
+*.glb
 *.obj
 *.blend
 *.blend1

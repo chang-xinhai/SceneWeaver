@@ -28,5 +28,5 @@ global c
 c = bpy.context.scene.collection
 keep_object_from_collections(c, object_to_keep)
 
-save_path = "debug.blend"
-bpy.ops.wm.save_as_mainfile(filepath=save_path)
+# save_path = "debug.blend"
+# bpy.ops.wm.save_as_mainfile(filepath=save_path)

@@ -204,8 +204,8 @@ def stable_against(
         res = projected_a.overlaps(projected_b)
     elif relation.check_z:
         res = projected_a.within(projected_b.buffer(1e-2))
-        # if (use_initial and not res) or (sa.dof_matrix_translation is not None and sa.obj.name=='FloorLampFactory(8520374).bbox_placeholder(3326486)' and not res):
-        if use_initial and not res and not fix_pos:
+        if (use_initial and not res) or (not use_initial and sa.dof_matrix_translation is not None and not res):
+        # if use_initial and not res and not fix_pos:
             move_vectors = []
             vertices = list(np.array(projected_a.exterior.coords))
             for point in vertices:
@@ -239,23 +239,23 @@ def stable_against(
                     np.array(move_vector)[None, :]
                     / np.linalg.norm(np.array(move_vector))
                 )
-
-            gradient = np.mean(np.concatenate(move_vectors, axis=0), axis=0)
-            if obj_name == "60910_nightstand":
-                a = 1
-            gradient = anti_project_to_3d(gradient, normal_b)
-            gradient = sa.dof_matrix_translation @ gradient
-            gradient_norm = np.linalg.norm(gradient)
-            if gradient_norm == 0:
-                translation = np.zeros(3)
-            else:
-                TRANS_MULT = 0.05  # min(0.05,gradient_norm)
-                translation = TRANS_MULT * gradient / gradient_norm
-            # gradient = [gradient[0],gradient[1],0]
-            # TRANS_MULT = 0.05
-            # translation = TRANS_MULT * sa.dof_matrix_translation @ gradient
-            iu.translate(state.trimesh_scene, sa.obj.name, translation)
-            print(obj_name, bpy.data.objects[sa.obj.name].location)
+            if move_vectors!=[]:
+                gradient = np.mean(np.concatenate(move_vectors, axis=0), axis=0)
+                if obj_name == "60910_nightstand":
+                    a = 1
+                gradient = anti_project_to_3d(gradient, normal_b)
+                gradient = sa.dof_matrix_translation @ gradient
+                gradient_norm = np.linalg.norm(gradient)
+                if gradient_norm == 0:
+                    translation = np.zeros(3)
+                else:
+                    TRANS_MULT = 0.05  # min(0.05,gradient_norm)
+                    translation = TRANS_MULT * gradient / gradient_norm
+                # gradient = [gradient[0],gradient[1],0]
+                # TRANS_MULT = 0.05
+                # translation = TRANS_MULT * sa.dof_matrix_translation @ gradient
+                iu.translate(state.trimesh_scene, sa.obj.name, translation)
+                print(obj_name, bpy.data.objects[sa.obj.name].location)
 
     else:
         if obj_name == "6569851_FloorLampFactory":

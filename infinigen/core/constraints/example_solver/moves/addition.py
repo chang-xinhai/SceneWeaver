@@ -153,6 +153,36 @@ class Addition(moves.Move):
         logger.debug(f"{self} {success=}")
         return success
 
+    def apply_random(self, state: State,target_name, gen_class,expand_collision=False):  # mark
+
+        assert target_name not in state.objs
+
+        self._new_obj, gen = sample_rand_placeholder(
+            gen_class, dimension=(1, 1, 1)
+        )
+
+        parse_scene.add_to_scene(state.trimesh_scene, self._new_obj, preprocess=True)
+
+        tags = self.temp_force_tags.union(usage_lookup.usages_of_factory(gen.__class__))
+
+        assert isinstance(self._new_obj, bpy.types.Object)
+        objstate = ObjectState(
+            obj=self._new_obj,
+            generator=gen,
+            tags=tags,
+            relations=self.relation_assignments,
+        )
+
+        state.objs[target_name] = objstate
+
+        success = dof.try_apply_relation_constraints(
+            state, target_name, expand_collision=expand_collision
+        )  # check
+       
+        logger.debug(f"{self} {success=}")
+        return success
+
+
     def remove_onfloor_rel(self, gen_class, gen, T=0.3):
         from infinigen_examples.steps.tools import export_relation
 

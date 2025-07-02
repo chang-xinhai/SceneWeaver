@@ -281,9 +281,9 @@ def setup_camera(margin=1.05, resolution=720):
     cam.data.angle = fov_rad
 
 
-
 def update_camera(margin=1.05, resolution=720):
     import bpy
+
     resolution = 2048
 
     bpy.context.scene.render.resolution_x = resolution
@@ -301,7 +301,7 @@ def update_camera(margin=1.05, resolution=720):
 
 # === 4. 创建旋转轴空对象 ===
 def setup_rotation_anchor():
-    try: 
+    try:
         anchor = bpy.data.objects.get("RotationAnchor")
         assert anchor is not None
     except:
@@ -357,16 +357,12 @@ def rotate_scene(anchor, angle):
 
 
 if __name__ == "__main__":
-
-
     add_light(strength=20)
     add_wall()
     center_scene()
     setup_camera(resolution=2048)
     anchor = setup_rotation_anchor()
     bpy.context.scene.render.engine = "CYCLES"  #'CYCLES' #'BLENDER_EEVEE_NEXT'
-
-
 
     # Get the active object
     obj = bpy.data.objects.get("RotationAnchor")
@@ -375,7 +371,7 @@ if __name__ == "__main__":
         raise Exception("No active object selected")
 
     # Set rotation mode to Euler XYZ
-    obj.rotation_mode = 'XYZ'
+    obj.rotation_mode = "XYZ"
 
     # Frame 0: rotation = 0 degrees (0 radians)
     bpy.context.scene.frame_set(0)
@@ -391,9 +387,7 @@ if __name__ == "__main__":
     for fcurve in obj.animation_data.action.fcurves:
         if fcurve.data_path == "rotation_euler" and fcurve.array_index == 2:
             for keyframe in fcurve.keyframe_points:
-                keyframe.interpolation = 'LINEAR'
-    
-
+                keyframe.interpolation = "LINEAR"
 
     # Set frame range
     bpy.context.scene.frame_start = 0
@@ -401,7 +395,6 @@ if __name__ == "__main__":
 
     # Set FPS
     bpy.context.scene.render.fps = 25
-    
- 
-    bpy.context.scene.render.engine = 'CYCLES'
+
+    bpy.context.scene.render.engine = "CYCLES"
     bpy.context.scene.cycles.samples = 1024

@@ -64,12 +64,9 @@ class SceneDesigner:
     duplicate_threshold: int = 2
 
     # Add general-purpose tools to the tool collection
-    # available_tools0 = ToolCollection(
-    #     InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
-    # )
     available_tools0 = ToolCollection(
-            InitGPTExecute()
-        )
+        InitGPTExecute(), InitMetaSceneExecute(), InitPhySceneExecute()
+    )
     available_tools1 = ToolCollection(
         AddAcdcExecute(),
         AddGPTExecute(),
@@ -80,9 +77,7 @@ class SceneDesigner:
         Terminate(),
         RemoveExecute(),
     )
-    # available_tools1 = ToolCollection(
-    #         Terminate()
-    #     )
+
     available_tools2 = ToolCollection(Terminate())
     current_step: int = 0
     memory = Memory()

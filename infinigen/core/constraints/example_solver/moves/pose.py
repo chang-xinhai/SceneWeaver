@@ -87,7 +87,7 @@ class TranslateMove(moves.Move):
         os = state.objs[target_name]
 
         obj_state = state.objs[target_name]
-        if "bathtub" in target_name.lower():
+        if "6563700_BookFactory" in target_name:
             import pdb
         # print("111",state.objs["5865980_BookStackFactory"].obj.location)
         # print(target_name,s "1 ",obj_state.obj.location)
@@ -126,7 +126,7 @@ class TranslateMove(moves.Move):
         self._backup_pose = pose_backup(os, dof=False)
 
         if not bpy.app.background:
-            invisible_others()
+            invisible_others(hide_placeholder=True)
             bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
             visible_others()
         # import pdb
