@@ -73,9 +73,9 @@ def propose_translate_all(
         candidates.append(objname)
     
 
-    candidates = [
-        c for c in candidates if state.objs[c].dof_matrix_translation is not None
-    ]
+    # candidates = [
+    #     c for c in candidates if state.objs[c].dof_matrix_translation is not None
+    # ]
     if not len(candidates):
         return
 
@@ -85,8 +85,10 @@ def propose_translate_all(
 
         var = max(TRANS_MIN, TRANS_MULT * temperature)
         random_vector = np.random.normal(0, var, size=3)
-
-        projected_vector = obj_state.dof_matrix_translation @ random_vector
+        try:
+            projected_vector = obj_state.dof_matrix_translation @ random_vector
+        except:
+            projected_vector = [0,0,0]
 
         yield moves.TranslateMove(
             names=[obj_state_name],

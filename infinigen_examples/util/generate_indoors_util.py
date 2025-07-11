@@ -121,6 +121,9 @@ def create_outdoor_backdrop(
 
 
 def place_cam_overhead(cam: bpy.types.Object, bbox: tuple[np.array]):
+    if bpy.data.objects.get("place_cam_overhead"):
+        bpy.data.objects.remove(bpy.data.objects["place_cam_overhead"], do_unlink=True)
+
     butil.spawn_point_cloud("place_cam_overhead", bbox)
 
     mins, maxs = bbox

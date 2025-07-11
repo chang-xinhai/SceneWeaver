@@ -110,8 +110,8 @@ def compose_indoors(
     inplace,
     **overrides,
 ):
+    
     height = 1
-
     consgraph = home_constraints()
     stages = basic_scene.default_greedy_stages()
     checks.check_all(consgraph, stages, all_vars)
@@ -122,6 +122,7 @@ def compose_indoors(
     os.environ["JSON_RESULTS"] = json_name
     save_dir = os.getenv("save_dir")
     if iter == 0 and action != "add_relation":
+        
         p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
         p, terrain = basic_scene.basic_scene(
             scene_seed, output_folder, overrides, logger, p
@@ -224,6 +225,8 @@ def compose_indoors(
             state, solver = update_graph.add_acdc(solver, state, p, description)
         elif action == "add_rule":
             state, solver = update_graph.add_rule(stages, limits, solver, state, p)
+        elif action == "add_obj_crowd":
+            state, solver = update_graph.add_obj_crowd(solver, state, p)
         elif action == "export_supporter":
             record.export_supporter(
                 state,
@@ -257,85 +260,88 @@ def compose_indoors(
         else:
             raise ValueError(f"Action is wrong: {action}")
 
-    if "nophy" not in save_dir:
-        if action not in [
-            "init_physcene",
-            "init_metascene",
-            "finalize_scene",
-            "add_acdc",
-        ]:
-            p.run_stage(
-                "populate_assets",
-                populate.populate_state_placeholders_mid,
-                state,
-                use_chance=False,
-            )
+    # if "nophy" not in save_dir:
+    #     if action not in [
+    #         "init_physcene",
+    #         "init_metascene",
+    #         "finalize_scene",
+    #         "add_acdc",
+    #     ]:
+    #         p.run_stage(
+    #             "populate_assets",
+    #             populate.populate_state_placeholders_mid,
+    #             state,
+    #             use_chance=False,
+    #         )
+    #         save_path = "debug.blend"
+    #         bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    #         if action == "add_relation":
+    #             state, solver = solve_objects.solve_large_object(
+    #                 stages, limits, solver, state, p, consgraph, overrides
+    #             )
+    #         else:
+    #             stop = False
+    #             while not stop:
+    #                 state, solver = solve_objects.solve_large_object(
+    #                     stages, limits, solver, state, p, consgraph, overrides
+    #                 )
+    #                 save_path = "debug1.blend"
+    #                 bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    #                 for k, objinfo in state.objs.items():
+    #                     if hasattr(objinfo, "populate_obj"):
+    #                         asset_obj = bpy.data.objects.get(objinfo.populate_obj)
+    #                         place_obj = objinfo.obj
+    #                         if not np.allclose(asset_obj.location, place_obj.location):
+    #                             a = 1
+    #                         asset_obj.rotation_mode = "XYZ"
+    #                         place_obj.rotation_mode = "XYZ"
+    #                         if not np.allclose(
+    #                             asset_obj.rotation_euler, place_obj.rotation_euler
+    #                         ):
+    #                             a = 1
+    #                 p.run_stage(
+    #                     "populate_assets",
+    #                     populate.populate_state_placeholders_mid,
+    #                     state,
+    #                     update_trimesh=False,
+    #                     use_chance=False,
+    #                 )
 
-            if action == "add_relation":
-                state, solver = solve_objects.solve_large_object(
-                    stages, limits, solver, state, p, consgraph, overrides
-                )
-            else:
-                stop = False
-                while not stop:
-                    state, solver = solve_objects.solve_large_object(
-                        stages, limits, solver, state, p, consgraph, overrides
-                    )
-                    for k, objinfo in state.objs.items():
-                        if hasattr(objinfo, "populate_obj"):
-                            asset_obj = bpy.data.objects.get(objinfo.populate_obj)
-                            place_obj = objinfo.obj
-                            if not np.allclose(asset_obj.location, place_obj.location):
-                                a = 1
-                            asset_obj.rotation_mode = "XYZ"
-                            place_obj.rotation_mode = "XYZ"
-                            if not np.allclose(
-                                asset_obj.rotation_euler, place_obj.rotation_euler
-                            ):
-                                a = 1
-                    p.run_stage(
-                        "populate_assets",
-                        populate.populate_state_placeholders_mid,
-                        state,
-                        update_trimesh=False,
-                        use_chance=False,
-                    )
+    #                 solver.del_no_relation_objects()
+    #                 # save_path = "debug3.blend"
+    #                 # bpy.ops.twm.save_as_mainfile(filepath=save_path)
+    #                 stop = evaluate.del_top_collide_obj(state, iter)
 
-                    solver.del_no_relation_objects()
-                    # save_path = "debug3.blend"
-                    # bpy.ops.twm.save_as_mainfile(filepath=save_path)
-                    stop = evaluate.del_top_collide_obj(state, iter)
+    #                 solver.del_no_relation_objects()
 
-                    solver.del_no_relation_objects()
+    #                 if not bpy.app.background:
+    #                     invisible_others()
+    #                     bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+    #                     visible_others()
 
-                    if not bpy.app.background:
-                        invisible_others()
-                        bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
-                        visible_others()
-
-                for name in list(state.objs.keys())[::-1]:
-                    if name in state.objs.keys():
-                        if name != "newroom_0-0":
-                            if not all_relations_valid(
-                                state, name, use_initial=True, fix_pos=True
-                            ):
-                                if check_support(state, name, ratio=0.6):
-                                    # continue if children object is supported > 60%
-                                    continue
-                                print("all_relations_valid not valid ", name)
-                                objname = state.objs[name].obj.name
-                                delete_obj_with_children(
-                                    state.trimesh_scene,
-                                    objname,
-                                    delete_blender=True,
-                                    delete_asset=True,
-                                )
-                                state.objs.pop(name)
-                    if not bpy.app.background:
-                        invisible_others()
-                        bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
-                        visible_others()
-                solver.del_no_relation_objects()
+    #             for name in list(state.objs.keys())[::-1]:
+    #                 if name in state.objs.keys():
+    #                     if name != "newroom_0-0":
+    #                         if not all_relations_valid(
+    #                             state, name, use_initial=True, fix_pos=True
+    #                         ):
+    #                             if check_support(state, name, ratio=0.6):
+    #                                 # continue if children object is supported > 60%
+    #                                 continue
+    #                             print("all_relations_valid not valid ", name)
+    #                             objname = state.objs[name].obj.name
+    #                             delete_obj_with_children(
+    #                                 state.trimesh_scene,
+    #                                 objname,
+    #                                 delete_blender=True,
+    #                                 delete_asset=True,
+    #                             )
+    #                             state.objs.pop(name)
+    #                 if not bpy.app.background:
+    #                     invisible_others(hide_placeholder=True)
+    #                     bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+    #                     visible_others()
+    #             solver.del_no_relation_objects()
 
         # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
         # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
@@ -343,12 +349,12 @@ def compose_indoors(
         state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p
     )
 
-    evaluate.eval_metric(state, iter, remove_bad=True)
+    # evaluate.eval_metric(state, iter, remove_bad=True)
 
     record_success()
 
-    save_path = "debug.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
     return {
         "height_offset": height,
         "whole_bbox": house_bbox,

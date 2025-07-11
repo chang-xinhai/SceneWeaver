@@ -9,13 +9,14 @@ import random
 import typing
 from pprint import pprint
 
+import bpy
 import numpy as np
 
 from infinigen.core.constraints import constraint_language as cl
 from infinigen.core.constraints import reasoning as r
 from infinigen.core.constraints.evaluator.domain_contains import objkeys_in_dom
 from infinigen.core.tags import Subpart
-import bpy
+
 from . import state_def
 
 logger = logging.getLogger(__name__)
@@ -174,7 +175,7 @@ def find_given_assignments(
     assignments: list[state_def.RelationState] = None,
     parent_obj_name=None,
 ) -> typing.Iterator[list[state_def.RelationState]]:
-    if parent_obj_name=="830203_desk":
+    if parent_obj_name == "830203_desk":
         a = 1
     if assignments is None:
         assignments = []
@@ -217,8 +218,8 @@ def find_given_assignments(
             assignments=assignments,
         )
         return
-    if hasattr(rel,"parent_tags"):
-        return
+    # if hasattr(rel, "parent_tags"):
+    #     return
 
     for parent_candidate_name in candidates:  # 遍历候选对象
         if parent_candidate_name != "newroom_0-0":
@@ -227,7 +228,11 @@ def find_given_assignments(
         # 获取当前候选对象的状态
         parent_state = curr.objs[parent_candidate_name]
         # 获取符合关系父标签的平面数量
-        if Subpart.SupportSurface in rel.parent_tags and parent_candidate_name!='newroom_0-0' and hasattr(parent_state, "populate_obj"): #TODO YYD
+        if (
+            Subpart.SupportSurface in rel.parent_tags
+            and parent_candidate_name != "newroom_0-0"
+            and hasattr(parent_state, "populate_obj")
+        ):  # TODO YYD
             populate_obj = bpy.data.objects.get(parent_state.populate_obj)
             n_parent_planes = len(
                 curr.planes.get_tagged_planes(populate_obj, rel.parent_tags)
@@ -263,10 +268,9 @@ def find_given_assignments_fast(
     assignments: list[state_def.RelationState] = None,
     parent_obj_name=None,
 ) -> typing.Iterator[list[state_def.RelationState]]:
-
     if assignments is None:
         assignments = []
-      
+
     if len(relations) == 0:
         yield assignments
         return
@@ -296,7 +300,11 @@ def find_given_assignments_fast(
         # 获取当前候选对象的状态
         parent_state = curr.objs[parent_candidate_name]
         # 获取符合关系父标签的平面数量
-        if Subpart.SupportSurface in rel.parent_tags and parent_candidate_name!='newroom_0-0' and hasattr(parent_state, "populate_obj"): #TODO YYD
+        if (
+            Subpart.SupportSurface in rel.parent_tags
+            and parent_candidate_name != "newroom_0-0"
+            and hasattr(parent_state, "populate_obj")
+        ):  # TODO YYD
             populate_obj = bpy.data.objects.get(parent_state.populate_obj)
             n_parent_planes = len(
                 curr.planes.get_tagged_planes(populate_obj, rel.parent_tags)

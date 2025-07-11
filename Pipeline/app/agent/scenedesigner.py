@@ -98,47 +98,54 @@ class SceneDesigner:
 
     def step(self) -> str:
         if self.current_step != 0:
-            eval_results = self.eval(iter=self.current_step - 1)
-            isvalid = self.check_valid(self.current_step - 1)
+            try:
+                eval_results = self.eval(iter=self.current_step - 1)
+                isvalid = self.check_valid(self.current_step - 1)
+            except:
+                print(f"Error: Failed in evaluation in iter {iter-1} !!! Go back to the last iter.")
+                isvalid = False
             if not isvalid:
                 save_dir = os.getenv("save_dir")
                 iter = self.current_step - 1
-                os.system(
-                    f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_failed.jpg"
-                )
-                os.system(
-                    f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_failed.jpg"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_failed.json"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_failed.blend"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_failed.pkl"
-                )
-                os.system(
-                    f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_failed.json"
-                )
+                try:
+                    os.system(
+                        f"cp {save_dir}/record_scene/render_{iter}_marked.jpg {save_dir}/record_scene/render_{iter}_marked_failed.jpg"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_scene/render_{iter}.jpg {save_dir}/record_scene/render_{iter}_failed.jpg"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/metric_{iter}.json {save_dir}/record_files/metric_{iter}_failed.json"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/scene_{iter}.blend {save_dir}/record_files/scene_{iter}_failed.blend"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/env_{iter}.pkl {save_dir}/record_files/env_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/house_bbox_{iter}.pkl {save_dir}/record_files/house_bbox_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/p_{iter}.pkl {save_dir}/record_files/p_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/solved_bbox_{iter}.pkl {save_dir}/record_files/solved_bbox_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/solver_{iter}.pkl {save_dir}/record_files/solver_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/state_{iter}.pkl {save_dir}/record_files/state_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/record_files/terrain_{iter}.pkl {save_dir}/record_files/terrain_{iter}_failed.pkl"
+                    )
+                    os.system(
+                        f"cp {save_dir}/pipeline/metric_{iter}.json {save_dir}/pipeline/metric_{iter}_failed.json"
+                    )
+                except:
+                    pass
                 return "Failed"
 
         """Execute a single step: think and act."""

@@ -15,8 +15,7 @@ conda activate infinigen_python
 # /home/yandan/workspace/infinigen/blender/3.6/python/bin/python3.10 -m pip install dill
 
 # blender viewport
-python -m infinigen.launch_blender -m infinigen_examples.generate_indoors -- --seed 0 --task coarse --output_folder outputs/indoors/coarse_expand_whole_nobedframe -g fast_solve.gin overhead.gin studio.gin -p compose_indoors.terrain_enabled=False
-
+python -m infinigen.launch_blender -m infinigen_examples.generate_indoors --save_dir /mnt/fillipo/yandan/scenesage/record_scene/manus/A_cozy_home_library_with_tall__0/ -- --seed 0 --task coarse  --output_folder outputs/indoors/coarse_expand_whole_nobedframe -g fast_solve.gin overhead.gin studio.gin -p compose_indoors.terrain_enabled=False
 
 # ffmpeg -framerate 2 -i render_%d.jpg -vf "scale=1280:-1:flags=lanczos" -loop 0 output.gif
 # from infinigen_examples.util.visible import invisible_others, visible_others

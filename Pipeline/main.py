@@ -16,7 +16,11 @@ def main(prompt, i):
         save_dir = save_dir + "_" + str(i)
         if not os.path.exists(save_dir):
             os.system(f"mkdir {save_dir}")
-            os.system(f"mkdir {save_dir}/pipeline")
+        
+        os.makedirs(f"{save_dir}/pipeline", exist_ok=True)
+        os.makedirs(f"{save_dir}/args", exist_ok=True)
+        os.makedirs(f"{save_dir}/record_files", exist_ok=True)
+        os.makedirs(f"{save_dir}/record_scene", exist_ok=True)
         os.environ["save_dir"] = save_dir
         os.environ["UserDemand"] = prompt
         if not prompt.strip():
@@ -58,8 +62,8 @@ if __name__ == "__main__":
     # prompts = ["A laundromat with 10 machines around the room, add some washing supplies on each machine. Add other related objects, such as baskets, washthub, and clock in the room."]  # computer room
     # prompts = ["A baby room for a 1-year-old infant. Warm and detailed with daily supplies."]
     # prompts = ["Design an indoor hot spring room. It has some Spa Pool and related objects. With some cabinet and shelf to store towel and cloth and other daily items."]
-    prompts = ["Design me a game room."] 
-    # "Design me an garage of size 6*6. A car is in the middleOn the left side, a heavy-duty metal shelving unit spans the wall, holding various tools, paint cans, car fluids, and labeled plastic bins containing screws, bolts, and nails. Below the shelves, there is a red tool chest on wheels, topped with a small bench vise. The right side features a workbench with pegboard backing, where hand tools (wrenches, hammers, screwdrivers) are neatly hung. A cordless drill, safety goggles, and gloves are also placed here. Beneath the bench are storage cabinets with power tools like a circular saw and a jigsaw. A bike leans against the back wall, beside a stack of seasonal gear boxes and a ladder. A water heater is installed in one back corner, next to a utility sink."] 
+    prompts = ["Design me a bedroom."]
+    # "Design me an garage of size 6*6. A car is in the middleOn the left side, a heavy-duty metal shelving unit spans the wall, holding various tools, paint cans, car fluids, and labeled plastic bins containing screws, bolts, and nails. Below the shelves, there is a red tool chest on wheels, topped with a small bench vise. The right side features a workbench with pegboard backing, where hand tools (wrenches, hammers, screwdrivers) are neatly hung. A cordless drill, safety goggles, and gloves are also placed here. Beneath the bench are storage cabinets with power tools like a circular saw and a jigsaw. A bike leans against the back wall, beside a stack of seasonal gear boxes and a ladder. A water heater is installed in one back corner, next to a utility sink."]
     # prompts = [
     #             # "A pottery studio with a central worktable, shelves filled with clay tools and pots, and a sink in the corner. Include drying racks and a kiln against the back wall.",
     #             "A music practice room with acoustic foam on the walls, a piano, a drum kit, and a few guitars on stands. Add scattered sheet music and a metronome on a side table.",
@@ -78,7 +82,7 @@ if __name__ == "__main__":
             # main(prompt, i)
             # try:
             prompt = p
-            main(prompt, i+2)
+            main(prompt, i)
             # except:
             #     continue
     # import sys

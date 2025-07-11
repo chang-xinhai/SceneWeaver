@@ -24,6 +24,7 @@ class RandomStageExecutor:
     def __init__(self, scene_seed, output_folder: Path, params):
         self.scene_seed = scene_seed
         self.output_folder = output_folder
+      
         self.params = params
 
         self.results = []

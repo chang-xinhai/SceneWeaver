@@ -7,6 +7,7 @@
 import argparse
 import subprocess
 from pathlib import Path
+import os
 
 root = Path(__file__).parent.parent
 
@@ -42,27 +43,30 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--module", type=str, default=None)
     parser.add_argument("-s", "--script", type=str, default=None)
-    parser.add_argument("-i", "--iter", type=int, default=None)
+    parser.add_argument("-i", "--iter", type=int, default=0)
+    parser.add_argument("--save_dir", type=str, default="debug/")
     parser.add_argument("--inplace", type=bool, default=False)
     args, unknown_args = parser.parse_known_args()
 
     import json
-
-    with open("args.json", "r") as f:
-        j = json.load(f)
-        args.iter = j["iter"]
-        args.inplace = j["inplace"]
-    
-    with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
-        j = json.load(f)
-        save_dir = j["save_dir"]
-        
+    save_dir = args.save_dir
+    if os.path.exists(f"{save_dir}/args.json"):
+        with open(f"{save_dir}/args.json", "r") as f:
+            j = json.load(f)
+            args.iter = j["iter"]
+            args.inplace = j["inplace"]
+    if save_dir!="debug/" and save_dir!="debug":
+        with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
+            j = json.load(f)
+            save_dir = j["save_dir"]
+            
 
     cmd_args = [str(get_standalone_blender_path())]
-    if args.inplace:
-        cmd_args += [f"{save_dir}/record_files/scene_{args.iter}.blend"]
-    else:
-        cmd_args += [f"{save_dir}/record_files/scene_{args.iter-1}.blend"]
+    if args.iter != 0:
+        if args.inplace:
+            cmd_args += [f"{save_dir}/record_files/scene_{args.iter}.blend"]
+        else:
+            cmd_args += [f"{save_dir}/record_files/scene_{args.iter-1}.blend"]
     if args.module is not None:
         # cmd_args += HEADLESS_ARGS
 
@@ -84,6 +88,9 @@ if __name__ == "__main__":
 
     if len(unknown_args):
         cmd_args += unknown_args
+        
+    cmd_args += ["--save_dir", save_dir]
+
 
     print(" ".join(cmd_args))
 

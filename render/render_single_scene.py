@@ -283,7 +283,7 @@ def setup_camera(margin=1.05, resolution=720):
 
 # === 4. 创建旋转轴空对象 ===
 def setup_rotation_anchor():
-    try: 
+    try:
         anchor = bpy.data.objects.get("RotationAnchor")
     except:
         anchor = bpy.data.objects.new("RotationAnchor", None)

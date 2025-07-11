@@ -2,6 +2,20 @@ import bpy
 from mathutils import Matrix, Vector
 import mathutils
 
+def link_to_collection(collection_name="mark",obj=None):
+    # Create (or get) a collection named "mark"
+    if collection_name in bpy.data.collections:
+        mark_collection = bpy.data.collections[collection_name]
+    else:
+        mark_collection = bpy.data.collections.new(collection_name)
+        bpy.context.scene.collection.children.link(mark_collection)
+
+    # Remove obj from other collections to avoid duplication
+    for coll in obj.users_collection:
+        coll.objects.unlink(obj)
+
+    # Link obj to the "mark" collection
+    mark_collection.objects.link(obj)
 
 def add_rotated_bbox_wireframe(obj, cat_name):
     if obj.type != "MESH":
@@ -41,8 +55,13 @@ def add_rotated_bbox_wireframe(obj, cat_name):
     bbox_cube.display_type = "WIRE"
     bbox_cube.hide_render = False
 
-    add_text_on_bbox_surface(bbox_cube, text_content=cat_name)
-    add_front_arrow_to_bbox(bbox_cube)
+    link_to_collection(obj=bbox_cube)
+
+    text_obj, bg_plane = add_text_on_bbox_surface(bbox_cube, text_content=cat_name)
+    link_to_collection(obj=text_obj)
+    link_to_collection(obj=bg_plane)
+    arrow_obj = add_front_arrow_to_bbox(bbox_cube)
+    link_to_collection(obj=arrow_obj)
     return
 
 def create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=2, shaft_radius=0.02, head_length=0.3, head_radius=0.1,
@@ -99,6 +118,7 @@ def create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=2, shaft_rad
     else:
         arrow.data.materials.append(mat)
 
+    return arrow
 
 def add_front_arrow_to_bbox(bbox_obj, length=0.5, color=(1, 0.5, 0, 1)):
     
@@ -117,14 +137,14 @@ def add_front_arrow_to_bbox(bbox_obj, length=0.5, color=(1, 0.5, 0, 1)):
     head_radius = 0.1 #bbox_obj.dimensions[0]*0.1
 
     # Call arrow creation utility (assumes get_arrow or create_arrow is defined)
-    create_arrow(start=start, 
+    arrow = create_arrow(start=start, 
                  direction=direction, 
                  shaft_length=shaft_length, 
                  shaft_radius = shaft_radius,
                  head_length=head_length, 
                  head_radius=head_radius,
                  color=color)
-
+    return arrow
 
 def get_coord(solver):
    
@@ -160,6 +180,7 @@ def get_coord(solver):
             (-text_obj.dimensions[0] * text_obj.scale[0] / 2, 0.1, bbox_size.z / 2 + 0.02)
         )
         text_obj.location = bbox_center + text_offset
+        return text_obj
 
 
     def add_circle(x,y,z=0):
@@ -195,7 +216,9 @@ def get_coord(solver):
     for x in range(round(roomsize[0])+1):
         for y in range(round(roomsize[1])+1):
             circle = add_circle(x,y,z=z)
-            add_coordinate(circle,x,y,z)
+            link_to_collection(obj=circle)
+            text_obj = add_coordinate(circle,x,y,z)
+            link_to_collection(obj=text_obj)
     return 
 
 
@@ -208,16 +231,20 @@ def get_bbox(state):
         if cat_name.endswith("Factory"):
             cat_name = cat_name[:-7]
         add_rotated_bbox_wireframe(obj, cat_name)
-    save_path = "debug.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
     return
 
 def get_arrow(state):
 
     # Example usage:
-    create_arrow(start=(0, 0, 0), direction=(1, 0, 0), shaft_length=1,color=(1, 0, 0, 1))
-    create_arrow(start=(0, 0, 0), direction=(0, 1, 0), shaft_length=1,color=(0, 1, 0, 1))
-    create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=1,color=(0, 0, 1, 1))  
+    arrow_x = create_arrow(start=(0, 0, 0), direction=(1, 0, 0), shaft_length=1,color=(1, 0, 0, 1))
+    arrow_y = create_arrow(start=(0, 0, 0), direction=(0, 1, 0), shaft_length=1,color=(0, 1, 0, 1))
+    arrow_z = create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=1,color=(0, 0, 1, 1))  
+    link_to_collection(obj=arrow_x)
+    link_to_collection(obj=arrow_y)
+    link_to_collection(obj=arrow_z)
+    return
 
 
 def add_text_on_bbox_surface(bbox_obj, text_content="ObjectName"):
@@ -282,7 +309,7 @@ def add_text_on_bbox_surface(bbox_obj, text_content="ObjectName"):
     # Optional: parent text and background to bbox
     #    text_obj.parent = bbox_obj
     bg_plane.parent = text_obj
-
+    
     return text_obj, bg_plane
 
 

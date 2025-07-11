@@ -201,4 +201,4 @@ if __name__ == "__main__":
 
     # TODO: Generate the room with the room dimensions
     create_room(4.0, 4.0, 2.5)
-    bpy.ops.wm.save_as_mainfile(filepath="debug.blend")
+    # bpy.ops.wm.save_as_mainfile(filepath="debug.blend")

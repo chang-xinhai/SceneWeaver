@@ -188,8 +188,8 @@ def populate_state_placeholders_mid(
             continue
         # 将当前对象的 objkey 加入目标列表
         targets.append(objkey)
-    save_path = "debug.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
     update_state_mesh_objs = []  # 用于存放需要更新的网格对象信息
     # 遍历目标对象，执行生成和处理
     for i, objkey in enumerate(targets):
@@ -206,12 +206,13 @@ def populate_state_placeholders_mid(
         update_state_mesh_objs.append((objkey, old_objname))  # 将旧对象信息加入更新列表
 
         *_, inst_seed = parse_asset_name(placeholder.name)  # 解析资产名称并提取实例种子
-        if "SinkFactory" in objkey:
-            import pdb
+        
+            
         # # 使用生成器生成新的对象，并设置位置、旋转等属性 'ThreedFrontCategoryFactory(2179127).spawn_asset(620454)'
         populate_obj_name = placeholder.name.replace(
             "bbox_placeholder", "spawn_asset"
         ).replace("spawn_placeholder", "spawn_asset")
+
         if any(obj.name == populate_obj_name for obj in unique_assets.objects):
             obj = unique_assets.objects[populate_obj_name]
             obj.location = placeholder.location
@@ -381,8 +382,8 @@ def update_asset_location(state: State, filter=None, final=False, update_trimesh
             continue
         # 将当前对象的 objkey 加入目标列表
         targets.append(objkey)
-    save_path = "debug.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
     update_state_mesh_objs = []  # 用于存放需要更新的网格对象信息
     # 遍历目标对象，执行生成和处理
     for i, objkey in enumerate(targets):

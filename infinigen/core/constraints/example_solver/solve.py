@@ -691,7 +691,87 @@ class Solver:
 
         return self.state
 
+    @gin.configurable
+    def add_obj_crowd(
+        self,
+        # filter_domain: r.Domain,
+        iter,
+        var_assignments: dict[str, str],
+    ):
+        self.del_no_relation_objects()
+
+        for i in range(100):  
+            parent_obj_name = "5778780_LargeShelfFactory"
+            category = "BookStackFactory"
+  
+            against_wall = False
+            on_floor = False
+            relation = "on"
+
+            filter_domain = self.calc_filter_domain(
+                category,
+                num=None,
+                on_floor=on_floor,
+                against_wall=against_wall,
+                parent_obj_name=parent_obj_name,
+                relation=relation,
+            )
+            import random
+ 
+            # module_and_class =  random.choice(["table_decorations.BookStackFactory"])
+            module_and_class =   random.choice(['tableware.BottleFactory', 'tableware.BowlFactory', 'tableware.CanFactory', 'tableware.CupFactory', 'tableware.FoodBagFactory', 'tableware.FoodBoxFactory', 'tableware.FruitContainerFactory', 'tableware.JarFactory', 'tableware.PlateFactory', 'tableware.PotFactory','tableware.WineglassFactory'])
+            module_name, class_name = module_and_class.rsplit(".", 1)
+            module = importlib.import_module(
+                "infinigen.assets.objects." + module_name
+            )
+            class_obj = getattr(module, class_name)
+            gen_class = class_obj
+
+            # gen_class = GeneralObjavFactory
+            # size = [  ]
+            search_rels = filter_domain.relations
+            # 筛选出有效的关系，只选择非否定关系
+            search_rels = [
+                rd
+                for rd in search_rels
+                if not isinstance(rd[0], cl.NegatedRelation)
+            ]
+
+            assign = propose_relations.find_given_assignments(
+                self.state, search_rels, parent_obj_name=parent_obj_name
+            )
+            for i, assignments in enumerate(assign):
+                found_tags = usage_lookup.usages_of_factory(gen_class)
+                move = moves.Addition(
+                    names=[
+                        f"{np.random.randint(1e6):04d}_{gen_class.__name__}"
+                    ],  # decided later # 随机生成一个名称，基于生成器类的名称
+                    gen_class=gen_class,  # 使用传入的生成器类
+                    relation_assignments=assignments,  # 传入分配的关系
+                    temp_force_tags=found_tags,  # 临时强制标签
+                )
+
+                while True:
+                    target_name = f"{np.random.randint(1e7)}_{class_name}"
+                    if target_name not in self.state.objs:
+                        break
+
+                success = move.apply_random(
+                    self.state,
+                    target_name,
+                    gen_class,
+                )
+
+                # if not success:
+                #     bpy.data.objects.remove(self.state.objs[target_name].obj)
+                #     del self.state.objs[target_name]
+                break
+                   
+        return self.state
+
     def modify_graph(self):
+        import pdb
+        pdb.set_trace()
         layouts = dict()
 
         for iter in [0, 1, 3, 4, 5, 6, 7, 8, "8_coord"]:
@@ -1037,10 +1117,10 @@ class Solver:
                     and instance["parent"] is not None
                     and len(instance["parent"]) > 0
                 ):
-                    if isinstance(instance["parent"][0],str):
+                    if isinstance(instance["parent"][0], str):
                         parent_type = instance["parent"][0]
-                    elif isinstance(instance["parent"][0],list):
-                         parent_type = instance["parent"][0][0]
+                    elif isinstance(instance["parent"][0], list):
+                        parent_type = instance["parent"][0][0]
                     else:
                         AssertionError("order error")
                     if parent_type in graph:
@@ -1163,7 +1243,7 @@ class Solver:
                         self.state, search_rels, parent_obj_name=parent_obj_name
                     )
                     assignments = list(assign)
-                    if len(assignments)==0:
+                    if len(assignments) == 0:
                         assignments = assignments
                     else:
                         assignments = assignments[0]
@@ -1691,12 +1771,14 @@ class Solver:
                 try:
                     parent_key, parent_num, relation = value[num]["parent"]
                     try:
-                        parent_obj_name = self.Placement_big[parent_key][parent_num]["name"]
+                        parent_obj_name = self.Placement_big[parent_key][parent_num][
+                            "name"
+                        ]
                     except:
                         parent_obj_name = self.Placement[parent_key][parent_num]["name"]
                 except:
                     parent_obj_name, relation = value[num]["parent"]
-                    
+
                 var_assignments = {
                     cu.variable_room: "newroom_0-0",
                     cu.variable_obj: parent_obj_name,

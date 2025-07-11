@@ -184,8 +184,8 @@ def compose_indoors(
 
     record_success()
 
-    save_path = "debug.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
     return {
         "height_offset": height,
         "whole_bbox": house_bbox,

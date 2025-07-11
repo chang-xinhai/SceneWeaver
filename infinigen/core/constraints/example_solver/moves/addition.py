@@ -83,7 +83,10 @@ def sample_rand_placeholder(gen_class: type[AssetFactory], dimension=None):
     butil.put_in_collection(
         list(butil.iter_object_tree(new_obj)), butil.get_collection("placeholders")
     )
+    # print("before",new_obj,len(new_obj.data.polygons))
     parse_scene.preprocess_obj(new_obj)
+    # print("after",new_obj,len(new_obj.data.polygons))
+    # bpy.ops.wm.save_as_mainfile(filepath="debug.blend")
     tagging.tag_canonical_surfaces(new_obj)
 
     return new_obj, gen
@@ -153,13 +156,12 @@ class Addition(moves.Move):
         logger.debug(f"{self} {success=}")
         return success
 
-    def apply_random(self, state: State,target_name, gen_class,expand_collision=False):  # mark
-
+    def apply_random(
+        self, state: State, target_name, gen_class, expand_collision=False
+    ):  # mark
         assert target_name not in state.objs
 
-        self._new_obj, gen = sample_rand_placeholder(
-            gen_class, dimension=(1, 1, 1)
-        )
+        self._new_obj, gen = sample_rand_placeholder(gen_class, dimension=(1, 1, 1))
 
         parse_scene.add_to_scene(state.trimesh_scene, self._new_obj, preprocess=True)
 
@@ -178,10 +180,9 @@ class Addition(moves.Move):
         success = dof.try_apply_relation_constraints(
             state, target_name, expand_collision=expand_collision
         )  # check
-       
+
         logger.debug(f"{self} {success=}")
         return success
-
 
     def remove_onfloor_rel(self, gen_class, gen, T=0.3):
         from infinigen_examples.steps.tools import export_relation
@@ -238,7 +239,9 @@ class Addition(moves.Move):
         )
 
         state.objs[target_name] = objstate
-        parent_planes = dof.apply_relations_surfacesample(state, target_name, closest_surface=True)
+        parent_planes = dof.apply_relations_surfacesample(
+            state, target_name, closest_surface=True
+        )
         if parent_planes is None:
             return False
         # name = "SofaFactory(1351066).bbox_placeholder(2179127)"

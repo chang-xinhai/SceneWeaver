@@ -204,8 +204,10 @@ def stable_against(
         res = projected_a.overlaps(projected_b)
     elif relation.check_z:
         res = projected_a.within(projected_b.buffer(1e-2))
-        if (use_initial and not res) or (not use_initial and sa.dof_matrix_translation is not None and not res):
-        # if use_initial and not res and not fix_pos:
+        if (use_initial and not res) or (
+            not use_initial and sa.dof_matrix_translation is not None and not res
+        ):
+            # if use_initial and not res and not fix_pos:
             move_vectors = []
             vertices = list(np.array(projected_a.exterior.coords))
             for point in vertices:
@@ -239,7 +241,7 @@ def stable_against(
                     np.array(move_vector)[None, :]
                     / np.linalg.norm(np.array(move_vector))
                 )
-            if move_vectors!=[]:
+            if move_vectors != []:
                 gradient = np.mean(np.concatenate(move_vectors, axis=0), axis=0)
                 if obj_name == "60910_nightstand":
                     a = 1

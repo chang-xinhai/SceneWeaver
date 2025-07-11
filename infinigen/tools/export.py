@@ -65,7 +65,7 @@ def remove_shade_smooth(obj):
             smooth_node = geo_group.nodes["Set Shade Smooth"]
         else:
             continue
-        try: 
+        try:
             link = smooth_node.inputs[0].links[0]
         except:
             continue
@@ -177,7 +177,6 @@ def clean_names(obj=None):
                     ".", "_"
                 )  # if uv has '.' in name the node will export wrong in USD
 
-    
     # for mat in bpy.data.materials:
     for i in range(len(bpy.data.materials)):
         mat = bpy.data.materials[i]
@@ -199,10 +198,7 @@ def remove_obj_parents(obj=None):
         obj.parent = None
         obj.matrix_world.translation = old_location
 
-
-def delete_objects():
-    logging.info("Deleting placeholders collection")
-    collection_name = "placeholders"
+def delete_collection(collection_name):
     collection = bpy.data.collections.get(collection_name)
 
     if collection:
@@ -220,6 +216,15 @@ def delete_objects():
 
         delete_child_collections(collection)
         bpy.data.collections.remove(collection)
+
+def delete_objects():
+    logging.info("Deleting placeholders collection")
+    collection_name = "placeholders"
+    delete_collection(collection_name)
+
+    collection_name = "mark"
+    delete_collection(collection_name)
+
 
     if bpy.data.objects.get("Grid"):
         bpy.data.objects.remove(bpy.data.objects["Grid"], do_unlink=True)
@@ -525,7 +530,7 @@ def bake_metal(
         try:
             links.remove(outputNode.inputs[0].links[0])
         except:
-            print(f"error removing {outputNode.inputs[0].links[0]}" )
+            print(f"error removing {outputNode.inputs[0].links[0]}")
             continue
         links.new(outputNode.inputs[0], principled_bsdf_node.outputs[0])
 
@@ -945,7 +950,7 @@ def export_curr_scene(
 
     for obj, status in obj_views.items():
         obj.hide_render = status
- 
+
     clean_names()
 
     for obj in bpy.data.objects:
@@ -959,7 +964,7 @@ def export_curr_scene(
             if obj.type == "MESH" and len(obj.data.polygons) == 0:
                 logging.info(f"{obj.name} has no faces, removing...")
                 bpy.data.objects.remove(obj, do_unlink=True)
-    
+
     if individual_export:
         bpy.ops.object.select_all(action="SELECT")
         bpy.ops.object.location_clear()  # send all objects to (0,0,0)
@@ -987,8 +992,50 @@ def export_curr_scene(
         run_blender_export(export_file, format, vertex_colors, individual_export)
 
         return export_file
+    
+import re
 
+import re
+from pathlib import Path
 
+import re
+from pathlib import Path
+
+def find_blend_file(filenames):
+    """Returns the matching .blend file as a Path object.
+    
+    Rules:
+    1. If only one .blend file exists, return it
+    2. If multiple .blend files exist and follow scene_{i}.blend pattern:
+       - Return the one with highest scene number
+    3. Otherwise return None
+    """
+    # Convert all items to Path objects
+    paths = [Path(f) if isinstance(f, str) else f for f in filenames]
+    
+    # Filter .blend files using Path.suffix
+    blend_files = [f for f in paths if f.suffix == '.blend']
+    
+    if not blend_files:
+        return None
+    elif len(blend_files) == 1:
+        return blend_files[0]  # Return single match as Path
+    else:
+        # Check for scene_{i}.blend pattern
+        scene_files = []
+        pattern = re.compile(r'scene_(\d+)\.blend$')
+        
+        for path in blend_files:
+            match = pattern.search(path.name)
+            if match:
+                scene_files.append((int(match.group(1)), path))
+        
+        if scene_files:
+            # Return Path with highest scene number
+            return max(scene_files, key=lambda x: x[0])[1]
+        else:
+            return None  # Multiple .blend files but no scene pattern
+        
 def main(args):
     args.output_folder.mkdir(exist_ok=True)
     logging.basicConfig(
@@ -998,25 +1045,24 @@ def main(args):
     )
 
     targets = sorted(list(args.input_folder.iterdir()))
-    for blendfile in targets:
-        if blendfile.stem == "solve_state":
-            shutil.copy(blendfile, args.output_folder / "solve_state.json")
+    blendfile = find_blend_file(targets)
 
-        if not blendfile.suffix == ".blend":
-            print(f"Skipping non-blend file {blendfile}")
-            continue
-
-        folder = export_scene(
-            blendfile,
-            args.output_folder,
-            format=args.format,
-            image_res=args.resolution,
-            vertex_colors=args.vertex_colors,
-            individual_export=args.individual,
-            omniverse_export=args.omniverse,
-        )
-        # wanted to use shutil here but kept making corrupted files
-        subprocess.call(["zip", "-r", str(folder.with_suffix(".zip")), str(folder)])
+    for file in targets:
+        if file.stem == "solve_state":
+            shutil.copy(file, args.output_folder / "solve_state.json")
+        
+    folder = export_scene(
+        blendfile,
+        args.output_folder,
+        format=args.format,
+        image_res=args.resolution,
+        vertex_colors=args.vertex_colors,
+        individual_export=args.individual,
+        omniverse_export=args.omniverse,
+    )
+    
+    # # wanted to use shutil here but kept making corrupted files
+    # subprocess.call(["zip", "-r", str(folder.with_suffix(".zip")), str(folder)])
 
     bpy.ops.wm.quit_blender()
 

@@ -77,7 +77,6 @@ class InitGPTExecute(BaseTool):
             os.system(
                 f"cp  {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json"
             )
-
             success = update_infinigen(action, iter, json_name, ideas=ideas)
             assert success
 

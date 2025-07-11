@@ -580,8 +580,8 @@ def compose_indoors(output_folder: Path, scene_seed: int, iter, action, json_nam
         "populate_assets", populate.populate_state_placeholders_mid, state, use_chance=False
     )
     # render_scene(p,solved_bbox,camera_rigs,state,filename="render_gpt_turbo.jpg")
-    save_path = "debug.blend"
-    bpy.ops.wm.save_as_mainfile(filepath=save_path)
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
 
     p.run_stage(
         "populate_intermediate_pholders",

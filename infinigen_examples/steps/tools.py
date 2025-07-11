@@ -28,7 +28,7 @@ from infinigen_examples.util.generate_indoors_util import (
     place_cam_overhead,
     restrict_solving,
 )
-from infinigen_examples.util.visible import invisible_others, visible_others
+from infinigen_examples.util.visible import invisible_others, visible_others, visible_layer,visible_layers
 
 
 def change_attr(obj, condition, replace_attr, visited=None, path=""):
@@ -324,10 +324,24 @@ def calc_position_bias(obj):
     return offset_vector
 
 
-def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg",transparent=False):
-    rooms_meshed = butil.get_collection("placeholders:room_meshes")
-    rooms_split = room_dec.split_rooms(list(rooms_meshed.objects))
+def delete_collection_and_objects(collection_name):
+    if collection_name not in bpy.data.collections:
+        print(f"Collection '{collection_name}' not found.")
+        return
 
+    collection = bpy.data.collections[collection_name]
+
+    # Delete all objects in the collection
+    for obj in list(collection.objects):  # Make a copy of the list to avoid modification during iteration
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    bpy.data.collections.remove(collection)
+    print(f"Collection '{collection_name}' and its objects have been deleted.")
+
+
+
+
+def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg",transparent=False):
     def invisible_room_ceilings():
         rooms_split["exterior"].hide_viewport = True
         rooms_split["exterior"].hide_render = True
@@ -338,7 +352,11 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
             [o for o in bpy.data.objects if "CeilingLight" in o.name]
         )
 
-    p.run_stage("invisible_room_ceilings", invisible_room_ceilings, use_chance=False)
+    mesh_name = "newroom_0-0.floor"
+    if mesh_name not in bpy.data.objects:
+        rooms_meshed = butil.get_collection("placeholders:room_meshes")
+        rooms_split = room_dec.split_rooms(list(rooms_meshed.objects))
+        p.run_stage("invisible_room_ceilings", invisible_room_ceilings, use_chance=False)
 
     p.run_stage(
         "overhead_cam",
@@ -347,6 +365,7 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
         bbox=solved_bbox,
         use_chance=False,
     )
+    delete_collection_and_objects("mark")
 
     # camera_rigs[0].rotation_euler = [0,0,1.57]
     bpy.context.scene.camera = camera_rigs[0]
@@ -365,11 +384,13 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     bpy.ops.render.render(write_still=True)
     visible_others()
 
+    
+    invisible_others(hide_all=True)
+
     get_bbox(state)
     get_arrow(state)
     get_coord(solver)
 
-    invisible_others(hide_all=True)
     # Set resolution
     bpy.context.scene.render.resolution_x = 1920
     bpy.context.scene.render.resolution_y = 1080
@@ -385,9 +406,10 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     bpy.context.scene.render.filepath = os.path.join(filename_bbox)
     bpy.ops.render.render(write_still=True)
     visible_others(view_all=True)
+    invisible_others(hide_placeholder=True)
 
     merge_two_image(filename, filename_bbox, transparent=transparent)
-
+    
     # modified_output_path = bpy.path.abspath("render_8_coord.jpg")
     # world_to_image(filename, modified_output_path)
 
@@ -680,7 +702,11 @@ def load_record(iter):
 
     if not bpy.data.objects.get("newroom_0-0"):
         bpy.ops.wm.open_mainfile(filepath=save_path, load_ui=False, use_scripts=False)
-    
+
+    # visible_layer("placeholders")
+    visible_layers()
+    # bpy.ops.wm.save_as_mainfile(filepath="debug.blend")
+
     with open(f"{save_dir}/record_files/state_{iter}.pkl", "rb") as file:
         state = dill.load(file)
     # print("\n".join(state.trimesh_scene.geometry.keys()))

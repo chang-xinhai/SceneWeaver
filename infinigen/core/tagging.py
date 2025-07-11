@@ -235,7 +235,12 @@ def tag_object(obj, name=None, mask=None):
 
 
 def vert_mask_to_tri_mask(obj, vert_mask, require_all=True):
+
     arr = np.zeros(len(obj.data.polygons) * 3)
+
+    # save_path = "debug.blend"
+    # bpy.ops.wm.save_as_mainfile(filepath=save_path)
+
     obj.data.polygons.foreach_get("vertices", arr)
     face_vert_idxs = arr.reshape(-1, 3).astype(int)
 

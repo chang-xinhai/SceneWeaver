@@ -121,7 +121,7 @@ def compose_indoors(
     # p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
     os.environ["JSON_RESULTS"] = json_name
     save_dir = os.getenv("save_dir")
-    
+
     # if iter == 0 and action != "add_relation":
     if True:
         p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
@@ -140,7 +140,7 @@ def compose_indoors(
         )
         view_all()
         state.__post_init__()
-        
+
         solved_rooms = [bpy.data.objects["newroom_0-0"]]
 
         height = complete_structure.finalize_scene(
@@ -156,7 +156,7 @@ def compose_indoors(
             camera_rigs,
         )
         # invisible_wall()
-       
+
     save_dir = os.getenv("save_dir")
     save_path = f"{save_dir}/record_files/scene_{iter}.blend"
     bpy.ops.file.make_paths_absolute()

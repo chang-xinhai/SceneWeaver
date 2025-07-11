@@ -135,7 +135,9 @@ class ObjaverseCategoryFactory(ObjaverseFactory):
 
         if self.tag_support:
             tag_support_surfaces(imported_obj)
-
+        # import pdb
+        # pdb.set_trace()
+        print("-----------------------------------",filename)
         if imported_obj:
             return imported_obj
         else:
