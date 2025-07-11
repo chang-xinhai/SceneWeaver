@@ -3,7 +3,7 @@
 <img src="docs/images/sceneweaver.png" width="500"></img>
 </div>
 
-# [SceneWeaver: All-in-One 3D Scene Synthesis with an Extensible and Self-Reflective Agent](https://infinigen.org)
+# SceneWeaver: All-in-One 3D Scene Synthesis with an Extensible and Self-Reflective Agent
 
 [**Getting Started**](#getting-started)
 | [**Website**](https://infinigen.org/)

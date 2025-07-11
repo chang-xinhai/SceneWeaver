@@ -4,36 +4,32 @@
 
 <h2 align="center">
   <b>SceneWeaver: All-in-One 3D Scene Synthesis with an Extensible and Self-Reflective Agent</b>
-
-  <b><i>CVPR 2024 Highlight </i> ⭐</b>
 </h2>
  <div align="center" margin-bottom="6em">
   <a target="_blank" href="https://yandanyang.github.io/">Yandan Yang</a><sup>✶</sup>,
   <a target="_blank" href="https://buzz-beater.github.io/">Baoxiong Jia</a><sup>✶</sup>,
-  <a target="_blank" href="https://github.com/peryion">Peiyuan Zhi</a>,
+  <a target="_blank" href="https://github.com/hiShujie">Shujie Zhang</a>,
   <a target="_blank" href="https://siyuanhuang.com/">Siyuan Huang</a>
 
 </div>
 <br>
 <div align="center">
     <!-- <a href="https://cvpr.thecvf.com/virtual/2023/poster/22552" target="_blank"> -->
-    <a>
-      <img src="https://img.shields.io/badge/CVPR 2024-Highlight-red"></a> 
     <a href="https://arxiv.org/abs/2404.09465" target="_blank"> 
       <img src="https://img.shields.io/badge/Paper-arXiv-green" alt="Paper arXiv"></a>
-    <a href="https://physcene.github.io" target="_blank">
-      <img src="https://img.shields.io/badge/Page-PhyScene-blue" alt="Project Page"/></a>
+    <a href="https://sceneweaver.github.io" target="_blank">
+      <img src="https://img.shields.io/badge/Page-SceneWeaver-blue" alt="Project Page"/></a>
 </div>
 <br>
 <div style="text-align: center">
-<img src="demo/teaser.png"  />
+<img src="docs/images/teaser.jpg"  />
 </div>
 
 
 <!-- This is the official repository of [**PhyScene: Physically Interactable 3D Scene Synthesis for Embodied AI**](https://arxiv.org/abs/2211.05272). -->
 
 
-For more information, please visit our [**project page**](https://physcene.github.io).
+For more information, please visit our [**project page**](https://sceneweaver.github.io).
 
 
 
