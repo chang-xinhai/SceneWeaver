@@ -24,7 +24,7 @@ class RandomStageExecutor:
     def __init__(self, scene_seed, output_folder: Path, params):
         self.scene_seed = scene_seed
         self.output_folder = output_folder
-      
+
         self.params = params
 
         self.results = []
@@ -32,7 +32,7 @@ class RandomStageExecutor:
     def _should_run_stage(self, name, use_chance, prereq):
         if prereq is not None:
             try:
-                if prereq=="terrain":
+                if prereq == "terrain":
                     return False
                 e = next(e for e in self.results if e["name"] == prereq)
             except StopIteration:

@@ -105,13 +105,14 @@ def add_rule(solver, state, p):
     # endregion
     return state, solver
 
+
 def add_obj_crowd(solver, state, p):
     # region load acdc
     def obj_crowd():
         solver.add_obj_crowd(
             iter=iter,
             var_assignments=vars,
-            )
+        )
         return solver.state
 
     state = p.run_stage("add_obj_crowd", obj_crowd, use_chance=False, default=state)

@@ -28,7 +28,12 @@ from infinigen_examples.util.generate_indoors_util import (
     place_cam_overhead,
     restrict_solving,
 )
-from infinigen_examples.util.visible import invisible_others, visible_others, visible_layer,visible_layers
+from infinigen_examples.util.visible import (
+    invisible_others,
+    visible_layer,
+    visible_layers,
+    visible_others,
+)
 
 
 def change_attr(obj, condition, replace_attr, visited=None, path=""):
@@ -332,16 +337,18 @@ def delete_collection_and_objects(collection_name):
     collection = bpy.data.collections[collection_name]
 
     # Delete all objects in the collection
-    for obj in list(collection.objects):  # Make a copy of the list to avoid modification during iteration
+    for obj in list(
+        collection.objects
+    ):  # Make a copy of the list to avoid modification during iteration
         bpy.data.objects.remove(obj, do_unlink=True)
 
     bpy.data.collections.remove(collection)
     print(f"Collection '{collection_name}' and its objects have been deleted.")
 
 
-
-
-def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg",transparent=False):
+def render_scene(
+    p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg", transparent=False
+):
     def invisible_room_ceilings():
         rooms_split["exterior"].hide_viewport = True
         rooms_split["exterior"].hide_render = True
@@ -356,7 +363,9 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     if mesh_name not in bpy.data.objects:
         rooms_meshed = butil.get_collection("placeholders:room_meshes")
         rooms_split = room_dec.split_rooms(list(rooms_meshed.objects))
-        p.run_stage("invisible_room_ceilings", invisible_room_ceilings, use_chance=False)
+        p.run_stage(
+            "invisible_room_ceilings", invisible_room_ceilings, use_chance=False
+        )
 
     p.run_stage(
         "overhead_cam",
@@ -373,10 +382,12 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     invisible_others(hide_placeholder=True)
     bpy.context.scene.render.resolution_x = 1920
     bpy.context.scene.render.resolution_y = 1080
-    
+
     if transparent:
         bpy.context.scene.render.image_settings.file_format = "PNG"
-        bpy.context.scene.render.image_settings.color_mode = 'RGBA'  # Include alpha channel
+        bpy.context.scene.render.image_settings.color_mode = (
+            "RGBA"  # Include alpha channel
+        )
         bpy.context.scene.render.film_transparent = True  # For Cycles
     else:
         bpy.context.scene.render.image_settings.file_format = "JPEG"
@@ -384,7 +395,6 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     bpy.ops.render.render(write_still=True)
     visible_others()
 
-    
     invisible_others(hide_all=True)
 
     get_bbox(state)
@@ -409,7 +419,7 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     invisible_others(hide_placeholder=True)
 
     merge_two_image(filename, filename_bbox, transparent=transparent)
-    
+
     # modified_output_path = bpy.path.abspath("render_8_coord.jpg")
     # world_to_image(filename, modified_output_path)
 
@@ -417,8 +427,9 @@ def render_scene(p, solved_bbox, camera_rigs, state, solver, filename="debug.jpg
     return
 
 
-def merge_two_image(background_imgfile, foregroung_imgfile,transparent=False):
+def merge_two_image(background_imgfile, foregroung_imgfile, transparent=False):
     from PIL import Image
+
     if transparent:
         bg_image = Image.open(background_imgfile).convert("RGBA")
     else:
@@ -524,7 +535,6 @@ def save_record(state, solver, terrain, house_bbox, solved_bbox, iter, p):
     bpy.ops.file.make_paths_absolute()
     bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=save_path, check_existing=False)
-
 
     # COMBINED_ATTR_NAME = "MaskTag"
     # obj = bpy.data.objects.get("MetaCategoryFactory(8823346).spawn_asset(6550758)")
@@ -770,7 +780,7 @@ def load_record(iter):
         # except:
         #     pass
     state.__post_init__()
-    
+
     solver.state = state
 
     with open(f"{save_dir}/record_files/env_{iter}.pkl", "rb") as f:

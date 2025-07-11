@@ -11,12 +11,12 @@ from typing import Union
 
 import bpy
 import numpy as np
+from mathutils import Vector
 
 import infinigen.core.util.blender as butil
 from infinigen.core import surface
 from infinigen.core.nodes.node_wrangler import Nodes, NodeWrangler
 from infinigen.core.util.logging import lazydebug
-from mathutils import Vector
 
 from . import tags as t
 
@@ -235,7 +235,6 @@ def tag_object(obj, name=None, mask=None):
 
 
 def vert_mask_to_tri_mask(obj, vert_mask, require_all=True):
-
     arr = np.zeros(len(obj.data.polygons) * 3)
 
     # save_path = "debug.blend"
@@ -334,8 +333,8 @@ def _name_for_tagval(i: int) -> str | None:
 def union_object_tags(obj):
     if COMBINED_ATTR_NAME not in obj.data.attributes:
         return set()
-    if obj.name=="MetaCategoryFactory(8823346).spawn_asset(6550758)":
-        a =1
+    if obj.name == "MetaCategoryFactory(8823346).spawn_asset(6550758)":
+        a = 1
 
     masktag = surface.read_attr_data(obj, COMBINED_ATTR_NAME)
     res = set()
@@ -466,7 +465,6 @@ def extract_mask(
                 f"extract_mask({obj.name=}) got {res=} with {len(res.data.polygons)=}"
             )
     elif res is None:
-
         logger.warning(f"extract_mask({obj.name=}) failed to extract any faces")
         return butil.spawn_vert()
 
@@ -503,7 +501,6 @@ def tag_support_surfaces(obj, angle_threshold=0.1):
 
         tag_object(mesh_obj, name=t.Subpart.SupportSurface.value, mask=support_mask)
 
-        
         print(
             f"Tagged {support_mask.sum()} faces as 'support' in object {mesh_obj.name}"
         )

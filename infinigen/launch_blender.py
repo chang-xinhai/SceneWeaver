@@ -5,9 +5,9 @@
 # Authors: Alexander Raistrick
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
-import os
 
 root = Path(__file__).parent.parent
 
@@ -49,17 +49,17 @@ if __name__ == "__main__":
     args, unknown_args = parser.parse_known_args()
 
     import json
+
     save_dir = args.save_dir
     if os.path.exists(f"{save_dir}/args.json"):
         with open(f"{save_dir}/args.json", "r") as f:
             j = json.load(f)
             args.iter = j["iter"]
             args.inplace = j["inplace"]
-    if save_dir!="debug/" and save_dir!="debug":
-        with open("/home/yandan/workspace/infinigen/roominfo.json","r") as f:
+    if save_dir != "debug/" and save_dir != "debug":
+        with open("/home/yandan/workspace/infinigen/roominfo.json", "r") as f:
             j = json.load(f)
             save_dir = j["save_dir"]
-            
 
     cmd_args = [str(get_standalone_blender_path())]
     if args.iter != 0:
@@ -88,9 +88,8 @@ if __name__ == "__main__":
 
     if len(unknown_args):
         cmd_args += unknown_args
-        
-    cmd_args += ["--save_dir", save_dir]
 
+    cmd_args += ["--save_dir", save_dir]
 
     print(" ".join(cmd_args))
 

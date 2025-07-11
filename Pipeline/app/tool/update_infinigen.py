@@ -1,36 +1,38 @@
+import argparse
 import json
 import os
-import subprocess
 import socket
+import subprocess
 import time
-import argparse
 
-def send_command(host='localhost', port=12345, command=None):
+
+def send_command(host="localhost", port=12345, command=None):
     """Send a single command to the Blender socket server"""
     try:
         # Create socket connection
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((host, port))
-        
+
         # Send command
         command_json = json.dumps(command)
-        client_socket.send(command_json.encode('utf-8'))
-        
+        client_socket.send(command_json.encode("utf-8"))
+
         # Receive response
         response = client_socket.recv(1024)
-        response_data = json.loads(response.decode('utf-8'))
-        
+        response_data = json.loads(response.decode("utf-8"))
+
         print(f"Sent: {command}")
         print(f"Response: {response_data}")
-        
+
         return response_data
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return None
     finally:
-        if 'client_socket' in locals():
+        if "client_socket" in locals():
             client_socket.close()
+
 
 def update_infinigen(
     action,
@@ -58,10 +60,9 @@ def update_infinigen(
     os.system(
         f"cp {save_dir}/roominfo.json /home/yandan/workspace/infinigen/roominfo.json"
     )
-    
-    # # if invisible:
-    if action=="export_supporter":
 
+    # # if invisible:
+    if action == "export_supporter":
         # if True:
         cmd = f"""
         source ~/anaconda3/etc/profile.d/conda.sh
@@ -74,15 +75,15 @@ def update_infinigen(
         #     os.system("bash -i /home/yandan/workspace/infinigen/run.sh > run.log 2>&1")
     else:
         command = {
-            'action': action,
-            'iter': iter,
-            'description': description,
-            'save_dir': save_dir,
-            'json_name': json_name,
-            'inplace': inplace
+            "action": action,
+            "iter": iter,
+            "description": description,
+            "save_dir": save_dir,
+            "json_name": json_name,
+            "inplace": inplace,
         }
         # Send command
-        response = send_command('localhost', 12345, command)
+        response = send_command("localhost", 12345, command)
 
     with open(argsfile, "r") as f:
         j = json.load(f)

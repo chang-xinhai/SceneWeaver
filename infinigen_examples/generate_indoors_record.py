@@ -120,12 +120,10 @@ def compose_indoors(
 
     # p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
     os.environ["JSON_RESULTS"] = json_name
-    
+
     load_iter = iter
     p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
-    state, solver, terrain, house_bbox, solved_bbox, _ = record.load_scene(
-        load_iter
-    )
+    state, solver, terrain, house_bbox, solved_bbox, _ = record.load_scene(load_iter)
     solved_rooms = [bpy.data.objects["newroom_0-0"]]
     camera_rigs = [bpy.data.objects.get("CameraRigs/0")]
     # height = complete_structure.finalize_scene(
@@ -141,13 +139,17 @@ def compose_indoors(
     #     camera_rigs,
     # )
     # invisible_wall()
-    
-    
-    
-    
-   
+
     record.record_scene(
-        state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p, transparent=False
+        state,
+        solver,
+        terrain,
+        house_bbox,
+        solved_bbox,
+        camera_rigs,
+        iter,
+        p,
+        transparent=False,
     )
     evaluate.eval_metric(state, iter, remove_bad=True)
 

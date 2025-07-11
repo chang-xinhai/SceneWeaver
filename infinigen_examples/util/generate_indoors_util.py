@@ -293,4 +293,3 @@ def restrict_solving(
         )
 
     return stages, problem, quantity_limits
-

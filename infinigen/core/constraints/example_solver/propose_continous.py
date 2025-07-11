@@ -65,13 +65,15 @@ def propose_translate_all(
     filter_domain: r.Domain,
     temperature: float,
 ) -> typing.Iterator[moves.TranslateMove]:
-
     candidates = []
     for objname in state.objs.keys():
-        if objname.startswith("window") or objname.startswith("entrance") or objname.startswith("newroom_0-0"):
+        if (
+            objname.startswith("window")
+            or objname.startswith("entrance")
+            or objname.startswith("newroom_0-0")
+        ):
             continue
         candidates.append(objname)
-    
 
     # candidates = [
     #     c for c in candidates if state.objs[c].dof_matrix_translation is not None
@@ -88,12 +90,13 @@ def propose_translate_all(
         try:
             projected_vector = obj_state.dof_matrix_translation @ random_vector
         except:
-            projected_vector = [0,0,0]
+            projected_vector = [0, 0, 0]
 
         yield moves.TranslateMove(
             names=[obj_state_name],
             translation=projected_vector,
         )
+
 
 def propose_translate(
     consgraph: cl.Node,
@@ -122,13 +125,13 @@ def propose_translate(
             translation=projected_vector,
         )
 
+
 def propose_translate_candid(
     consgraph: cl.Node,
     state: state_def.State,
     candidates,
     temperature: float,
 ) -> typing.Iterator[moves.TranslateMove]:
-    
     candidates = [
         c for c in candidates if state.objs[c].dof_matrix_translation is not None
     ]
@@ -148,6 +151,7 @@ def propose_translate_candid(
             names=[obj_state_name],
             translation=projected_vector,
         )
+
 
 def propose_rotate(
     consgraph: cl.Node,
@@ -181,6 +185,7 @@ def propose_rotate(
 
         axis = obj_state.dof_rotation_axis
         yield moves.RotateMove(names=[obj_state_name], axis=axis, angle=random_angle)
+
 
 def propose_rotate_candid(
     consgraph: cl.Node,
@@ -237,12 +242,10 @@ def propose_reinit_pose(
             names=[obj_state_name],
         )
 
+
 def propose_reinit_pose_candid(
-    consgraph: cl.Node,
-    state: state_def.State,
-    candidates
+    consgraph: cl.Node, state: state_def.State, candidates
 ) -> typing.Iterator[moves.ReinitPoseMove]:
-   
     candidates = [
         c for c in candidates if state.objs[c].dof_matrix_translation is not None
     ]
@@ -257,7 +260,6 @@ def propose_reinit_pose_candid(
         yield moves.ReinitPoseMove(
             names=[obj_state_name],
         )
-
 
 
 def propose_scale(consgraph, state, temperature):

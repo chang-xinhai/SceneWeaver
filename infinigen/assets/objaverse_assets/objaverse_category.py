@@ -61,9 +61,7 @@ class ObjaverseCategoryFactory(ObjaverseFactory):
                 front_view_angle = 0
             else:
                 save_dir = os.getenv("save_dir")
-                with open(
-                    f"{save_dir}/objav_files.json", "r"
-                ) as f:
+                with open(f"{save_dir}/objav_files.json", "r") as f:
                     LoadObjavFiles = json.load(f)
                 filename = LoadObjavFiles[self.category][0]
                 with open(filename.replace(".glb", "") + "/metadata.json", "r") as f:
@@ -137,7 +135,7 @@ class ObjaverseCategoryFactory(ObjaverseFactory):
             tag_support_surfaces(imported_obj)
         # import pdb
         # pdb.set_trace()
-        print("-----------------------------------",filename)
+        print("-----------------------------------", filename)
         if imported_obj:
             return imported_obj
         else:

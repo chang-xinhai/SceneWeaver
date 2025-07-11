@@ -15,11 +15,11 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     level=logging.INFO,
 )
+import json
 import os
 import pickle
-import sys
 import socket
-import json
+import sys
 import threading
 import time
 
@@ -85,9 +85,9 @@ from infinigen_examples.util.generate_indoors_util import (
 from infinigen_examples.util.visible import (
     invisible_others,
     invisible_wall,
-    visible_others,
     visible_layer,
-    visible_layers
+    visible_layers,
+    visible_others,
 )
 
 logger = logging.getLogger(__name__)
@@ -103,6 +103,7 @@ global_overrides = []  # Store initial overrides from command line
 global_configs = ["base"]  # Store initial configs from command line
 command_results = {}
 
+
 def view_all():
     if not bpy.app.background:
         for area in bpy.context.screen.areas:
@@ -114,12 +115,12 @@ def view_all():
 
 
 class SocketServer:
-    def __init__(self, host='localhost', port=12345):
+    def __init__(self, host="localhost", port=12345):
         self.host = host
         self.port = port
         self.socket = None
         self.running = False
-        
+
     def start(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -128,58 +129,60 @@ class SocketServer:
             self.socket.listen(1)
             self.running = True
             logger.info(f"Socket server started on {self.host}:{self.port}")
-            
+
             while self.running:
                 try:
                     self.socket.settimeout(1.0)  # Allow for periodic checks
                     client_socket, address = self.socket.accept()
                     logger.info(f"Connection from {address}")
-                    
+
                     # Handle client in a separate thread
-                    client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+                    client_thread = threading.Thread(
+                        target=self.handle_client, args=(client_socket,)
+                    )
                     client_thread.daemon = True
                     client_thread.start()
-                    
+
                 except socket.timeout:
                     continue
                 except Exception as e:
                     if self.running:
                         logger.error(f"Socket error: {e}")
                     break
-                    
+
         except Exception as e:
             logger.error(f"Failed to start socket server: {e}")
         finally:
             if self.socket:
                 self.socket.close()
-    
+
     def handle_client(self, client_socket):
         try:
             while self.running:
                 data = client_socket.recv(1024)
                 if not data:
                     break
-                    
+
                 try:
-                    command = json.loads(data.decode('utf-8'))
+                    command = json.loads(data.decode("utf-8"))
                     logger.info(f"Received command: {command}")
-                    
+
                     # Handle special commands immediately
-                    action = command.get('action', '')
+                    action = command.get("action", "")
                     if action in ["ping", "status", "stop_server"]:
                         result = process_action_command(command)
                         response = {"status": "completed", "result": result}
-                        client_socket.send(json.dumps(response).encode('utf-8'))
+                        client_socket.send(json.dumps(response).encode("utf-8"))
                         if action == "stop_server":
                             break
                     else:
                         # Add command to action queue for processing
                         command_id = len(action_queue)  # Simple ID assignment
-                        command['command_id'] = command_id
-                        
+                        command["command_id"] = command_id
+
                         with action_lock:
                             action_queue.append(command)
-                        
+
                         # # Send acknowledgment
                         # response = {"status": "queued", "command_id": command_id, "message": "Command queued for processing"}
                         # client_socket.send(json.dumps(response).encode('utf-8'))
@@ -187,20 +190,27 @@ class SocketServer:
                         while self.running:
                             if command_id in command_results:
                                 result = command_results.pop(command_id)
-                                response = {"status": "completed", "command_id": command_id, "result": result}
-                                client_socket.send(json.dumps(response).encode('utf-8'))
+                                response = {
+                                    "status": "completed",
+                                    "command_id": command_id,
+                                    "result": result,
+                                }
+                                client_socket.send(json.dumps(response).encode("utf-8"))
                                 break
                             time.sleep(0.1)
-                    
+
                 except json.JSONDecodeError as e:
-                    error_response = {"status": "error", "message": f"Invalid JSON: {e}"}
-                    client_socket.send(json.dumps(error_response).encode('utf-8'))
-                    
+                    error_response = {
+                        "status": "error",
+                        "message": f"Invalid JSON: {e}",
+                    }
+                    client_socket.send(json.dumps(error_response).encode("utf-8"))
+
         except Exception as e:
             logger.error(f"Client handling error: {e}")
         finally:
             client_socket.close()
-    
+
     def stop(self):
         self.running = False
         if self.socket:
@@ -236,28 +246,31 @@ def add_global_override(override):
     global global_overrides
     if override not in global_overrides:
         global_overrides.append(override)
-        logger.info(f"Added override '{override}'. Global overrides: {global_overrides}")
+        logger.info(
+            f"Added override '{override}'. Global overrides: {global_overrides}"
+        )
 
 
 def process_action_command(command):
-
     """Process a single action command"""
     try:
         # Extract parameters from command
-        action = command.get('action', 'init_physcene')
-        iter_num = command.get('iter', 0)
-        description = command.get('description', '')
-        inplace = command.get('inplace', False)
-        json_name = command.get('json_name',  "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean/Bedroom-47007_bedroom.json")
-        seed = command.get('seed', 0)
+        action = command.get("action", "init_physcene")
+        iter_num = command.get("iter", 0)
+        description = command.get("description", "")
+        inplace = command.get("inplace", False)
+        json_name = command.get(
+            "json_name",
+            "/home/yandan/workspace/PhyScene/3D_front/generate_filterGPN_clean/Bedroom-47007_bedroom.json",
+        )
+        seed = command.get("seed", 0)
         # output_folder = command.get('save_dir', "debug/")
         # Set save_dir from command if provided
-        save_dir = command.get('save_dir', os.getenv("save_dir", "debug/"))
+        save_dir = command.get("save_dir", os.getenv("save_dir", "debug/"))
         os.environ["save_dir"] = save_dir
 
         logger.info(f"Processing action: {action} with iter: {iter_num}")
 
-        
         # Handle special commands
         if action == "stop_server":
             return stop_server_command()
@@ -265,18 +278,15 @@ def process_action_command(command):
             return {"status": "pong", "message": "Server is running"}
         elif action == "status":
             return {
-                "status": "running", 
+                "status": "running",
                 "queue_size": len(action_queue),
-                "message": "Socket server is active and listening"
+                "message": "Socket server is active and listening",
             }
-        
-        
-        
+
         # Update parameters from save_dir/args.json if it exists
         args_json_path = f"{save_dir}/args.json"
 
         if os.path.exists(args_json_path):
-            
             if inplace and os.path.exists(f"{save_dir}/args/args_{iter_num}.json"):
                 os.system(
                     f"cp {save_dir}/args/args_{iter_num}.json {save_dir}/args/args_{iter_num}_inplaced.json"
@@ -284,49 +294,50 @@ def process_action_command(command):
             # Save current args
             os.system(f"cp {args_json_path} {save_dir}/args/args_{iter_num}.json")
 
-
             try:
                 with open(args_json_path, "r") as f:
                     j = json.load(f)
                     # Update with saved values, but prioritize command values
-                    if 'iter' not in command:
+                    if "iter" not in command:
                         iter_num = j.get("iter", iter_num)
-                    if 'action' not in command:
+                    if "action" not in command:
                         action = j.get("action", action)
-                    if 'description' not in command:
+                    if "description" not in command:
                         description = j.get("description", description)
-                    if 'inplace' not in command:
+                    if "inplace" not in command:
                         inplace = j.get("inplace", inplace)
-                    if 'json_name' not in command:
+                    if "json_name" not in command:
                         json_name = j.get("json_name", json_name)
             except (json.JSONDecodeError, KeyError) as e:
-                logger.warning(f"Could not load args.json: {e}. Using command parameters.")
-        
+                logger.warning(
+                    f"Could not load args.json: {e}. Using command parameters."
+                )
+
         # Create output folder path
         output_path = Path(save_dir)
-        
+
         # Apply seed if provided
         if seed is not None:
             # scene_seed = init.apply_scene_seed(seed)
-            scene_seed = gin.config._CONFIG.get(('OVERALL_SEED', 'gin.macro'))['value']
+            scene_seed = gin.config._CONFIG.get(("OVERALL_SEED", "gin.macro"))["value"]
         else:
             # scene_seed = init.apply_scene_seed(None)
-            scene_seed = gin.config._CONFIG.get(('OVERALL_SEED', 'gin.macro'))['value']
-        
+            scene_seed = gin.config._CONFIG.get(("OVERALL_SEED", "gin.macro"))["value"]
+
         # Initialize gin configs - ensure this works properly
         # Merge global overrides with command overrides
         global global_overrides
-        
+
         # Start with global overrides, then add command-specific overrides
         overrides = global_overrides[:]
-    
+
         # Ensure terrain is disabled to avoid landlab dependency issues
-        if 'compose_indoors.terrain_enabled=False' not in overrides:
-            overrides.append('compose_indoors.terrain_enabled=False')
-        
+        if "compose_indoors.terrain_enabled=False" not in overrides:
+            overrides.append("compose_indoors.terrain_enabled=False")
+
         logger.info(f"Global overrides: {global_overrides}")
         logger.info(f"Merged overrides: {overrides}")
-            
+
         try:
             # Always re-apply gin configs with the current overrides for socket commands
             # This ensures that the terrain_enabled=False override is properly applied
@@ -335,13 +346,12 @@ def process_action_command(command):
             logger.info(f"Applying gin configs for socket command:")
             logger.info(f"  configs: {configs_to_load}")
             logger.info(f"  overrides: {overrides}")
-            
+
             # Import the gin module to access current config
-            
-            
+
             # Clear any existing gin config to ensure clean state
             # gin.clear_config()
-            
+
             # Apply the same configs as the main function would
             init.apply_gin_configs(
                 configs=configs_to_load,
@@ -352,20 +362,23 @@ def process_action_command(command):
                 ],
             )
             constants.initialize_constants()
-            
+
             # Debug: Check if the lights_off_chance parameter is loaded
             try:
-                lights_off_chance = gin.get_configurable_singletons()['compose_indoors'].__dict__.get('lights_off_chance', 'NOT_FOUND')
+                lights_off_chance = gin.get_configurable_singletons()[
+                    "compose_indoors"
+                ].__dict__.get("lights_off_chance", "NOT_FOUND")
                 logger.info(f"lights_off_chance parameter: {lights_off_chance}")
             except Exception as debug_e:
                 logger.warning(f"Could not check lights_off_chance: {debug_e}")
-                
+
         except Exception as e:
             logger.error(f"Failed to initialize gin configs: {e}")
             import traceback
+
             traceback.print_exc()
             raise e
-        
+
         # Set environment variable for JSON results
         os.environ["JSON_RESULTS"] = json_name
 
@@ -373,26 +386,30 @@ def process_action_command(command):
         # Convert overrides list to dict format for function call
         overrides_dict = {}
         for override in overrides:
-            if '=' in override:
-                key, value = override.split('=', 1)
+            if "=" in override:
+                key, value = override.split("=", 1)
                 # Handle gin-style function parameters
-                if key.startswith('compose_indoors.'):
-                    key = key.replace('compose_indoors.', '')
-                
+                if key.startswith("compose_indoors."):
+                    key = key.replace("compose_indoors.", "")
+
                 # Convert string values to appropriate types
-                if value.lower() == 'true':
+                if value.lower() == "true":
                     overrides_dict[key] = True
-                elif value.lower() == 'false':
+                elif value.lower() == "false":
                     overrides_dict[key] = False
                 else:
                     try:
                         # Try to convert to number
-                        overrides_dict[key] = float(value) if '.' in value else int(value)
+                        overrides_dict[key] = (
+                            float(value) if "." in value else int(value)
+                        )
                     except ValueError:
                         overrides_dict[key] = value
-        
-        logger.info(f"Calling compose_indoors_debug with overrides_dict: {overrides_dict}")
-        
+
+        logger.info(
+            f"Calling compose_indoors_debug with overrides_dict: {overrides_dict}"
+        )
+
         result = compose_indoors(
             output_folder=output_path,
             scene_seed=scene_seed,
@@ -401,14 +418,20 @@ def process_action_command(command):
             json_name=json_name,
             description=description,
             inplace=inplace,
-            **overrides_dict
+            **overrides_dict,
         )
-        
-        return {"status": "success", "action": action, "iter": iter_num, "result": result}
-        
+
+        return {
+            "status": "success",
+            "action": action,
+            "iter": iter_num,
+            "result": result,
+        }
+
     except Exception as e:
         logger.error(f"Error processing action: {e}")
         import traceback
+
         traceback.print_exc()
         return {"status": "error", "message": str(e), "action": action}
 
@@ -416,15 +439,15 @@ def process_action_command(command):
 def execute_main_logic(args):
     """Execute the main scene generation logic"""
     global global_overrides, global_configs
-    
+
     # scene_seed = init.apply_scene_seed(args.seed)
-    scene_seed = gin.config._CONFIG.get(('OVERALL_SEED', 'gin.macro'))['value']
-    
+    scene_seed = gin.config._CONFIG.get(("OVERALL_SEED", "gin.macro"))["value"]
+
     # Use the same configs and overrides as stored globally
     configs_to_load = ["base_indoors.gin"] + global_configs
     logger.info(f"execute_main_logic using configs: {configs_to_load}")
     logger.info(f"execute_main_logic using overrides: {global_overrides}")
-    
+
     init.apply_gin_configs(
         configs=configs_to_load,
         overrides=global_overrides,
@@ -460,7 +483,7 @@ def blender_action_handler():
         result = process_action_command(action)
         logger.info(f"Action completed with result: {result}")
         # 这里写入 command_results
-        command_id = action.get('command_id')
+        command_id = action.get("command_id")
         if command_id is not None:
             command_results[command_id] = result
 
@@ -468,8 +491,9 @@ def blender_action_handler():
         if not bpy.app.background:
             for area in bpy.context.screen.areas:
                 area.tag_redraw()
-      
+
     return 0.1  # Check again in 0.1 seconds
+
 
 @gin.configurable
 def compose_indoors(
@@ -490,7 +514,7 @@ def compose_indoors(
 
     # Add debugging to see if terrain is disabled
     logger.info(f"compose_indoors_debug called with terrain_enabled={terrain_enabled}")
-    overrides['terrain_enabled'] = terrain_enabled
+    overrides["terrain_enabled"] = terrain_enabled
 
     consgraph = home_constraints()
     stages = basic_scene.default_greedy_stages()
@@ -619,8 +643,7 @@ def compose_indoors(
             invisible_wall()
         else:
             raise ValueError(f"Action is wrong: {action}")
-        
-        
+
     if "nophy" not in save_dir:
         if action not in [
             "init_physcene",
@@ -704,7 +727,6 @@ def compose_indoors(
                         visible_others()
                 solver.del_no_relation_objects()
 
-
     record.record_scene(
         state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p
     )
@@ -714,9 +736,9 @@ def compose_indoors(
 
     # save_path = "debug.blend"
     # bpy.ops.wm.save_as_mainfile(filepath=save_path)
-    return 
+    return
 
-    
+
 @gin.configurable
 def compose_indoors_debug(
     output_folder: Path,
@@ -733,7 +755,7 @@ def compose_indoors_debug(
 
     # Add debugging to see if terrain is disabled
     logger.info(f"compose_indoors called with terrain_enabled={terrain_enabled}")
-    overrides['terrain_enabled'] = terrain_enabled
+    overrides["terrain_enabled"] = terrain_enabled
 
     consgraph = home_constraints()
     stages = basic_scene.default_greedy_stages()
@@ -1073,22 +1095,22 @@ def stop_server_command():
 
 def main(args):
     global global_overrides, global_configs
-    global state, solver, terrain, house_bbox, solved_bbox, camera_rigs, p 
-        
+    global state, solver, terrain, house_bbox, solved_bbox, camera_rigs, p
+
     # Initialize basic setup
     scene_seed = init.apply_scene_seed(args.seed)
-    
+
     # Add terrain disable override by default to avoid landlab dependency issues
     overrides = args.overrides[:]  # Make a copy
-    if 'compose_indoors.terrain_enabled=False' not in overrides:
-        overrides.append('compose_indoors.terrain_enabled=False')
-    
+    if "compose_indoors.terrain_enabled=False" not in overrides:
+        overrides.append("compose_indoors.terrain_enabled=False")
+
     # # Store overrides and configs globally for use in timer handler
     global_overrides = overrides[:]
     global_configs = args.configs[:]  # Store the gin config files
     logger.info(f"Stored global overrides: {global_overrides}")
     logger.info(f"Stored global configs: {global_configs}")
-    
+
     init.apply_gin_configs(
         configs=["base_indoors.gin"] + args.configs,
         overrides=overrides,
@@ -1099,19 +1121,19 @@ def main(args):
     )
     constants.initialize_constants()
 
-
-
     # Start socket server
     logger.info("Starting socket server for remote commands...")
     start_socket_server()
-    
+
     # Register Blender timer for action handling
     if not bpy.app.background:
         # Option 1: Use global overrides (current implementation)
         bpy.app.timers.register(blender_action_handler, persistent=True)
         logger.info("Blender action handler registered. Waiting for socket commands...")
         logger.info("Send JSON commands to localhost:12345 with format:")
-        logger.info('{"action": "init_physcene", "iter": 0, "description": "", "save_dir": "debug/"}')
+        logger.info(
+            '{"action": "init_physcene", "iter": 0, "description": "", "save_dir": "debug/"}'
+        )
     else:
         # If running in background mode, execute once with provided args
         execute_main_logic(args)
@@ -1197,19 +1219,21 @@ if __name__ == "__main__":
                 args.inplace = j.get("inplace", args.inplace)
                 args.json_name = j.get("json_name", args.json_name)
         except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Could not load args.json: {e}. Using command line arguments.")
+            logger.warning(
+                f"Could not load args.json: {e}. Using command line arguments."
+            )
 
     # Create necessary directories
     if not os.path.exists(f"{save_dir}/args"):
         os.makedirs(f"{save_dir}/args", exist_ok=True)
         os.makedirs(f"{save_dir}/record_files", exist_ok=True)
         os.makedirs(f"{save_dir}/record_scene", exist_ok=True)
-    
+
     if args.inplace and os.path.exists(f"{save_dir}/args/args_{args.iter}.json"):
         os.system(
             f"cp {save_dir}/args/args_{args.iter}.json {save_dir}/args/args_{args.iter}_inplaced.json"
         )
-    
+
     # Save current args
     if os.path.exists(args_json_path):
         os.system(f"cp {args_json_path} {save_dir}/args/args_{args.iter}.json")

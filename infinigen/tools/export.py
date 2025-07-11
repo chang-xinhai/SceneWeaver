@@ -198,6 +198,7 @@ def remove_obj_parents(obj=None):
         obj.parent = None
         obj.matrix_world.translation = old_location
 
+
 def delete_collection(collection_name):
     collection = bpy.data.collections.get(collection_name)
 
@@ -217,6 +218,7 @@ def delete_collection(collection_name):
         delete_child_collections(collection)
         bpy.data.collections.remove(collection)
 
+
 def delete_objects():
     logging.info("Deleting placeholders collection")
     collection_name = "placeholders"
@@ -224,7 +226,6 @@ def delete_objects():
 
     collection_name = "mark"
     delete_collection(collection_name)
-
 
     if bpy.data.objects.get("Grid"):
         bpy.data.objects.remove(bpy.data.objects["Grid"], do_unlink=True)
@@ -992,18 +993,15 @@ def export_curr_scene(
         run_blender_export(export_file, format, vertex_colors, individual_export)
 
         return export_file
-    
-import re
+
 
 import re
 from pathlib import Path
 
-import re
-from pathlib import Path
 
 def find_blend_file(filenames):
     """Returns the matching .blend file as a Path object.
-    
+
     Rules:
     1. If only one .blend file exists, return it
     2. If multiple .blend files exist and follow scene_{i}.blend pattern:
@@ -1012,10 +1010,10 @@ def find_blend_file(filenames):
     """
     # Convert all items to Path objects
     paths = [Path(f) if isinstance(f, str) else f for f in filenames]
-    
+
     # Filter .blend files using Path.suffix
-    blend_files = [f for f in paths if f.suffix == '.blend']
-    
+    blend_files = [f for f in paths if f.suffix == ".blend"]
+
     if not blend_files:
         return None
     elif len(blend_files) == 1:
@@ -1023,19 +1021,20 @@ def find_blend_file(filenames):
     else:
         # Check for scene_{i}.blend pattern
         scene_files = []
-        pattern = re.compile(r'scene_(\d+)\.blend$')
-        
+        pattern = re.compile(r"scene_(\d+)\.blend$")
+
         for path in blend_files:
             match = pattern.search(path.name)
             if match:
                 scene_files.append((int(match.group(1)), path))
-        
+
         if scene_files:
             # Return Path with highest scene number
             return max(scene_files, key=lambda x: x[0])[1]
         else:
             return None  # Multiple .blend files but no scene pattern
-        
+
+
 def main(args):
     args.output_folder.mkdir(exist_ok=True)
     logging.basicConfig(
@@ -1050,7 +1049,7 @@ def main(args):
     for file in targets:
         if file.stem == "solve_state":
             shutil.copy(file, args.output_folder / "solve_state.json")
-        
+
     folder = export_scene(
         blendfile,
         args.output_folder,
@@ -1060,7 +1059,7 @@ def main(args):
         individual_export=args.individual,
         omniverse_export=args.omniverse,
     )
-    
+
     # # wanted to use shutil here but kept making corrupted files
     # subprocess.call(["zip", "-r", str(folder.with_suffix(".zip")), str(folder)])
 

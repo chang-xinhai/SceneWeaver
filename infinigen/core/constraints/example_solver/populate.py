@@ -206,8 +206,7 @@ def populate_state_placeholders_mid(
         update_state_mesh_objs.append((objkey, old_objname))  # 将旧对象信息加入更新列表
 
         *_, inst_seed = parse_asset_name(placeholder.name)  # 解析资产名称并提取实例种子
-        
-            
+
         # # 使用生成器生成新的对象，并设置位置、旋转等属性 'ThreedFrontCategoryFactory(2179127).spawn_asset(620454)'
         populate_obj_name = placeholder.name.replace(
             "bbox_placeholder", "spawn_asset"
@@ -240,7 +239,7 @@ def populate_state_placeholders_mid(
             # 更新当前视图层，以反映对对象的修改
             bpy.context.view_layer.update()
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-            
+
         else:
             if inst_seed == "9128922":
                 a = 1
@@ -347,7 +346,7 @@ def populate_state_placeholders_mid(
                 continue
             os = state.objs[objkey]
             obj = bpy.data.objects.get(os.populate_obj)
-           
+
             bpy.context.view_layer.update()
             # 应用变换，只对对象的缩放进行应用，不改变位置和旋转
             butil.apply_transform(obj, loc=False, rot=False, scale=True)

@@ -102,7 +102,9 @@ class SceneDesigner:
                 eval_results = self.eval(iter=self.current_step - 1)
                 isvalid = self.check_valid(self.current_step - 1)
             except:
-                print(f"Error: Failed in evaluation in iter {iter-1} !!! Go back to the last iter.")
+                print(
+                    f"Error: Failed in evaluation in iter {iter-1} !!! Go back to the last iter."
+                )
                 isvalid = False
             if not isvalid:
                 save_dir = os.getenv("save_dir")

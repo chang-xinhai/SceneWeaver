@@ -700,10 +700,10 @@ class Solver:
     ):
         self.del_no_relation_objects()
 
-        for i in range(100):  
+        for i in range(100):
             parent_obj_name = "5778780_LargeShelfFactory"
             category = "BookStackFactory"
-  
+
             against_wall = False
             on_floor = False
             relation = "on"
@@ -717,13 +717,25 @@ class Solver:
                 relation=relation,
             )
             import random
- 
+
             # module_and_class =  random.choice(["table_decorations.BookStackFactory"])
-            module_and_class =   random.choice(['tableware.BottleFactory', 'tableware.BowlFactory', 'tableware.CanFactory', 'tableware.CupFactory', 'tableware.FoodBagFactory', 'tableware.FoodBoxFactory', 'tableware.FruitContainerFactory', 'tableware.JarFactory', 'tableware.PlateFactory', 'tableware.PotFactory','tableware.WineglassFactory'])
-            module_name, class_name = module_and_class.rsplit(".", 1)
-            module = importlib.import_module(
-                "infinigen.assets.objects." + module_name
+            module_and_class = random.choice(
+                [
+                    "tableware.BottleFactory",
+                    "tableware.BowlFactory",
+                    "tableware.CanFactory",
+                    "tableware.CupFactory",
+                    "tableware.FoodBagFactory",
+                    "tableware.FoodBoxFactory",
+                    "tableware.FruitContainerFactory",
+                    "tableware.JarFactory",
+                    "tableware.PlateFactory",
+                    "tableware.PotFactory",
+                    "tableware.WineglassFactory",
+                ]
             )
+            module_name, class_name = module_and_class.rsplit(".", 1)
+            module = importlib.import_module("infinigen.assets.objects." + module_name)
             class_obj = getattr(module, class_name)
             gen_class = class_obj
 
@@ -732,9 +744,7 @@ class Solver:
             search_rels = filter_domain.relations
             # 筛选出有效的关系，只选择非否定关系
             search_rels = [
-                rd
-                for rd in search_rels
-                if not isinstance(rd[0], cl.NegatedRelation)
+                rd for rd in search_rels if not isinstance(rd[0], cl.NegatedRelation)
             ]
 
             assign = propose_relations.find_given_assignments(
@@ -766,11 +776,12 @@ class Solver:
                 #     bpy.data.objects.remove(self.state.objs[target_name].obj)
                 #     del self.state.objs[target_name]
                 break
-                   
+
         return self.state
 
     def modify_graph(self):
         import pdb
+
         pdb.set_trace()
         layouts = dict()
 

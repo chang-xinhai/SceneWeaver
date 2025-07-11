@@ -20,7 +20,7 @@ def main(prompt, i):
             os.system(f"mkdir {save_dir}/args")
             os.system(f"mkdir {save_dir}/record_files")
             os.system(f"mkdir {save_dir}/record_scene")
-            
+
         os.environ["save_dir"] = save_dir
         os.environ["UserDemand"] = prompt
         if not prompt.strip():

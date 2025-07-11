@@ -1,8 +1,9 @@
 import bpy
-from mathutils import Matrix, Vector
 import mathutils
+from mathutils import Matrix, Vector
 
-def link_to_collection(collection_name="mark",obj=None):
+
+def link_to_collection(collection_name="mark", obj=None):
     # Create (or get) a collection named "mark"
     if collection_name in bpy.data.collections:
         mark_collection = bpy.data.collections[collection_name]
@@ -16,6 +17,7 @@ def link_to_collection(collection_name="mark",obj=None):
 
     # Link obj to the "mark" collection
     mark_collection.objects.link(obj)
+
 
 def add_rotated_bbox_wireframe(obj, cat_name):
     if obj.type != "MESH":
@@ -64,8 +66,16 @@ def add_rotated_bbox_wireframe(obj, cat_name):
     link_to_collection(obj=arrow_obj)
     return
 
-def create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=2, shaft_radius=0.02, head_length=0.3, head_radius=0.1,
-        color=(1, 0, 0, 1)):
+
+def create_arrow(
+    start=(0, 0, 0),
+    direction=(0, 0, 1),
+    shaft_length=2,
+    shaft_radius=0.02,
+    head_length=0.3,
+    head_radius=0.1,
+    color=(1, 0, 0, 1),
+):
     # Normalize the direction vector
     dir_vector = mathutils.Vector(direction).normalized()
 
@@ -76,29 +86,29 @@ def create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=2, shaft_rad
     bpy.ops.mesh.primitive_cylinder_add(
         radius=shaft_radius,
         depth=shaft_length,
-        location=(mathutils.Vector(start) + shaft_end) / 2
+        location=(mathutils.Vector(start) + shaft_end) / 2,
     )
     shaft = bpy.context.object
 
     # Align the shaft to the direction vector
     shaft_direction = dir_vector
-    shaft.rotation_mode = 'QUATERNION'
-    shaft.rotation_quaternion = shaft_direction.to_track_quat('Z', 'Y')
+    shaft.rotation_mode = "QUATERNION"
+    shaft.rotation_quaternion = shaft_direction.to_track_quat("Z", "Y")
 
     # Create the head (cone)
     bpy.ops.mesh.primitive_cone_add(
         radius1=head_radius,
         depth=head_length,
-        location=shaft_end + dir_vector * (head_length / 2)
+        location=shaft_end + dir_vector * (head_length / 2),
     )
     head = bpy.context.object
 
     # Align the head to the direction vector
-    head.rotation_mode = 'QUATERNION'
-    head.rotation_quaternion = shaft_direction.to_track_quat('Z', 'Y')
+    head.rotation_mode = "QUATERNION"
+    head.rotation_quaternion = shaft_direction.to_track_quat("Z", "Y")
 
     # Join shaft and head into a single object
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     shaft.select_set(True)
     head.select_set(True)
     bpy.context.view_layer.objects.active = shaft
@@ -120,36 +130,37 @@ def create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=2, shaft_rad
 
     return arrow
 
+
 def add_front_arrow_to_bbox(bbox_obj, length=0.5, color=(1, 0.5, 0, 1)):
-    
     # Get object's center in world coordinates
     start = list(bbox_obj.matrix_world.translation)
-    start[2] += bbox_obj.dimensions[2]/2
+    start[2] += bbox_obj.dimensions[2] / 2
 
     # Get local X axis (front) in world coordinates
     local_x = mathutils.Vector((1, 0, 0))  # Y+ is typically "front"
     direction = bbox_obj.matrix_world.to_3x3() @ local_x
     direction.normalize()
 
-    shaft_length = bbox_obj.dimensions[0]*0.75
-    shaft_radius = 0.02 #bbox_obj.dimensions[0]*0.03
-    head_length = 0.1 # bbox_obj.dimensions[0]*0.2
-    head_radius = 0.1 #bbox_obj.dimensions[0]*0.1
+    shaft_length = bbox_obj.dimensions[0] * 0.75
+    shaft_radius = 0.02  # bbox_obj.dimensions[0]*0.03
+    head_length = 0.1  # bbox_obj.dimensions[0]*0.2
+    head_radius = 0.1  # bbox_obj.dimensions[0]*0.1
 
     # Call arrow creation utility (assumes get_arrow or create_arrow is defined)
-    arrow = create_arrow(start=start, 
-                 direction=direction, 
-                 shaft_length=shaft_length, 
-                 shaft_radius = shaft_radius,
-                 head_length=head_length, 
-                 head_radius=head_radius,
-                 color=color)
+    arrow = create_arrow(
+        start=start,
+        direction=direction,
+        shaft_length=shaft_length,
+        shaft_radius=shaft_radius,
+        head_length=head_length,
+        head_radius=head_radius,
+        color=color,
+    )
     return arrow
 
+
 def get_coord(solver):
-   
-    
-    def add_coordinate(bbox_obj, x,y,z):
+    def add_coordinate(bbox_obj, x, y, z):
         text_content = f"({x},{y})"
         # Create text object
         bpy.ops.object.text_add(location=(0, 0, 0))
@@ -177,19 +188,19 @@ def get_coord(solver):
         bbox_center = bbox_obj.matrix_world.translation
         bbox_size = bbox_obj.dimensions
         text_offset = Vector(
-            (-text_obj.dimensions[0] * text_obj.scale[0] / 2, 0.1, bbox_size.z / 2 + 0.02)
+            (
+                -text_obj.dimensions[0] * text_obj.scale[0] / 2,
+                0.1,
+                bbox_size.z / 2 + 0.02,
+            )
         )
         text_obj.location = bbox_center + text_offset
         return text_obj
 
-
-    def add_circle(x,y,z=0):
+    def add_circle(x, y, z=0):
         # Add a filled circle (Ngon)
         bpy.ops.mesh.primitive_circle_add(
-            vertices=64,
-            radius=0.05,
-            fill_type='NGON',
-            location=(x, y, z)
+            vertices=64, radius=0.05, fill_type="NGON", location=(x, y, z)
         )
         circle = bpy.context.active_object
         circle.name = "RedCircle"
@@ -210,16 +221,15 @@ def get_coord(solver):
             circle.data.materials.append(mat)
         return circle
 
-
     z = 0
     roomsize = [solver.dimensions[0], solver.dimensions[1]]
-    for x in range(round(roomsize[0])+1):
-        for y in range(round(roomsize[1])+1):
-            circle = add_circle(x,y,z=z)
+    for x in range(round(roomsize[0]) + 1):
+        for y in range(round(roomsize[1]) + 1):
+            circle = add_circle(x, y, z=z)
             link_to_collection(obj=circle)
-            text_obj = add_coordinate(circle,x,y,z)
+            text_obj = add_coordinate(circle, x, y, z)
             link_to_collection(obj=text_obj)
-    return 
+    return
 
 
 def get_bbox(state):
@@ -235,12 +245,18 @@ def get_bbox(state):
     # bpy.ops.wm.save_as_mainfile(filepath=save_path)
     return
 
-def get_arrow(state):
 
+def get_arrow(state):
     # Example usage:
-    arrow_x = create_arrow(start=(0, 0, 0), direction=(1, 0, 0), shaft_length=1,color=(1, 0, 0, 1))
-    arrow_y = create_arrow(start=(0, 0, 0), direction=(0, 1, 0), shaft_length=1,color=(0, 1, 0, 1))
-    arrow_z = create_arrow(start=(0, 0, 0), direction=(0, 0, 1), shaft_length=1,color=(0, 0, 1, 1))  
+    arrow_x = create_arrow(
+        start=(0, 0, 0), direction=(1, 0, 0), shaft_length=1, color=(1, 0, 0, 1)
+    )
+    arrow_y = create_arrow(
+        start=(0, 0, 0), direction=(0, 1, 0), shaft_length=1, color=(0, 1, 0, 1)
+    )
+    arrow_z = create_arrow(
+        start=(0, 0, 0), direction=(0, 0, 1), shaft_length=1, color=(0, 0, 1, 1)
+    )
     link_to_collection(obj=arrow_x)
     link_to_collection(obj=arrow_y)
     link_to_collection(obj=arrow_z)
@@ -309,7 +325,7 @@ def add_text_on_bbox_surface(bbox_obj, text_content="ObjectName"):
     # Optional: parent text and background to bbox
     #    text_obj.parent = bbox_obj
     bg_plane.parent = text_obj
-    
+
     return text_obj, bg_plane
 
 

@@ -16,7 +16,7 @@ def main(prompt, i):
         save_dir = save_dir + "_" + str(i)
         if not os.path.exists(save_dir):
             os.system(f"mkdir {save_dir}")
-        
+
         os.makedirs(f"{save_dir}/pipeline", exist_ok=True)
         os.makedirs(f"{save_dir}/args", exist_ok=True)
         os.makedirs(f"{save_dir}/record_files", exist_ok=True)

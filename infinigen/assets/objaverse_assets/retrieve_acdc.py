@@ -139,7 +139,6 @@ if __name__ == "__main__":
 
         LoadObjavFiles = dict()
         if not os.path.exists(f"{save_dir}/objav_files.json"):
-            
             for category, cnt in LoadObjavCnts.items():
                 if category.lower() == "meeting_table":
                     a = 1
@@ -189,7 +188,7 @@ if __name__ == "__main__":
                     file_path = list(objaverse_objects.values())[0]
 
                     LoadObjavFiles[category].append(file_path)
-                    if len(LoadObjavFiles[category])>=3:
+                    if len(LoadObjavFiles[category]) >= 3:
                         break
 
             with open(f"{save_dir}/objav_files.json", "w") as f:

@@ -110,7 +110,6 @@ def compose_indoors(
     inplace,
     **overrides,
 ):
-    
     height = 1
     consgraph = home_constraints()
     stages = basic_scene.default_greedy_stages()
@@ -122,7 +121,6 @@ def compose_indoors(
     os.environ["JSON_RESULTS"] = json_name
     save_dir = os.getenv("save_dir")
     if iter == 0 and action != "add_relation":
-        
         p = pipeline.RandomStageExecutor(scene_seed, output_folder, overrides)
         p, terrain = basic_scene.basic_scene(
             scene_seed, output_folder, overrides, logger, p
@@ -343,8 +341,8 @@ def compose_indoors(
     #                     visible_others()
     #             solver.del_no_relation_objects()
 
-        # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
-        # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
+    # state,solver = solve_objects.solve_medium_object(stages,limits,solver,state,p,consgraph,overrides)
+    # state,solver = solve_objects.solve_small_object(stages,limits,solver,state,p,consgraph,overrides)
     record.record_scene(
         state, solver, terrain, house_bbox, solved_bbox, camera_rigs, iter, p
     )
