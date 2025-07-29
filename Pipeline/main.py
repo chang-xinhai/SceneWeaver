@@ -52,7 +52,12 @@ if __name__ == "__main__":
     cnt = args.cnt
     basedir = args.basedir
     os.environ["socket"] = args.socket
-    
+
+    import os
+    current_file_path = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file_path)
+    parent_dir = os.path.dirname(current_dir)
+    os.environ["sceneweaver_dir"] = parent_dir
     # cnt = 3
     # prompts = ["Design me a baby room."]
 
