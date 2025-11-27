@@ -72,9 +72,10 @@ class AddAcdcExecute(BaseTool):
                         # 3 use acdc to reconstruct 3D scene
                         _ = acdc(img_filename, obj_id, info["obj category"])
 
-                        with open(
-                            "~/workspace/digital-cousins/args.json", "r"
-                        ) as f:
+                        # Get TDC path from environment or default
+                        tdc_dir = os.getenv("TABLETOP_DIGITAL_COUSINS_DIR", os.path.expanduser("~/workspace/Tabletop-Digital-Cousins"))
+                        args_path = os.path.join(tdc_dir, "args.json")
+                        with open(args_path, "r") as f:
                             j = json.load(f)
                             if j["success"]:
                                 save_dir = os.getenv("save_dir")
@@ -107,6 +108,11 @@ class AddAcdcExecute(BaseTool):
 def acdc(img_filename, obj_id, category):
     # objtype = obj_id.split("_")[1:]
     # objtype = "_".join(objtype)
+    
+    # Get paths from environment variables or use defaults
+    sceneweaver_dir = os.getenv("sceneweaver_dir", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    tdc_dir = os.getenv("TABLETOP_DIGITAL_COUSINS_DIR", os.path.expanduser("~/workspace/Tabletop-Digital-Cousins"))
+    
     j = {
         "obj_id": obj_id,
         "objtype": category.lower(),
@@ -114,20 +120,24 @@ def acdc(img_filename, obj_id, category):
         "success": False,
         "error": "Unknown",
     }
-    with open("~/workspace/Tabletop-Digital-Cousins/args.json", "w") as f:
+    args_path = os.path.join(tdc_dir, "args.json")
+    with open(args_path, "w") as f:
         json.dump(j, f, indent=4)
 
     import subprocess
 
-    cmd = """
-    source /home/yandan/anaconda3/etc/profile.d/conda.sh
+    # Use environment variable for conda path, fallback to standard locations
+    conda_init = os.getenv("CONDA_INIT_PATH", "$(conda info --base)/etc/profile.d/conda.sh")
+    acdc_env = os.getenv("ACDC_CONDA_ENV", "acdc2")
+    
+    cmd = f"""
+    source {conda_init}
     conda deactivate
-    cd ~/workspace/Tabletop-Digital-Cousins
-    conda activate acdc2
-    python digital_cousins/pipeline/acdc_pipeline.py --gpt_api_key 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 > ~/workspace/SceneWeaver/Pipeline/run.log 2>&1
+    cd {tdc_dir}
+    conda activate {acdc_env}
+    python digital_cousins/pipeline/acdc_pipeline.py > {sceneweaver_dir}/Pipeline/run.log 2>&1
     """
     subprocess.run(["bash", "-c", cmd])
-    # os.system("bash -i ~/workspace/digital-cousins/run.sh")
     save_dir = os.getenv("save_dir")
     json_name = (
         f"{save_dir}/pipeline/acdc_output/step_3_output/scene_0/scene_0_info.json"
@@ -143,11 +153,14 @@ def gen_img_SD(SD_prompt, obj_id, obj_size):
     save_dir = os.getenv("save_dir")
     img_filename = f"{save_dir}/pipeline/SD_img.jpg"
     j = {"prompt": SD_prompt, "img_savedir": img_filename}
-    with open("~/workspace/sd3.5/prompt.json", "w") as f:
+    
+    # Get SD path from environment or default
+    sd_dir = os.getenv("SD_DIR", os.path.expanduser("~/workspace/sd3.5"))
+    prompt_path = os.path.join(sd_dir, "prompt.json")
+    with open(prompt_path, "w") as f:
         json.dump(j, f, indent=4)
 
-    basedir = "~/workspace/sd3.5"
-    os.system(f"bash {basedir}/run.sh")
+    os.system(f"bash {sd_dir}/run.sh")
 
     return img_filename
 
