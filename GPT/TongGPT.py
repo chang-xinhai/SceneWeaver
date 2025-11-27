@@ -24,7 +24,7 @@ def get_api_key(key_path="key.txt"):
     if api_key:
         return api_key
     
-    raise FileNotFoundError(f"API key file not found. Please create key.txt or set OPENROUTER_API_KEY environment variable.")
+    raise FileNotFoundError(f"API key file not found. Please create key.txt or set OPENROUTER_API_KEY/OPENAI_API_KEY environment variable.")
 
 
 class LLMClient:

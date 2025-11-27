@@ -110,7 +110,7 @@ def acdc(img_filename, obj_id, category):
     # objtype = "_".join(objtype)
     
     # Get paths from environment variables or use defaults
-    sceneweaver_dir = os.getenv("sceneweaver_dir", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    sceneweaver_dir = os.getenv("sceneweaver_dir", os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
     tdc_dir = os.getenv("TABLETOP_DIGITAL_COUSINS_DIR", os.path.expanduser("~/workspace/Tabletop-Digital-Cousins"))
     
     j = {
@@ -127,7 +127,21 @@ def acdc(img_filename, obj_id, category):
     import subprocess
 
     # Use environment variable for conda path, fallback to standard locations
-    conda_init = os.getenv("CONDA_INIT_PATH", "$(conda info --base)/etc/profile.d/conda.sh")
+    # Get conda base path at runtime
+    conda_base = os.getenv("CONDA_PREFIX")
+    if conda_base:
+        # If in a conda env, get the base
+        while os.path.basename(conda_base) == 'envs' or os.path.exists(os.path.join(conda_base, 'envs')):
+            parent = os.path.dirname(conda_base)
+            if parent == conda_base:
+                break
+            if os.path.exists(os.path.join(parent, 'etc', 'profile.d', 'conda.sh')):
+                conda_base = parent
+                break
+            conda_base = parent
+    
+    default_conda_init = os.path.join(conda_base, 'etc', 'profile.d', 'conda.sh') if conda_base else "~/miniconda3/etc/profile.d/conda.sh"
+    conda_init = os.getenv("CONDA_INIT_PATH", default_conda_init)
     acdc_env = os.getenv("ACDC_CONDA_ENV", "acdc2")
     
     cmd = f"""
