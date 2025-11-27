@@ -43,7 +43,7 @@ if __name__ == "__main__":
                        help='Your prompt to generate the scene. Default is "Design me a bedroom."')
     parser.add_argument('--cnt', type=int, default=1,
                    help='Number of scene to generate. Default is 1')
-    parser.add_argument('--basedir', type=str, default="/mnt/fillipo/yandan/scenesage/record_scene/manus/",
+    parser.add_argument('--basedir', type=str, default="./output/",
                    help='The basic path to save all the generated scenes.')
     parser.add_argument('--socket', type=str, default="False", help='Run with Blender in the foreground')
 

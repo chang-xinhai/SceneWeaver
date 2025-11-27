@@ -158,4 +158,3 @@ dependencies:
       - yacs==0.1.8
       - yarl==1.11.1
       - zipp==3.20.1
-prefix: /home/yandan/anaconda3/envs/sceneweaver

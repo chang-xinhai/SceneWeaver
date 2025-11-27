@@ -6,6 +6,7 @@ from openai import (
     APIError,
     AuthenticationError,
     AzureOpenAI,
+    OpenAI,
     OpenAIError,
     RateLimitError,
 )
@@ -217,20 +218,40 @@ class LLM:
                 # If the model is not in tiktoken's presets, use cl100k_base as default
                 self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
+            # Initialize client based on api_type
+            self._init_client()
+
+            self.token_counter = TokenCounter(self.tokenizer)
+
+    def _init_client(self):
+        """Initialize the appropriate client based on api_type."""
+        if self.api_type.lower() == "openrouter":
+            # OpenRouter configuration (uses OpenAI-compatible API)
+            self.MODEL = self.model
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url or "https://openrouter.ai/api/v1",
+            )
+        elif self.api_type.lower() == "openai":
+            # Standard OpenAI configuration
+            self.MODEL = self.model
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url if self.base_url else None,
+            )
+        elif self.api_type.lower() == "azure":
+            # Azure OpenAI configuration
             REGION = "eastus2"
             API_BASE = "https://api.tonggpt.mybigai.ac.cn/proxy"
             self.ENDPOINT = f"{API_BASE}/{REGION}"
-            self.MODEL = self.model  # "gpt-4o-2024-08-06"
-            # with open("key.txt","r") as f:
-            #     lines = f.readlines()
-            # self.API_KEY = lines[0].strip()
+            self.MODEL = self.model
             self.client = AzureOpenAI(
                 api_key=self.api_key,
                 api_version=self.api_version,
                 azure_endpoint=self.ENDPOINT,
             )
-
-            self.token_counter = TokenCounter(self.tokenizer)
+        else:
+            raise ValueError(f"Unsupported api_type: {self.api_type}. Supported types: openrouter, openai, azure")
 
     def count_tokens(self, text: str) -> int:
         """Calculate the number of tokens in a text"""

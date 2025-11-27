@@ -1,18 +1,28 @@
 import base64
+import os
 
 from TongGPT import GPT4o
 
 
 class GPT4(GPT4o):
     """
-    Simple interface for interacting with GPT-4O model
+    Simple interface for interacting with GPT-4 models via OpenRouter, OpenAI, or Azure.
     """
 
+    # Version mapping for different model names
     VERSIONS = {
         "4v": "gpt-4-vision-preview",
         "4o": "gpt-4o-2024-08-06",
         "4o-mini": "gpt-4o-mini",
         "gpt-4-turbo": "gpt-4-turbo-2024-04-09",
+    }
+    
+    # OpenRouter model mapping
+    OPENROUTER_VERSIONS = {
+        "4v": "openai/gpt-4-vision-preview",
+        "4o": "openai/gpt-4o-2024-08-06",
+        "4o-mini": "openai/gpt-4o-mini",
+        "gpt-4-turbo": "openai/gpt-4-turbo",
     }
 
     def __init__(
@@ -20,9 +30,15 @@ class GPT4(GPT4o):
         api_key=None,
         version="gpt-4-turbo",
     ):
-        # def __init__(self, '
         self.version = version
-        MODEL = self.VERSIONS[version]
+        api_type = os.environ.get("LLM_API_TYPE", "openrouter")
+        
+        # Select model name based on API type
+        if api_type == "openrouter":
+            MODEL = self.OPENROUTER_VERSIONS.get(version, f"openai/{self.VERSIONS.get(version, version)}")
+        else:
+            MODEL = self.VERSIONS.get(version, version)
+        
         self.MODEL = MODEL
         REGION = "eastus2"
         super().__init__(MODEL, REGION)
