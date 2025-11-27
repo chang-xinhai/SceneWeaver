@@ -225,18 +225,7 @@ class LLM:
 
     def _init_client(self):
         """Initialize the appropriate client based on api_type."""
-        if self.api_type.lower() == "azure":
-            # Azure OpenAI configuration
-            REGION = "eastus2"
-            API_BASE = "https://api.tonggpt.mybigai.ac.cn/proxy"
-            self.ENDPOINT = f"{API_BASE}/{REGION}"
-            self.MODEL = self.model
-            self.client = AzureOpenAI(
-                api_key=self.api_key,
-                api_version=self.api_version,
-                azure_endpoint=self.ENDPOINT,
-            )
-        elif self.api_type.lower() == "openrouter":
+        if self.api_type.lower() == "openrouter":
             # OpenRouter configuration (uses OpenAI-compatible API)
             self.MODEL = self.model
             self.client = OpenAI(
@@ -250,8 +239,19 @@ class LLM:
                 api_key=self.api_key,
                 base_url=self.base_url if self.base_url else None,
             )
+        elif self.api_type.lower() == "azure":
+            # Azure OpenAI configuration
+            REGION = "eastus2"
+            API_BASE = "https://api.tonggpt.mybigai.ac.cn/proxy"
+            self.ENDPOINT = f"{API_BASE}/{REGION}"
+            self.MODEL = self.model
+            self.client = AzureOpenAI(
+                api_key=self.api_key,
+                api_version=self.api_version,
+                azure_endpoint=self.ENDPOINT,
+            )
         else:
-            raise ValueError(f"Unsupported api_type: {self.api_type}. Supported types: azure, openrouter, openai")
+            raise ValueError(f"Unsupported api_type: {self.api_type}. Supported types: openrouter, openai, azure")
 
     def count_tokens(self, text: str) -> int:
         """Calculate the number of tokens in a text"""

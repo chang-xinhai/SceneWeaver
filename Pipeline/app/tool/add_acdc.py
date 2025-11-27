@@ -127,21 +127,23 @@ def acdc(img_filename, obj_id, category):
     import subprocess
 
     # Use environment variable for conda path, fallback to standard locations
-    # Get conda base path at runtime
-    conda_base = os.getenv("CONDA_PREFIX")
-    if conda_base:
-        # If in a conda env, get the base
-        while os.path.basename(conda_base) == 'envs' or os.path.exists(os.path.join(conda_base, 'envs')):
-            parent = os.path.dirname(conda_base)
-            if parent == conda_base:
-                break
-            if os.path.exists(os.path.join(parent, 'etc', 'profile.d', 'conda.sh')):
-                conda_base = parent
-                break
-            conda_base = parent
+    # Try to get conda base path reliably
+    conda_init = os.getenv("CONDA_INIT_PATH")
+    if not conda_init:
+        try:
+            result = subprocess.run(['conda', 'info', '--base'], capture_output=True, text=True)
+            if result.returncode == 0:
+                conda_base = result.stdout.strip()
+                conda_init = os.path.join(conda_base, 'etc', 'profile.d', 'conda.sh')
+        except (FileNotFoundError, subprocess.SubprocessError):
+            pass
     
-    default_conda_init = os.path.join(conda_base, 'etc', 'profile.d', 'conda.sh') if conda_base else "~/miniconda3/etc/profile.d/conda.sh"
-    conda_init = os.getenv("CONDA_INIT_PATH", default_conda_init)
+    if not conda_init:
+        # Fallback to common locations
+        conda_init = os.path.expanduser("~/miniconda3/etc/profile.d/conda.sh")
+        if not os.path.exists(conda_init):
+            conda_init = os.path.expanduser("~/anaconda3/etc/profile.d/conda.sh")
+    
     acdc_env = os.getenv("ACDC_CONDA_ENV", "acdc2")
     
     cmd = f"""
