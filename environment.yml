@@ -1,4 +1,4 @@
-name: infinigen_python
+name: infinigen_sceneweaver
 channels:
   - pytorch
   - nvidia
@@ -164,4 +164,4 @@ dependencies:
       - wcwidth==0.2.13
       - xarray==2024.7.0
       - zstandard==0.23.0
-prefix: /home/yandan/anaconda3/envs/infinigen_python
+prefix: /home/yandan/anaconda3/envs/infinigen_sceneweaver
